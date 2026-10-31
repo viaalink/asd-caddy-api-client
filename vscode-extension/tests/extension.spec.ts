@@ -50,7 +50,7 @@ test.describe("Extension Activation", () => {
   test("activates without error", async ({ page, codeServerUrl }) => {
     const activationErrors: string[] = [];
     page.on("console", (msg) => {
-      if (/Activating extension 'asd-host\.vscode-caddy-tools' failed/.test(msg.text())) {
+      if (/Activating extension 'viaalink\.vscode-caddy-tools' failed/.test(msg.text())) {
         activationErrors.push(msg.text());
       }
     });
@@ -887,10 +887,8 @@ test.describe("Extension Listing", () => {
 
     const entry = page.locator('.extension-list-item:has-text("Caddy Configuration Tools")');
     await expect(entry).toBeVisible({ timeout: 10000 });
-    await expect(entry).toContainText("asd-host");
-    // Not asserting on a custom icon src here: package.json has no "icon"
-    // field committed yet, so VS Code falls back to a generic icon -- that's
-    // current, correct behavior, not a bug this test should flag.
+    await expect(entry.locator("img")).toHaveAttribute("src", /icon\.png|\.png$/);
+    await expect(entry).toContainText("viaalink");
 
     await entry.click();
     const detailsPane = page.locator(".extension-editor");
@@ -899,7 +897,7 @@ test.describe("Extension Listing", () => {
     ).toBeVisible({
       timeout: 10000,
     });
-    await expect(detailsPane).toContainText("asd-host");
+    await expect(detailsPane).toContainText("viaalink");
 
     // README.md renders two webview iframes deep (outer sandbox shell ->
     // inner content frame) -- proves it actually rendered, not a blank pane.

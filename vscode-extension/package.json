@@ -3,7 +3,8 @@
   "displayName": "Caddy Configuration Tools",
   "description": "IntelliSense, snippets, and validation for Caddy and caddy-security configurations",
   "version": "0.2.0",
-  "publisher": "asd-host",
+  "publisher": "viaalink",
+  "icon": "icon.png",
   "author": {
     "name": "Viaalink",
     "email": "info@viaalink.com",
