@@ -1,889 +1,132 @@
 /**
- * VSCode Extension Tests
+ * code-server UI tests for the Caddy Configuration Tools extension.
  *
- * Comprehensive tests for the Caddy Configuration Tools extension.
- * Tests real user workflows and extension features in code-server.
+ * Every test here verifies behaviour of THIS extension (its providers,
+ * commands, snippets, diagnostics or Marketplace listing) as a user sees
+ * it in the browser -- not VS Code's own editor features. The workbench is
+ * loaded once per worker and reset between tests (see fixtures.ts).
+ *
+ * Completion/diagnostics tests use real files in the (throwaway) workspace:
+ * the extension's providers are registered for `scheme: "file"` documents,
+ * so an untitled buffer never reaches them.
  */
 
 import {
   test,
   expect,
-  waitForEditor,
   openFile,
-  handleTrustDialog,
-  closeNotifications,
-  cleanupEditor,
-  closeAllEditors,
   triggerCompletion,
+  suggestItem,
+  suggestWidget,
+  suggestLabels,
+  goToLineEnd,
+  saveActiveEditor,
+  expectValidJson,
+  readWorkspaceFile,
+  caddyProblemRows,
+  problemRows,
+  runCommand,
+  openCommandPalette,
+  pickQuickOption,
+  quickOptions,
+  quickInputTitled,
+  answerInputBox,
+  DIAGNOSTICS_SETTLE_MS,
+  type ScratchFileFactory,
 } from "./fixtures";
 import type { Page } from "@playwright/test";
 
-// Common setup for all tests
-async function setupPage(page: Page, codeServerUrl: string) {
-  await page.goto(codeServerUrl);
-  await page.waitForSelector(".monaco-workbench", { timeout: 30000 });
-  await handleTrustDialog(page);
-  await closeNotifications(page);
-  await cleanupEditor(page);
+const CADDY_COMMANDS = [
+  "Caddy: Show Handler Documentation",
+  "Caddy: Insert Route Configuration",
+  "Caddy: Insert Security Configuration",
+  "Caddy: Route Configuration Wizard",
+  "Caddy: Security Configuration Wizard",
+];
 
-  // Close any modal dialogs that might be open
-  const cancelButton = page.locator('button:has-text("Cancel")').first();
-  if (await cancelButton.isVisible({ timeout: 500 }).catch(() => false)) {
-    await cancelButton.click();
-  }
+/** Create a scratch file with `content` and open it. */
+async function openScratch(
+  page: Page,
+  scratchFile: ScratchFileFactory,
+  name: string,
+  content = ""
+): Promise<void> {
+  await openFile(page, await scratchFile(name, content));
+}
+
+/**
+ * Wait out the diagnostics debounce, then assert the open file has no
+ * problems at all -- neither from the extension's own validator (source
+ * "caddy") nor from VS Code validating against the schemas the extension
+ * contributes. Absence can't be awaited as an event, so this is a bounded
+ * wait (DIAGNOSTICS_SETTLE_MS); callers pair it with a positive control
+ * where one is available.
+ */
+async function expectNoProblems(page: Page): Promise<void> {
+  // Deliberate fixed wait: there is no event for "validation ran and found nothing".
+  await page.waitForTimeout(DIAGNOSTICS_SETTLE_MS);
+  const rows = await problemRows(page);
+  await expect(rows).toHaveCount(0);
+  await expect(page.locator(".squiggly-error, .squiggly-warning")).toHaveCount(0);
+}
+
+/** Save the active editor and return its on-disk content parsed as strict JSON. */
+async function saveAndParse(
+  page: Page,
+  workspaceDir: string,
+  name: string
+): Promise<{ text: string; value: unknown }> {
+  await saveActiveEditor(page);
+  const text = readWorkspaceFile(workspaceDir, name);
+  return { text, value: expectValidJson(text) };
+}
+
+/**
+ * Type a snippet prefix at the cursor, assert the snippet is offered, accept
+ * it, and leave snippet mode with every placeholder at its default.
+ */
+async function insertSnippetByPrefix(page: Page, prefix: string): Promise<void> {
+  await page.keyboard.type(prefix);
+  await triggerCompletion(page);
+  const item = suggestItem(page, prefix);
+  await expect(item, `snippet "${prefix}" not offered`).toHaveCount(1);
+  await item.click();
+  await expect(suggestWidget(page)).toBeHidden();
+  // Leave snippet mode (and any choice popup) keeping the defaults.
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
 }
 
 // ============================================================================
-// EXTENSION ACTIVATION
+// ACTIVATION AND LISTING
 // ============================================================================
 
 test.describe("Extension Activation", () => {
-  // Every other test in this file only proves a *feature* works once the
-  // extension has activated -- none of them would catch the extension
-  // failing to activate at all (e.g. a bundling bug leaving a dangling
-  // `require()` in dist/extension.js that only breaks at runtime). VS
-  // Code's own built-in JSON schema validation (declarative, via
-  // package.json's jsonValidation) keeps working even when our extension's
-  // activate() throws, which is exactly what let this go unnoticed: the
-  // diagnostics tests below still passed while hover/completions/CodeLens
-  // were silently dead.
-  test("activates without error", async ({ page, codeServerUrl }) => {
-    const activationErrors: string[] = [];
-    page.on("console", (msg) => {
-      if (/Activating extension 'viaalink\.vscode-caddy-tools' failed/.test(msg.text())) {
-        activationErrors.push(msg.text());
-      }
-    });
-
-    let activated = false;
-    page.on("console", (msg) => {
-      if (/Caddy Configuration Tools: Activated/.test(msg.text())) {
-        activated = true;
-      }
-    });
-
-    await page.goto(codeServerUrl);
-    await page.waitForSelector(".monaco-workbench", { timeout: 30000 });
-    await handleTrustDialog(page);
-    await closeNotifications(page);
-
-    // Opening a file is what triggers activation (onLanguage:json).
+  // VS Code's declarative jsonValidation keeps working even when our
+  // activate() throws, so the diagnostics tests alone would not notice a
+  // broken bundle (e.g. a dangling require() in dist/extension.js).
+  test("activates without error", async ({ page, consoleMessages }) => {
+    // Opening a JSON file is what triggers activation (onLanguage:json).
     await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-    await page.waitForTimeout(2000);
-
-    expect(activationErrors, activationErrors.join("\n")).toEqual([]);
-    expect(activated).toBe(true);
-  });
-});
-
-// ============================================================================
-// BASIC FUNCTIONALITY TESTS
-// ============================================================================
-
-test.describe("Basic Functionality", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("workbench loads with all required UI elements", async ({ page }) => {
-    // Verify core workbench structure
-    await expect(page.locator(".monaco-workbench")).toBeVisible();
-    await expect(page.locator(".statusbar")).toBeVisible();
-    await expect(page.locator('[aria-label*="Explorer"]').first()).toBeVisible();
-
-    // Wait for files to be visible or expand folder via twistie click
-    const validFile = page.locator('text="valid.caddy.json"').first();
-    if (!(await validFile.isVisible({ timeout: 2000 }).catch(() => false))) {
-      // Click the twistie (expand arrow) on the folder row
-      const twistie = page.locator('.monaco-list-row:has-text("test-files") .twistie').first();
-      if (await twistie.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await twistie.click();
-        // Wait for folder to expand
-        await validFile.waitFor({ state: "visible", timeout: 2000 }).catch(() => {});
-      }
-    }
-
-    // Verify test files are available via quick open
-    await page.keyboard.press("Control+p");
-    const quickInput = page.locator(".quick-input-box input");
-    await quickInput.waitFor({ state: "visible", timeout: 5000 });
-    await quickInput.fill("valid.caddy");
-    // Wait for search results to appear
-    await page
-      .waitForFunction(
-        () => document.querySelectorAll('.quick-input-list [role="option"]').length > 0,
-        { timeout: 3000 }
-      )
-      .catch(() => {});
-
-    // Should find at least one result
-    const results = page.locator('.quick-input-list [role="option"]');
-    const resultCount = await results.count();
-    expect(resultCount).toBeGreaterThan(0);
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("opens JSON file and displays content correctly", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Verify all key parts of the Caddy config are displayed
-    const editorContent = page.locator(".view-lines");
-    await expect(editorContent).toContainText("test-route");
-    await expect(editorContent).toContainText("example.com");
-    await expect(editorContent).toContainText("reverse_proxy");
-    await expect(editorContent).toContainText("localhost:3000");
-  });
-
-  test("detects JSON language mode for .caddy.json files", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Status bar should show JSON language
-    const languageMode = page.locator('[aria-label="JSON"], .statusbar :text-is("JSON")').first();
-    await expect(languageMode).toBeVisible({ timeout: 5000 });
-  });
-});
-
-// ============================================================================
-// INTELLISENSE AND COMPLETIONS
-// ============================================================================
-
-test.describe("IntelliSense and Completions", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("shows completions when typing in JSON file", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Go to end of a line and start typing
-    await page.keyboard.press("Control+End"); // Go to end of file
-    await page.keyboard.press("Home"); // Go to start of line
-    await page.keyboard.press("ArrowUp"); // Move up one line
-    await page.keyboard.press("End"); // Go to end of line
-
-    // Trigger completion with Ctrl+Space
-    try {
-      await triggerCompletion(page);
-      // If completion shows, that's good
-      const suggestWidget = page.locator(".suggest-widget");
-      const isVisible = await suggestWidget.isVisible({ timeout: 3000 });
-      console.log(`Completion widget visible: ${isVisible}`);
-    } catch {
-      // Completions may not trigger in all contexts - that's OK for this test
-      console.log("Completion not triggered in this context");
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("Ctrl+Space triggers autocomplete", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Position cursor after opening brace
-    await page.keyboard.press("Control+Home");
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.press("End");
-
-    // Try to trigger completion
-    await page.keyboard.press("Control+Space");
-
-    // Check if suggest widget appeared (may or may not depending on context)
-    const suggestWidget = page.locator(".suggest-widget");
-    const visible = await suggestWidget.isVisible({ timeout: 3000 }).catch(() => false);
-    console.log(`Suggest widget appeared: ${visible}`);
-
-    await page.keyboard.press("Escape");
-  });
-});
-
-// ============================================================================
-// DIAGNOSTICS AND VALIDATION
-// ============================================================================
-
-test.describe("Diagnostics and Validation", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("shows problems indicator in status bar", async ({ page }) => {
-    // The problems indicator should be visible
-    const problemsItem = page.locator('[id="status.problems"], [aria-label*="Problem"]').first();
-    await expect(problemsItem).toBeVisible({ timeout: 5000 });
-  });
-
-  test("valid.caddy.json shows no syntax errors", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Wait for diagnostics to process by checking for status bar update
-    await page
-      .waitForFunction(() => document.querySelector('[id="status.problems"]') !== null, {
-        timeout: 5000,
+    await expect
+      .poll(() => consoleMessages.some((m) => /Caddy Configuration Tools: Activated/.test(m)), {
+        timeout: 15000,
       })
-      .catch(() => {});
-
-    // Check for error squiggles in the editor
-    const errorSquiggles = page.locator(".squiggly-error");
-    const errorCount = await errorSquiggles.count();
-
-    // Note: There may be schema validation errors even if JSON is valid
-    console.log(`Error squiggles found: ${errorCount}`);
-  });
-
-  test("invalid.caddy.json displays validation indicators", async ({ page }) => {
-    await openFile(page, "invalid.caddy.json");
-    await waitForEditor(page);
-
-    // Wait for diagnostics to process by checking for status bar update
-    await page
-      .waitForFunction(() => document.querySelector('[id="status.problems"]') !== null, {
-        timeout: 5000,
-      })
-      .catch(() => {});
-
-    // The file has an invalid handler type - look for editor squiggles or status bar
-    // Check for any squiggly underlines (errors/warnings) or the problems status bar button
-    const squiggles = page.locator(".squiggly-error, .squiggly-warning, .squiggly-info");
-    const squiggleCount = await squiggles.count();
-    console.log(`Found ${squiggleCount} diagnostic squiggles`);
-
-    // Check the problems status bar indicator - same selector as the working test above
-    const problemsStatus = page.locator('[id="status.problems"], [aria-label*="Problem"]').first();
-    await expect(problemsStatus).toBeVisible({ timeout: 5000 });
+      .toBe(true);
+    const failures = consoleMessages.filter((m) =>
+      /Activating extension 'viaalink\.vscode-caddy-tools' failed/.test(m)
+    );
+    expect(failures, failures.join("\n")).toEqual([]);
   });
 });
-
-// ============================================================================
-// COMMAND PALETTE AND COMMANDS
-// ============================================================================
-
-test.describe("Commands and Keyboard Shortcuts", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("Ctrl+Shift+P opens command palette", async ({ page }) => {
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    const quickInput = page.locator(".quick-input-widget").first();
-    await expect(quickInput).toBeVisible({ timeout: 5000 });
-
-    // Verify it shows command prompt
-    const inputBox = page.locator(".quick-input-box input").first();
-    await expect(inputBox).toBeVisible();
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("can search for Caddy commands in palette", async ({ page }) => {
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("Caddy");
-    await page.waitForTimeout(500);
-
-    // Look for any results (commands may or may not be registered depending on extension state)
-    const resultsList = page.locator(".quick-input-list");
-    await expect(resultsList).toBeVisible({ timeout: 3000 });
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("Ctrl+P opens quick file picker", async ({ page }) => {
-    await page.keyboard.press("Control+p");
-    await page.waitForTimeout(500);
-
-    const quickInput = page.locator(".quick-input-widget").first();
-    await expect(quickInput).toBeVisible({ timeout: 5000 });
-
-    // Type a filename
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("valid");
-    await page.waitForTimeout(300);
-
-    // Should show file matches
-    const validFile = page.locator('[role="option"]:has-text("valid.caddy.json")').first();
-    await expect(validFile).toBeVisible({ timeout: 3000 });
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("Ctrl+Shift+X opens extensions view", async ({ page }) => {
-    await page.keyboard.press("Control+Shift+x");
-    await page.waitForTimeout(1000);
-
-    const extensionsHeading = page.locator('text="Extensions"').first();
-    await expect(extensionsHeading).toBeVisible({ timeout: 5000 });
-  });
-});
-
-// ============================================================================
-// EDITOR FEATURES
-// ============================================================================
-
-test.describe("Editor Features", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("can navigate to specific line with Ctrl+G", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Open go to line dialog
-    await page.keyboard.press("Control+g");
-    await page.waitForTimeout(300);
-
-    const quickInput = page.locator(".quick-input-widget").first();
-    await expect(quickInput).toBeVisible({ timeout: 3000 });
-
-    // Type line number
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("5");
-    await page.keyboard.press("Enter");
-
-    // Verify cursor moved (status bar shows line number)
-    await page.waitForTimeout(300);
-    const lineInfo = page.locator('[aria-label*="Ln 5"], :text("Ln 5")').first();
-    // Line info may be visible if cursor moved
-    const moved = await lineInfo.isVisible({ timeout: 2000 }).catch(() => false);
-    console.log(`Cursor moved to line 5: ${moved}`);
-  });
-
-  test("can use find and replace with Ctrl+H", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Open find and replace
-    await page.keyboard.press("Control+h");
-    await page.waitForTimeout(300);
-
-    // Find widget should appear
-    const findWidget = page.locator(".find-widget, .editor-widget.find-widget");
-    await expect(findWidget.first()).toBeVisible({ timeout: 5000 });
-
-    // Close it
-    await page.keyboard.press("Escape");
-  });
-
-  test("can toggle line comment with Ctrl+/", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Go to a line
-    await page.keyboard.press("Control+Home");
-    await page.keyboard.press("ArrowDown");
-
-    // Get initial line content
-    const lineContent = page.locator(".view-line").nth(1);
-    const initialText = await lineContent.textContent();
-
-    // Toggle comment (JSON doesn't support comments, but the key should work)
-    await page.keyboard.press("Control+/");
-    await page.waitForTimeout(200);
-
-    // Note: JSON doesn't have comments, so this may not change anything
-    console.log(`Line content after Ctrl+/: ${await lineContent.textContent()}`);
-  });
-});
-
-// ============================================================================
-// FILE OPERATIONS
-// ============================================================================
-
-test.describe("File Operations", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("can close file with Ctrl+W", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Verify file is open
-    const tab = page.locator('[role="tab"]:has-text("valid.caddy.json")');
-    await expect(tab.first()).toBeVisible({ timeout: 5000 });
-
-    // Close the file
-    await page.keyboard.press("Control+w");
-    await page.waitForTimeout(500);
-
-    // Tab should be gone or editor empty
-    const tabAfter = page.locator('[role="tab"]:has-text("valid.caddy.json")');
-    const stillOpen = await tabAfter
-      .first()
-      .isVisible({ timeout: 1000 })
-      .catch(() => false);
-    console.log(`File still open after Ctrl+W: ${stillOpen}`);
-  });
-
-  test("can switch between files", async ({ page }) => {
-    // Open first file
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Open second file
-    await openFile(page, "invalid.caddy.json");
-    await waitForEditor(page);
-
-    // Verify both tabs exist
-    const validTab = page.locator('[role="tab"]:has-text("valid.caddy.json")');
-    const invalidTab = page.locator('[role="tab"]:has-text("invalid.caddy.json")');
-
-    await expect(validTab.first()).toBeVisible({ timeout: 3000 });
-    await expect(invalidTab.first()).toBeVisible({ timeout: 3000 });
-
-    // Click on first tab to switch
-    await validTab.first().click();
-    await page.waitForTimeout(300);
-
-    // Verify content changed
-    const editorContent = page.locator(".view-lines");
-    await expect(editorContent).toContainText("example.com");
-  });
-});
-
-// ============================================================================
-// REAL WORKFLOW TESTS - Simulating actual user behavior
-// ============================================================================
-
-test.describe("Real User Workflows", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("workflow: view existing route configuration", async ({ page }) => {
-    // User wants to view an existing route configuration
-
-    // Step 1: Open the file
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Step 2: Verify they can see the route structure
-    const editorContent = page.locator(".view-lines");
-    await expect(editorContent).toContainText("@id");
-    await expect(editorContent).toContainText("match");
-    await expect(editorContent).toContainText("handle");
-
-    // Step 3: Check they can see the handler configuration
-    await expect(editorContent).toContainText("reverse_proxy");
-    await expect(editorContent).toContainText("upstreams");
-
-    // User successfully viewed the configuration
-  });
-
-  test("workflow: check file for errors", async ({ page }) => {
-    // User wants to check if their config has errors
-
-    // Step 1: Open the invalid file
-    await openFile(page, "invalid.caddy.json");
-    await waitForEditor(page);
-
-    // Step 2: Wait for validation (check for problems status bar)
-    await page
-      .waitForFunction(() => document.querySelector('[id="status.problems"]') !== null, {
-        timeout: 5000,
-      })
-      .catch(() => {});
-
-    // Step 3: Check for problems status bar button - it should be visible
-    const problemsStatus = page.locator('[id="status.problems"], [aria-label*="Problem"]').first();
-    await expect(problemsStatus).toBeVisible({ timeout: 5000 });
-
-    // User can see the problems indicator in the status bar
-  });
-
-  test("workflow: navigate code structure", async ({ page }) => {
-    // User wants to navigate through a Caddy configuration
-
-    // Step 1: Open the file
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Step 2: Use keyboard to navigate
-    await page.keyboard.press("Control+Home"); // Go to beginning
-
-    // Step 3: Navigate down line by line
-    for (let i = 0; i < 5; i++) {
-      await page.keyboard.press("ArrowDown");
-    }
-
-    // Step 4: Go to end of line
-    await page.keyboard.press("End");
-
-    // Step 5: Select word under cursor
-    await page.keyboard.press("Control+d");
-    await page.waitForTimeout(200);
-
-    // User successfully navigated the file
-  });
-
-  test("workflow: use quick open for file switching", async ({ page }) => {
-    // User wants to quickly switch between config files
-
-    // Step 1: Open first file
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Step 2: Use quick open to find another file
-    await page.keyboard.press("Control+p");
-    await page.waitForTimeout(300);
-
-    // Step 3: Type partial filename
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("invalid");
-    await page.waitForTimeout(300);
-
-    // Step 4: Select the file
-    await page.keyboard.press("Enter");
-    await waitForEditor(page);
-
-    // Step 5: Verify new file is open
-    const editorContent = page.locator(".view-lines");
-    await expect(editorContent).toContainText("invalid_handler_type");
-
-    // User successfully switched files
-  });
-
-  test("workflow: search within file", async ({ page }) => {
-    // User wants to find specific content in a config file
-
-    // Step 1: Open the file
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Step 2: Open find dialog
-    await page.keyboard.press("Control+f");
-    await page.waitForTimeout(500);
-
-    // Step 3: Wait for find dialog to appear and search for a term
-    // The find dialog has a textbox labeled "Find"
-    const findWidget = page.locator('.find-widget, [role="dialog"]:has-text("Find")').first();
-    await expect(findWidget).toBeVisible({ timeout: 5000 });
-
-    // Find the search input - it's the active textbox in the find dialog
-    const findInput = page.locator('.find-widget .input, [aria-label="Find"]').first();
-    await findInput.fill("proxy");
-    await page.waitForTimeout(500);
-
-    // Step 4: Check for search results message (matches or "No results")
-    // The find widget should be visible with some result indication
-    await expect(findWidget).toBeVisible();
-
-    // Step 5: Close find dialog
-    await page.keyboard.press("Escape");
-
-    // User successfully searched the file
-  });
-});
-
-// ============================================================================
-// WIZARD AND COMMAND TESTS
-// ============================================================================
-
-test.describe("Wizard and Command Interactions", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("command palette finds Caddy commands", async ({ page }) => {
-    // Open command palette
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    // Search for Caddy commands
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("Caddy");
-    await page.waitForTimeout(500);
-
-    // Verify Caddy commands appear in the list
-    const resultsList = page.locator(".quick-input-list");
-    await expect(resultsList).toBeVisible({ timeout: 5000 });
-
-    // Look for specific Caddy commands
-    const caddyItems = page.locator('.quick-input-list [role="option"]');
-    const itemCount = await caddyItems.count();
-    console.log(`Found ${itemCount} Caddy-related items`);
-
-    // Should find at least one Caddy command
-    expect(itemCount).toBeGreaterThan(0);
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("can launch Route Configuration Wizard", async ({ page }) => {
-    // Open a JSON file first
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Open command palette and search for route wizard
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("Caddy: Route Configuration Wizard");
-    await page.waitForTimeout(500);
-
-    // Select the command
-    const routeWizardOption = page
-      .locator('[role="option"]:has-text("Route Configuration Wizard")')
-      .first();
-    const isVisible = await routeWizardOption.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (isVisible) {
-      await routeWizardOption.click();
-      await page.waitForTimeout(1000);
-
-      // The wizard should show a quick pick for route type selection
-      // Look for the route type selection dialog
-      const quickPick = page.locator(".quick-input-widget").first();
-      const quickPickVisible = await quickPick.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`Route wizard quick pick visible: ${quickPickVisible}`);
-
-      // Cancel the wizard
-      await page.keyboard.press("Escape");
-    } else {
-      console.log(
-        "Route Configuration Wizard command not found - extension may not be fully loaded"
-      );
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("can launch Security Configuration Wizard", async ({ page }) => {
-    // Open a JSON file first
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Open command palette and search for security wizard
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("Caddy: Security Configuration Wizard");
-    await page.waitForTimeout(500);
-
-    // Select the command
-    const securityWizardOption = page
-      .locator('[role="option"]:has-text("Security Configuration Wizard")')
-      .first();
-    const isVisible = await securityWizardOption.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (isVisible) {
-      await securityWizardOption.click();
-      await page.waitForTimeout(1000);
-
-      // The wizard should show a quick pick for setup type (Quick Setup vs Custom Setup)
-      const quickPick = page.locator(".quick-input-widget").first();
-      const quickPickVisible = await quickPick.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`Security wizard quick pick visible: ${quickPickVisible}`);
-
-      // Cancel the wizard
-      await page.keyboard.press("Escape");
-    } else {
-      console.log(
-        "Security Configuration Wizard command not found - extension may not be fully loaded"
-      );
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("Insert Route command shows route type options", async ({ page }) => {
-    // Open a JSON file first
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Open command palette and search for insert route
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("Caddy: Insert Route");
-    await page.waitForTimeout(500);
-
-    // Select the command
-    const insertRouteOption = page
-      .locator('[role="option"]:has-text("Insert Route Configuration")')
-      .first();
-    const isVisible = await insertRouteOption.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (isVisible) {
-      await insertRouteOption.click();
-      await page.waitForTimeout(1000);
-
-      // Should show route type options (Reverse Proxy, Static File Server, etc.)
-      const quickPick = page.locator(".quick-input-widget").first();
-      const quickPickVisible = await quickPick.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`Insert route options visible: ${quickPickVisible}`);
-
-      if (quickPickVisible) {
-        // Verify route types are shown
-        const reverseProxy = page.locator('[role="option"]:has-text("Reverse Proxy")').first();
-        const rpVisible = await reverseProxy.isVisible({ timeout: 2000 }).catch(() => false);
-        console.log(`Reverse Proxy option visible: ${rpVisible}`);
-      }
-
-      await page.keyboard.press("Escape");
-    } else {
-      console.log("Insert Route command not found - extension may not be fully loaded");
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("Insert Security Config command shows config type options", async ({ page }) => {
-    // Open a JSON file first
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Open command palette and search for insert security
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("Caddy: Insert Security");
-    await page.waitForTimeout(500);
-
-    // Select the command
-    const insertSecurityOption = page
-      .locator('[role="option"]:has-text("Insert Security Configuration")')
-      .first();
-    const isVisible = await insertSecurityOption.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (isVisible) {
-      await insertSecurityOption.click();
-      await page.waitForTimeout(1000);
-
-      // Should show security config options (Local Identity Store, LDAP, Portal, Policy)
-      const quickPick = page.locator(".quick-input-widget").first();
-      const quickPickVisible = await quickPick.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`Insert security options visible: ${quickPickVisible}`);
-
-      if (quickPickVisible) {
-        // Verify security options are shown
-        const localStore = page.locator('[role="option"]:has-text("Local Identity Store")').first();
-        const lsVisible = await localStore.isVisible({ timeout: 2000 }).catch(() => false);
-        console.log(`Local Identity Store option visible: ${lsVisible}`);
-      }
-
-      await page.keyboard.press("Escape");
-    } else {
-      console.log(
-        "Insert Security Configuration command not found - extension may not be fully loaded"
-      );
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("Show Handler Docs command lists all handlers", async ({ page }) => {
-    // Open command palette and search for handler docs
-    await page.keyboard.press("Control+Shift+p");
-    await page.waitForTimeout(500);
-
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.fill("Caddy: Show Handler Documentation");
-    await page.waitForTimeout(500);
-
-    // Select the command
-    const handlerDocsOption = page
-      .locator('[role="option"]:has-text("Show Handler Documentation")')
-      .first();
-    const isVisible = await handlerDocsOption.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (isVisible) {
-      await handlerDocsOption.click();
-      await page.waitForTimeout(1000);
-
-      // Should show handler list
-      const quickPick = page.locator(".quick-input-widget").first();
-      const quickPickVisible = await quickPick.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`Handler list visible: ${quickPickVisible}`);
-
-      if (quickPickVisible) {
-        // Verify common handlers are shown
-        const reverseProxy = page.locator('[role="option"]:has-text("Reverse Proxy")').first();
-        const rpVisible = await reverseProxy.isVisible({ timeout: 2000 }).catch(() => false);
-        console.log(`Reverse Proxy handler visible: ${rpVisible}`);
-
-        const fileServer = page.locator('[role="option"]:has-text("File Server")').first();
-        const fsVisible = await fileServer.isVisible({ timeout: 2000 }).catch(() => false);
-        console.log(`File Server handler visible: ${fsVisible}`);
-      }
-
-      await page.keyboard.press("Escape");
-    } else {
-      console.log(
-        "Show Handler Documentation command not found - extension may not be fully loaded"
-      );
-    }
-
-    await page.keyboard.press("Escape");
-  });
-});
-
-// ============================================================================
-// EXTENSION FEATURE TESTS - CodeLens, Hover, Completion
-// ============================================================================
 
 test.describe("Extension Listing", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  // Functional tests below prove the extension's providers work once VS
-  // Code has silently loaded it -- none of them prove a user would actually
-  // see a correctly-installed, trustworthy-looking entry in the Extensions
-  // panel (icon, description, rendered README), which is a real, separate
-  // failure mode (a stale/broken vsix can install "successfully" while
-  // still rendering as a blank/generic entry).
+  // A stale/broken vsix can install "successfully" while still rendering as
+  // a blank/generic entry in the Extensions panel.
   test("shows a proper icon, description, and rendered README in the Extensions panel", async ({
     page,
   }) => {
     await page.keyboard.press("Control+Shift+X");
-    await page.waitForTimeout(1500);
 
     const entry = page.locator('.extension-list-item:has-text("Caddy Configuration Tools")');
     await expect(entry).toBeVisible({ timeout: 10000 });
@@ -894,9 +137,7 @@ test.describe("Extension Listing", () => {
     const detailsPane = page.locator(".extension-editor");
     await expect(
       detailsPane.getByRole("heading", { name: "Caddy Configuration Tools" })
-    ).toBeVisible({
-      timeout: 10000,
-    });
+    ).toBeVisible({ timeout: 10000 });
     await expect(detailsPane).toContainText("viaalink");
 
     // README.md renders two webview iframes deep (outer sandbox shell ->
@@ -911,43 +152,16 @@ test.describe("Extension Listing", () => {
   });
 });
 
-test.describe("Extension Features", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
+// ============================================================================
+// HOVER AND CODELENS
+// ============================================================================
 
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("CodeLens shows documentation links above handlers", async ({ page }) => {
-    await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
-
-    // Wait for CodeLens to load
-    await page.waitForTimeout(1000);
-
-    // Look for CodeLens widgets in the editor
-    const codeLens = page.locator(".codelens-decoration, .contentWidgets .codicon-book");
-    const codeLensCount = await codeLens.count();
-    console.log(`Found ${codeLensCount} CodeLens decorations`);
-
-    // Also check for the specific "Docs" link we add
-    const docsLink = page.locator('text="📖"').first();
-    const docsVisible = await docsLink.isVisible({ timeout: 3000 }).catch(() => false);
-    console.log(`Docs CodeLens visible: ${docsVisible}`);
-  });
-
+test.describe("Hover and CodeLens", () => {
   test("hover on handler shows documentation", async ({ page }) => {
     await openFile(page, "valid.caddy.json");
-    await waitForEditor(page);
 
-    // Find the "reverse_proxy" text in the editor
-    const handlerText = page.locator('.view-lines:has-text("reverse_proxy")');
-    await expect(handlerText).toBeVisible();
-
-    // Hover the handler name: our provider must render its docs, including
-    // the example (a typo'd appendCodeBlock once made it throw silently).
+    // Our provider must render its docs, including the example (a typo'd
+    // appendCodeBlock once made it throw silently).
     const reverseProxySpan = page
       .locator(".view-lines span")
       .filter({ hasText: /^"reverse_proxy"$/ })
@@ -961,731 +175,421 @@ test.describe("Extension Features", () => {
     await expect(hoverWidget).toContainText("Example");
   });
 
-  test("snippets work in JSON files", async ({ page }) => {
-    // Create a new untitled file to avoid modifying test fixtures
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    // Set language mode to JSON
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    await page.waitForTimeout(500);
-
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.fill("JSON");
-    await page.waitForTimeout(300);
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(500);
-
-    // Type a snippet prefix
-    await page.keyboard.type("caddy-route", { delay: 50 });
-    await page.waitForTimeout(500);
-
-    // Trigger completion
-    await page.keyboard.press("Control+Space");
-    await page.waitForTimeout(500);
-
-    // Check if completion widget shows our snippet
-    const suggestWidget = page.locator(".suggest-widget");
-    const isVisible = await suggestWidget.isVisible({ timeout: 3000 }).catch(() => false);
-    console.log(`Suggest widget visible after snippet prefix: ${isVisible}`);
-
-    if (isVisible) {
-      // Look for our snippet in the list
-      const snippetItem = page.locator('.suggest-widget [role="option"]:has-text("caddy")').first();
-      const snippetVisible = await snippetItem.isVisible({ timeout: 2000 }).catch(() => false);
-      console.log(`Caddy snippet visible: ${snippetVisible}`);
-    }
-
-    // Close the untitled file without saving
-    await page.keyboard.press("Escape");
-    await page.keyboard.press("Control+w");
-    // Don't save if prompted
-    const dontSaveButton = page.locator('button:has-text("Don\'t Save")').first();
-    if (await dontSaveButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await dontSaveButton.click();
-    }
-  });
-});
-
-// ============================================================================
-// VALIDATION ERROR FEEDBACK TESTS
-// ============================================================================
-
-test.describe("Validation Error Feedback", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("missing required 'handle' field shows validation error", async ({ page }) => {
-    await openFile(page, "invalid-missing-handle.caddy.json");
-    await waitForEditor(page);
-
-    // Wait for diagnostics to process
-    await page
-      .waitForFunction(
-        () => {
-          const squiggles = document.querySelectorAll(".squiggly-error, .squiggly-warning");
-          return squiggles.length > 0;
-        },
-        { timeout: 10000 }
-      )
-      .catch(() => {});
-
-    // Check for error squiggles
-    const errorSquiggles = page.locator(".squiggly-error, .squiggly-warning");
-    const errorCount = await errorSquiggles.count();
-    console.log(`Found ${errorCount} validation errors for missing 'handle' field`);
-    expect(errorCount).toBeGreaterThan(0);
-
-    // Open Problems panel to verify error message
-    await page.keyboard.press("Control+Shift+m");
-    await page
-      .waitForFunction(
-        () => document.querySelector('.markers-panel, [aria-label*="Problems"]') !== null,
-        { timeout: 5000 }
-      )
-      .catch(() => {});
-
-    // Look for "handle" or "required" in the problems list
-    const problemsPanel = page.locator(".markers-panel, .problems-widget");
-    const problemText = await problemsPanel.textContent().catch(() => "");
-    console.log(`Problems panel content: ${problemText?.substring(0, 200)}`);
-
-    // Verify error mentions the missing field
-    const hasHandleError =
-      problemText?.toLowerCase().includes("handle") ||
-      problemText?.toLowerCase().includes("required");
-    expect(hasHandleError).toBeTruthy();
-  });
-
-  test("unknown field shows additionalProperties error", async ({ page }) => {
-    await openFile(page, "invalid-unknown-field.caddy.json");
-    await waitForEditor(page);
-
-    // Wait for diagnostics
-    await page
-      .waitForFunction(
-        () => document.querySelectorAll(".squiggly-error, .squiggly-warning").length > 0,
-        { timeout: 10000 }
-      )
-      .catch(() => {});
-
-    // Should have errors for "paths" (should be "path") and "termnal" (typo)
-    const errorSquiggles = page.locator(".squiggly-error, .squiggly-warning");
-    const errorCount = await errorSquiggles.count();
-    console.log(`Found ${errorCount} validation errors for unknown fields`);
-    expect(errorCount).toBeGreaterThan(0);
-  });
-
-  test("valid route config shows no errors", async ({ page }) => {
+  test("CodeLens shows documentation links above handlers", async ({ page }) => {
     await openFile(page, "valid-route.caddy.json");
-    await waitForEditor(page);
-
-    // Wait for diagnostics to settle (shorter wait)
-    await page.waitForTimeout(1000);
-
-    // Check for absence of error squiggles
-    const errorSquiggles = page.locator(".squiggly-error");
-    const errorCount = await errorSquiggles.count();
-    console.log(`Found ${errorCount} errors in valid route config`);
-    expect(errorCount).toBe(0);
-  });
-
-  test("security config validation - missing portal name shows error", async ({ page }) => {
-    await openFile(page, "invalid.caddy-security.json");
-    await waitForEditor(page);
-
-    // Wait for diagnostics
-    await page
-      .waitForFunction(
-        () => document.querySelectorAll(".squiggly-error, .squiggly-warning").length > 0,
-        { timeout: 10000 }
-      )
-      .catch(() => {});
-
-    // Should have errors for missing "name" in portal and invalid "action" value
-    const errorSquiggles = page.locator(".squiggly-error, .squiggly-warning");
-    const errorCount = await errorSquiggles.count();
-    console.log(`Found ${errorCount} validation errors in security config`);
-    expect(errorCount).toBeGreaterThan(0);
-  });
-
-  test("valid security config shows no errors", async ({ page }) => {
-    await openFile(page, "valid.caddy-security.json");
-    await waitForEditor(page);
-
-    // Wait for diagnostics to settle
-    await page.waitForTimeout(1000);
-
-    // Check both severities: JSON schema `additionalProperties`/`required`
-    // violations render as warnings (yellow squiggle), not errors, in VS
-    // Code's built-in JSON language service — checking .squiggly-error
-    // alone previously let a stale fixture (pre-0.6.0 access_lists/driver
-    // shape) pass this test while actually failing schema validation.
-    const diagnosticSquiggles = page.locator(".squiggly-error, .squiggly-warning");
-    const diagnosticCount = await diagnosticSquiggles.count();
-    console.log(`Found ${diagnosticCount} diagnostics in valid security config`);
-    expect(diagnosticCount).toBe(0);
+    const lenses = page.locator(".codelens-decoration");
+    await expect(lenses.filter({ hasText: "Reverse Proxy Docs" })).toHaveCount(1, {
+      timeout: 10000,
+    });
+    await expect(lenses.filter({ hasText: "Headers Docs" })).toHaveCount(1);
   });
 });
 
 // ============================================================================
-// SCHEMA-AWARE INTELLISENSE TESTS
+// DIAGNOSTICS
+// ============================================================================
+
+test.describe("Diagnostics", () => {
+  // These go through the schemas the extension contributes via package.json
+  // `jsonValidation` (VS Code's JSON language service does the validating).
+  const invalid: Array<[string, RegExp[]]> = [
+    ["invalid.caddy.json", [/handler is not allowed/, /Missing property "handle"/]],
+    ["invalid-missing-handle.caddy.json", [/Missing property "handle"/]],
+    ["invalid-unknown-field.caddy.json", [/paths/, /termnal/]],
+    ["invalid.caddy-security.json", [/Missing property "name"/]],
+  ];
+  for (const [file, messages] of invalid) {
+    test(`${file} is reported against the contributed schema`, async ({ page }) => {
+      await openFile(page, file);
+      const rows = await problemRows(page);
+      for (const message of messages) {
+        await expect(rows.filter({ hasText: message }).first()).toBeVisible({ timeout: 10000 });
+      }
+      await expect(page.locator(".squiggly-error, .squiggly-warning").first()).toBeVisible();
+    });
+  }
+
+  test.fixme(
+    "the extension's own validator reports caddy-source problems",
+    // Extension bug (src/providers/schema-validator.ts): SimpleSchemaValidator
+    // never resolves "$ref", and every generated schema's root is
+    // {"$ref": "#/definitions/<name>"} -- so it validates against an empty
+    // schema and the "caddy" diagnostics collection is always empty. All
+    // problems users see today come from jsonValidation. Remove .fixme once
+    // the validator resolves $ref.
+    async ({ page }) => {
+      await openFile(page, "invalid-missing-handle.caddy.json");
+      const rows = await caddyProblemRows(page);
+      await expect(rows.first()).toBeVisible({ timeout: 10000 });
+    }
+  );
+
+  for (const file of ["valid.caddy.json", "valid-route.caddy.json", "valid.caddy-security.json"]) {
+    test(`${file} shows no problems`, async ({ page }) => {
+      await openFile(page, file);
+      await expectNoProblems(page);
+    });
+  }
+});
+
+// ============================================================================
+// SCHEMA-AWARE COMPLETIONS
 // ============================================================================
 
 test.describe("Schema-Aware IntelliSense", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("completions show handler types in route config", async ({ page }) => {
-    // Create new untitled JSON file (don't modify test fixtures)
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    // Set language to JSON
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    // Type the start of a route with handler
-    await page.keyboard.type('{\n  "handle": [{\n    "handler": "', { delay: 20 });
-
-    // Trigger completion for handler value
-    await page.keyboard.press("Control+Space");
-
-    // Wait for suggest widget
-    const suggestWidget = page.locator(".suggest-widget");
-    const isVisible = await suggestWidget.isVisible({ timeout: 5000 }).catch(() => false);
-    console.log(`Handler completion widget visible: ${isVisible}`);
-
-    if (isVisible) {
-      // Look for common handler types
-      const options = page.locator('.suggest-widget [role="option"]');
-      const optionCount = await options.count();
-      console.log(`Found ${optionCount} completion options for handler`);
-
-      // Get text of options
-      for (let i = 0; i < Math.min(optionCount, 5); i++) {
-        const text = await options.nth(i).textContent();
-        console.log(`  Option ${i}: ${text}`);
-      }
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("completions show HTTP methods in match config", async ({ page }) => {
-    // Create new untitled JSON file
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    // Type a match with method array
-    await page.keyboard.type('{\n  "match": [{\n    "method": ["', { delay: 20 });
-
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    const isVisible = await suggestWidget.isVisible({ timeout: 5000 }).catch(() => false);
-    console.log(`Method completion widget visible: ${isVisible}`);
-
-    if (isVisible) {
-      // Should show GET, POST, PUT, etc.
-      const getOption = page.locator('.suggest-widget [role="option"]:has-text("GET")');
-      const hasGet = await getOption.isVisible({ timeout: 2000 }).catch(() => false);
-      console.log(`GET method in completions: ${hasGet}`);
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("completions show property names at root level", async ({ page }) => {
-    // Create new untitled JSON file
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    // Position inside empty object
-    await page.keyboard.type('{\n  "', { delay: 20 });
-
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    const isVisible = await suggestWidget.isVisible({ timeout: 5000 }).catch(() => false);
-    console.log(`Root property completion visible: ${isVisible}`);
-
-    if (isVisible) {
-      const options = page.locator('.suggest-widget [role="option"]');
-      const count = await options.count();
-      console.log(`Found ${count} root property suggestions`);
-
-      // Should include @id, match, handle, terminal
-      const handleOption = page.locator('.suggest-widget [role="option"]:has-text("handle")');
-      const hasHandle = await handleOption.isVisible({ timeout: 2000 }).catch(() => false);
-      console.log(`'handle' property in completions: ${hasHandle}`);
-    }
-
-    await page.keyboard.press("Escape");
-  });
-
-  test("does not offer match properties inside a handler's nested object", async ({ page }) => {
-    // Regression test: context detection used to count brackets across the
-    // whole document, so once a "match" array appeared earlier, it never
-    // "closed" as far as the heuristic was concerned -- offering matcher
-    // properties (host, path, ...) anywhere later in the file, including
-    // deep inside an unrelated handler's own nested objects.
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.type(
-      '{\n  "match": [{ "host": ["example.com"] }],\n  "handle": [{\n    "handler": "headers",\n    "response": {\n      "',
-      { delay: 20 }
+  test("completions show handler types in a handler value", async ({ page, scratchFile }) => {
+    await openScratch(
+      page,
+      scratchFile,
+      "c-handler.caddy.json",
+      '{\n  "handle": [{ "handler": "" }]\n}\n'
     );
-
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    const isVisible = await suggestWidget.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (isVisible) {
-      const hostOption = page.locator('.suggest-widget [role="option"]:has-text("host")');
-      const hasHost = await hostOption.isVisible({ timeout: 1000 }).catch(() => false);
-      console.log(`'host' wrongly offered inside headers.response: ${hasHost}`);
-      expect(hasHost).toBe(false);
+    await goToLineEnd(page, 2);
+    // Cursor between the quotes of "handler": "|"
+    for (let i = 0; i < '" }]'.length; i++) await page.keyboard.press("ArrowLeft");
+    await triggerCompletion(page);
+    for (const handler of ["reverse_proxy", "file_server", "static_response", "headers"]) {
+      await expect(suggestItem(page, handler)).toHaveCount(1);
     }
-
-    await page.keyboard.press("Escape");
   });
 
-  test("offers match properties when actually inside a match object", async ({ page }) => {
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.type('{\n  "match": [{\n    "', { delay: 20 });
-
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    const isVisible = await suggestWidget.isVisible({ timeout: 5000 }).catch(() => false);
-    console.log(`Match-property completion widget visible: ${isVisible}`);
-
-    if (isVisible) {
-      const hostOption = page.locator('.suggest-widget [role="option"]:has-text("host")');
-      const hasHost = await hostOption.isVisible({ timeout: 2000 }).catch(() => false);
-      console.log(`'host' offered inside match object: ${hasHost}`);
-      expect(hasHost).toBe(true);
+  test("completions show HTTP methods in match config", async ({ page, scratchFile }) => {
+    await openScratch(
+      page,
+      scratchFile,
+      "c-method.caddy.json",
+      '{\n  "match": [{ "method": [""] }]\n}\n'
+    );
+    await goToLineEnd(page, 2);
+    for (let i = 0; i < '"] }]'.length; i++) await page.keyboard.press("ArrowLeft");
+    await triggerCompletion(page);
+    for (const method of ["GET", "POST", "DELETE"]) {
+      await expect(suggestItem(page, method)).toHaveCount(1);
     }
+  });
 
-    await page.keyboard.press("Escape");
+  test("completions show route properties at root level", async ({ page, scratchFile }) => {
+    await openScratch(page, scratchFile, "c-root.caddy.json", "{\n  \n}\n");
+    await goToLineEnd(page, 2);
+    await triggerCompletion(page);
+    for (const prop of ["@id", "match", "handle", "terminal"]) {
+      await expect(suggestItem(page, prop)).toHaveCount(1);
+    }
+  });
+
+  test("offers match properties when actually inside a match object", async ({
+    page,
+    scratchFile,
+  }) => {
+    await openScratch(page, scratchFile, "c-match.caddy.json", '{\n  "match": [{\n    \n  }]\n}\n');
+    await goToLineEnd(page, 3);
+    await triggerCompletion(page);
+    for (const prop of ["host", "path", "method"]) {
+      await expect(suggestItem(page, prop)).toHaveCount(1);
+    }
+  });
+
+  test("does not offer match properties inside a handler's nested object", async ({
+    page,
+    scratchFile,
+  }) => {
+    // Regression: context detection once counted brackets across the whole
+    // document, so after a "match" array matcher properties were offered
+    // anywhere later in the file.
+    await openScratch(
+      page,
+      scratchFile,
+      "c-nested.caddy.json",
+      '{\n  "match": [{ "host": ["example.com"] }],\n  "handle": [{\n    "handler": "headers",\n    "response": {\n      \n    }\n  }]\n}\n'
+    );
+    await goToLineEnd(page, 6);
+    await page.keyboard.press("Control+Space");
+    // Either nothing is offered or what is offered isn't a matcher property;
+    // wait for the widget to settle on one of its states before asserting.
+    const widget = page.locator(".editor-widget.suggest-widget");
+    await expect(widget).toHaveClass(/visible|message/, { timeout: 5000 });
+    await expect(suggestItem(page, "host")).toHaveCount(0);
+    await expect(suggestItem(page, "path")).toHaveCount(0);
   });
 
   test("offers handler-specific fields, not match properties, inside a handle object", async ({
     page,
+    scratchFile,
   }) => {
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.type(
-      '{\n  "match": [{ "host": ["example.com"] }],\n  "handle": [{\n    "handler": "reverse_proxy",\n    "',
-      { delay: 20 }
+    await openScratch(
+      page,
+      scratchFile,
+      "c-fields.caddy.json",
+      '{\n  "match": [{ "host": ["example.com"] }],\n  "handle": [{\n    "handler": "reverse_proxy",\n    \n  }]\n}\n'
     );
-
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    const isVisible = await suggestWidget.isVisible({ timeout: 5000 }).catch(() => false);
-    console.log(`Handler-property completion widget visible: ${isVisible}`);
-
-    if (isVisible) {
-      const upstreamsOption = page.locator('.suggest-widget [role="option"]:has-text("upstreams")');
-      const hasUpstreams = await upstreamsOption.isVisible({ timeout: 2000 }).catch(() => false);
-      console.log(`'upstreams' offered inside reverse_proxy handle object: ${hasUpstreams}`);
-      expect(hasUpstreams).toBe(true);
-
-      const hostOption = page.locator('.suggest-widget [role="option"]:has-text("host")');
-      const hasHost = await hostOption.isVisible({ timeout: 1000 }).catch(() => false);
-      expect(hasHost).toBe(false);
-    }
-
-    await page.keyboard.press("Escape");
+    await goToLineEnd(page, 5);
+    await triggerCompletion(page);
+    await expect(suggestItem(page, "upstreams")).toHaveCount(1);
+    await expect(suggestItem(page, "host")).toHaveCount(0);
   });
 });
 
 // ============================================================================
-// SNIPPET INSERTION AND VALIDATION TESTS
+// SNIPPETS
 // ============================================================================
 
-test.describe("Snippet Creation Support", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("caddy-route snippet inserts valid route structure", async ({ page }) => {
-    // Create new JSON file
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    // Set language to JSON
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    // Type snippet prefix and trigger
-    await page.keyboard.type("caddy-route", { delay: 30 });
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    if (await suggestWidget.isVisible({ timeout: 3000 }).catch(() => false)) {
-      // Select the snippet
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(500);
-
-      // Tab through placeholders to complete the snippet
-      for (let i = 0; i < 5; i++) {
-        await page.keyboard.press("Tab");
-      }
-
-      // Get editor content
-      const editorContent = await page.locator(".view-lines").textContent();
-      console.log(`Snippet result: ${editorContent?.substring(0, 200)}`);
-
-      // Verify structure contains key elements
-      expect(editorContent).toContain("@id");
-      expect(editorContent).toContain("match");
-      expect(editorContent).toContain("handle");
-      expect(editorContent).toContain("handler");
+test.describe("Snippets", () => {
+  test("caddy snippets are offered in JSON files", async ({ page, scratchFile }) => {
+    await openScratch(page, scratchFile, "s-list.caddy.json");
+    await page.keyboard.type("caddy-");
+    await triggerCompletion(page);
+    const labels = await suggestLabels(page);
+    for (const prefix of ["caddy-route", "caddy-handler-proxy", "caddy-sec-portal"]) {
+      expect(labels, `snippet "${prefix}" missing from ${labels.join(", ")}`).toContain(prefix);
     }
-
-    await page.keyboard.press("Escape");
   });
 
-  test("caddy-handler-proxy snippet inserts reverse proxy config", async ({ page }) => {
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.type("caddy-handler-proxy", { delay: 30 });
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    if (await suggestWidget.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(500);
-
-      const editorContent = await page.locator(".view-lines").textContent();
-      console.log(`Proxy snippet: ${editorContent}`);
-
-      expect(editorContent).toContain("reverse_proxy");
-      expect(editorContent).toContain("upstreams");
-      expect(editorContent).toContain("dial");
+  test.fixme(
+    "caddy-route snippet inserts a valid route",
+    // Snippet bug (snippets/caddy-json.json, generated by
+    // scripts/generate-snippets.js): placeholder ${4:"upstreams": [{ "dial":
+    // "${5:localhost:3000}" }]} contains an unescaped "}" which closes
+    // placeholder 4 early, so the literal "]}" lands after it and the buffer
+    // becomes `"upstreams": [{ "dial": "localhost:3000" ]}` -- invalid JSON.
+    // Needs "\\}" inside the placeholder. Remove .fixme once fixed.
+    async ({ page, scratchFile, workspaceDir }) => {
+      const name = "s-route.caddy.json";
+      await openScratch(page, scratchFile, name, "{}");
+      // Positive control: the route schema is active for this file name.
+      await expect((await problemRows(page)).first()).toBeVisible({ timeout: 10000 });
+      await page.locator(".editor-instance .view-lines").click();
+      await page.keyboard.press("Control+a");
+      await page.keyboard.press("Delete");
+      await insertSnippetByPrefix(page, "caddy-route");
+      const { value } = await saveAndParse(page, workspaceDir, name);
+      expect(value).toMatchObject({
+        handle: [{ handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] }],
+      });
+      await expectNoProblems(page);
     }
+  );
 
-    await page.keyboard.press("Escape");
+  test("caddy-handler-proxy snippet inserts a valid handler into a route", async ({
+    page,
+    scratchFile,
+    workspaceDir,
+  }) => {
+    const name = "s-proxy.caddy.json";
+    await openScratch(page, scratchFile, name, '{\n  "handle": [\n    \n  ]\n}\n');
+    await goToLineEnd(page, 3);
+    await insertSnippetByPrefix(page, "caddy-handler-proxy");
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toEqual({
+      handle: [{ handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] }],
+    });
+    await expectNoProblems(page);
   });
 
-  test("caddy-sec-portal snippet inserts security portal config", async ({ page }) => {
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
+  test("caddy-sec-portal snippet inserts a portal as valid JSON", async ({
+    page,
+    scratchFile,
+    workspaceDir,
+  }) => {
+    const name = "s-portal-json.caddy-security-portal.json";
+    await openScratch(page, scratchFile, name);
+    await insertSnippetByPrefix(page, "caddy-sec-portal");
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toMatchObject({ name: "myportal", identity_stores: ["local"] });
+  });
 
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInput = page.locator(".quick-input-box input").first();
-    await langInput.waitFor({ state: "visible", timeout: 3000 });
-    await langInput.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.type("caddy-sec-portal", { delay: 30 });
-    await page.keyboard.press("Control+Space");
-
-    const suggestWidget = page.locator(".suggest-widget");
-    if (await suggestWidget.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(500);
-
-      const editorContent = await page.locator(".view-lines").textContent();
-      console.log(`Portal snippet: ${editorContent}`);
-
-      expect(editorContent).toContain("name");
-      expect(editorContent).toContain("identity_stores");
-      expect(editorContent).toContain("cookie");
+  test.fixme(
+    "caddy-sec-portal snippet validates against the portal schema",
+    // Snippet bug (snippets/caddy-json.json via scripts/generate-snippets.js):
+    // it emits "cookie": {...}, but the contributed caddy-security-portal
+    // schema (additionalProperties: false) only knows "cookie_config", so
+    // the inserted portal shows "Property cookie is not allowed".
+    async ({ page, scratchFile, workspaceDir }) => {
+      const name = "s-portal.caddy-security-portal.json";
+      await openScratch(page, scratchFile, name, "{}");
+      // Positive control: the portal schema is active (requires "name").
+      await expect((await problemRows(page)).first()).toBeVisible({ timeout: 10000 });
+      await page.locator(".editor-instance .view-lines").click();
+      await page.keyboard.press("Control+a");
+      await page.keyboard.press("Delete");
+      await insertSnippetByPrefix(page, "caddy-sec-portal");
+      await saveAndParse(page, workspaceDir, name);
+      await expectNoProblems(page);
     }
-
-    await page.keyboard.press("Escape");
-  });
+  );
 });
 
 // ============================================================================
-// WIZARD AND COMMAND CONFIG CREATION TESTS
+// COMMANDS
 // ============================================================================
 
-test.describe("Config Creation Wizards", () => {
-  test.beforeEach(async ({ page, codeServerUrl }) => {
-    await setupPage(page, codeServerUrl);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await closeAllEditors(page);
-  });
-
-  test("Insert Route command creates route with selected handler", async ({ page }) => {
-    // Create fresh untitled JSON file (don't modify test fixtures)
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    // Set language to JSON
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInputSetup = page.locator(".quick-input-box input").first();
-    await langInputSetup.waitFor({ state: "visible", timeout: 3000 });
-    await langInputSetup.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    // Open command palette
-    await page.keyboard.press("Control+Shift+p");
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.waitFor({ state: "visible", timeout: 5000 });
-    await inputBox.fill("Caddy: Insert Route");
-
-    // Wait for command to appear and select it
-    const insertRouteOption = page.locator('[role="option"]:has-text("Insert Route")').first();
-    if (await insertRouteOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await insertRouteOption.click();
-
-      // Should show route type picker
-      const routeTypePicker = page.locator(".quick-input-widget").first();
-      if (await routeTypePicker.isVisible({ timeout: 3000 }).catch(() => false)) {
-        // Select Reverse Proxy option
-        const reverseProxyOption = page
-          .locator('[role="option"]:has-text("Reverse Proxy")')
-          .first();
-        if (await reverseProxyOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await reverseProxyOption.click();
-
-          // Fill in the wizard inputs (domain, upstream)
-          await page.waitForTimeout(500);
-
-          // Check if domain input appears
-          const domainInput = page.locator(".quick-input-box input").first();
-          if (await domainInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await domainInput.fill("api.example.com");
-            await page.keyboard.press("Enter");
-
-            // Upstream input
-            const upstreamInput = page.locator(".quick-input-box input").first();
-            if (await upstreamInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-              await upstreamInput.fill("localhost:3000");
-              await page.keyboard.press("Enter");
-            }
-          }
-
-          // Verify route was inserted
-          await page.waitForTimeout(1000);
-          const editorContent = await page.locator(".view-lines").textContent();
-          console.log(`Inserted route: ${editorContent?.substring(0, 300)}`);
-
-          // Should have route structure
-          if (editorContent && editorContent.length > 10) {
-            expect(editorContent).toContain("handle");
-          }
-        }
-      }
+test.describe("Commands", () => {
+  test("command palette lists every Caddy command", async ({ page }) => {
+    await openCommandPalette(page);
+    await page.locator(".quick-input-widget .quick-input-box input").fill(">Caddy:");
+    for (const title of CADDY_COMMANDS) {
+      await expect(
+        page.locator(`.quick-input-list [role="option"][aria-label^="${title}"]`)
+      ).toHaveCount(1);
     }
-
-    await page.keyboard.press("Escape");
   });
 
-  test("Insert Security Config command creates identity store", async ({ page }) => {
-    // Create fresh untitled JSON file
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInputSetup = page.locator(".quick-input-box input").first();
-    await langInputSetup.waitFor({ state: "visible", timeout: 3000 });
-    await langInputSetup.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.press("Control+Shift+p");
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.waitFor({ state: "visible", timeout: 5000 });
-    await inputBox.fill("Caddy: Insert Security");
-
-    const insertSecOption = page.locator('[role="option"]:has-text("Insert Security")').first();
-    if (await insertSecOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await insertSecOption.click();
-
-      // Should show security config type picker
-      const configTypePicker = page.locator(".quick-input-widget").first();
-      if (await configTypePicker.isVisible({ timeout: 3000 }).catch(() => false)) {
-        // Select Local Identity Store
-        const localStoreOption = page
-          .locator('[role="option"]:has-text("Local Identity Store")')
-          .first();
-        if (await localStoreOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await localStoreOption.click();
-          await page.waitForTimeout(1000);
-
-          const editorContent = await page.locator(".view-lines").textContent();
-          console.log(`Inserted security config: ${editorContent?.substring(0, 200)}`);
-
-          // Should have identity store structure
-          if (editorContent && editorContent.length > 10) {
-            const hasDriver = editorContent.includes("driver") || editorContent.includes("local");
-            console.log(`Has identity store structure: ${hasDriver}`);
-          }
-        }
-      }
+  test("Show Handler Docs lists handlers", async ({ page }) => {
+    await runCommand(page, "Caddy: Show Handler Documentation");
+    for (const handler of ["Reverse Proxy", "File Server", "Static Response", "Headers"]) {
+      await expect(
+        page.locator(`.quick-input-list [role="option"][aria-label^="${handler}"]`).first()
+      ).toBeVisible();
     }
-
-    await page.keyboard.press("Escape");
   });
 
-  test("Route Wizard walks through complete configuration", async ({ page }) => {
-    // Create fresh untitled JSON file
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
-
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInputSetup = page.locator(".quick-input-box input").first();
-    await langInputSetup.waitFor({ state: "visible", timeout: 3000 });
-    await langInputSetup.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.press("Control+Shift+p");
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.waitFor({ state: "visible", timeout: 5000 });
-    await inputBox.fill("Caddy: Route Configuration Wizard");
-
-    const wizardOption = page
-      .locator('[role="option"]:has-text("Route Configuration Wizard")')
-      .first();
-    if (await wizardOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await wizardOption.click();
-
-      // Wizard should show first step (route type selection)
-      const quickPick = page.locator(".quick-input-widget").first();
-      const wizardStarted = await quickPick.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`Route wizard started: ${wizardStarted}`);
-
-      if (wizardStarted) {
-        // Verify wizard shows route type options
-        const options = page.locator('.quick-input-list [role="option"]');
-        const optionCount = await options.count();
-        console.log(`Wizard shows ${optionCount} route type options`);
-        expect(optionCount).toBeGreaterThan(0);
-
-        // Select first option to test wizard flow
-        if (optionCount > 0) {
-          await options.first().click();
-
-          // Should proceed to next step (input for domain/host)
-          const nextInput = page.locator(".quick-input-box input").first();
-          const hasNextStep = await nextInput.isVisible({ timeout: 3000 }).catch(() => false);
-          console.log(`Wizard proceeded to next step: ${hasNextStep}`);
-        }
-      }
+  test("Insert Route offers every route type", async ({ page }) => {
+    await openFile(page, "empty.caddy.json");
+    await runCommand(page, "Caddy: Insert Route Configuration");
+    for (const label of [
+      "Reverse Proxy Route",
+      "Static File Server",
+      "Redirect Route",
+      "Protected Route (caddy-security)",
+    ]) {
+      await expect(
+        page.locator(`.quick-input-list [role="option"][aria-label^="${label}"]`)
+      ).toHaveCount(1);
     }
-
-    await page.keyboard.press("Escape");
   });
 
-  test("Security Wizard creates complete security config", async ({ page }) => {
-    // Create fresh untitled JSON file
-    await page.keyboard.press("Control+n");
-    await waitForEditor(page);
+  test("Insert Route inserts a valid reverse proxy route", async ({
+    page,
+    scratchFile,
+    workspaceDir,
+  }) => {
+    const name = "cmd-route.caddy.json";
+    await openScratch(page, scratchFile, name);
+    await runCommand(page, "Caddy: Insert Route Configuration");
+    await pickQuickOption(page, "Reverse Proxy Route");
+    await page.keyboard.press("Escape"); // leave snippet mode with defaults
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toMatchObject({
+      match: [{ host: ["example.com"] }],
+      handle: [{ handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] }],
+    });
+    await expectNoProblems(page);
+  });
 
-    await page.keyboard.press("Control+k");
-    await page.keyboard.press("m");
-    const langInputSetup = page.locator(".quick-input-box input").first();
-    await langInputSetup.waitFor({ state: "visible", timeout: 3000 });
-    await langInputSetup.fill("JSON");
-    await page.keyboard.press("Enter");
-
-    await page.keyboard.press("Control+Shift+p");
-    const inputBox = page.locator(".quick-input-box input").first();
-    await inputBox.waitFor({ state: "visible", timeout: 5000 });
-    await inputBox.fill("Caddy: Security Configuration Wizard");
-
-    const wizardOption = page
-      .locator('[role="option"]:has-text("Security Configuration Wizard")')
-      .first();
-    if (await wizardOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await wizardOption.click();
-
-      // Wizard should show setup type (Quick Setup vs Custom)
-      const quickPick = page.locator(".quick-input-widget").first();
-      const wizardStarted = await quickPick.isVisible({ timeout: 3000 }).catch(() => false);
-      console.log(`Security wizard started: ${wizardStarted}`);
-
-      if (wizardStarted) {
-        const options = page.locator('.quick-input-list [role="option"]');
-        const optionCount = await options.count();
-        console.log(`Security wizard shows ${optionCount} setup options`);
-        expect(optionCount).toBeGreaterThan(0);
-      }
+  test("Insert Security Config offers every config type", async ({ page }) => {
+    await openFile(page, "empty.caddy.json");
+    await runCommand(page, "Caddy: Insert Security Configuration");
+    for (const label of [
+      "Local Identity Store",
+      "LDAP Identity Store",
+      "Authentication Portal",
+      "Authorization Policy",
+      "Complete Security App",
+    ]) {
+      await expect(
+        page.locator(`.quick-input-list [role="option"][aria-label^="${label}"]`)
+      ).toHaveCount(1);
     }
+  });
 
-    await page.keyboard.press("Escape");
+  test("Insert Security Config inserts a local identity store as valid JSON", async ({
+    page,
+    scratchFile,
+    workspaceDir,
+  }) => {
+    const name = "cmd-store.json";
+    await openScratch(page, scratchFile, name);
+    await runCommand(page, "Caddy: Insert Security Configuration");
+    await pickQuickOption(page, "Local Identity Store");
+    await page.keyboard.press("Escape"); // leave snippet mode with defaults
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toMatchObject({ realm: "local", path: "/etc/caddy/users.json" });
+  });
+
+  test.fixme(
+    "Insert Security Config's Authentication Portal validates against the portal schema",
+    // Extension bug (src/providers/commands.ts): the inserted portal uses
+    // "cookie": {...}; the contributed caddy-security-portal schema only
+    // allows "cookie_config" -> "Property cookie is not allowed".
+    async ({ page, scratchFile, workspaceDir }) => {
+      const name = "cmd-portal.caddy-security-portal.json";
+      await openScratch(page, scratchFile, name);
+      await runCommand(page, "Caddy: Insert Security Configuration");
+      await pickQuickOption(page, "Authentication Portal");
+      await page.keyboard.press("Escape");
+      const { value } = await saveAndParse(page, workspaceDir, name);
+      expect(value).toMatchObject({ name: "myportal", identity_stores: ["local"] });
+      await expectNoProblems(page);
+    }
+  );
+});
+
+// ============================================================================
+// WIZARDS
+// ============================================================================
+
+test.describe("Wizards", () => {
+  test("Route Wizard builds a complete reverse proxy route", async ({
+    page,
+    scratchFile,
+    workspaceDir,
+  }) => {
+    const name = "wizard-route.caddy.json";
+    await openScratch(page, scratchFile, name);
+    await runCommand(page, "Caddy: Route Configuration Wizard");
+
+    await expect(quickInputTitled(page, "Select Route Type (Step 1/5)")).toBeVisible();
+    await expect(quickOptions(page)).toHaveCount(5);
+    await pickQuickOption(page, "Reverse Proxy");
+    await answerInputBox(page, "Route ID (Step 2/5)"); // keep default
+    await answerInputBox(page, "Host(s) (Step 3/5)", "api.example.com");
+    await answerInputBox(page, "Upstream Server (Step 4/5)", "localhost:3000");
+    await expect(quickInputTitled(page, "Add Security Headers? (Step 5/5)")).toBeVisible();
+    await pickQuickOption(page, "Yes");
+
+    await expect(
+      page.locator(".notification-toast", { hasText: "Route configuration inserted!" })
+    ).toBeVisible({ timeout: 10000 });
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toMatchObject({
+      "@id": "reverse-proxy-route",
+      match: [{ host: ["api.example.com"] }],
+      handle: [
+        { handler: "headers" },
+        { handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] },
+      ],
+      terminal: true,
+    });
+    await expectNoProblems(page);
+  });
+
+  test("Security Wizard quick setup builds a security app config", async ({
+    page,
+    scratchFile,
+    workspaceDir,
+  }) => {
+    const name = "wizard-security.json";
+    await openScratch(page, scratchFile, name);
+    await runCommand(page, "Caddy: Security Configuration Wizard");
+
+    await expect(quickInputTitled(page, "Security Configuration Wizard")).toBeVisible();
+    await expect(quickOptions(page)).toHaveCount(2);
+    await pickQuickOption(page, "Quick Setup");
+    await answerInputBox(page, "Portal Name"); // default "myportal"
+    await answerInputBox(page, "Cookie Domain", ".example.com");
+    await answerInputBox(page, "Users File Path"); // default
+
+    await expect(
+      page.locator(".notification-toast", { hasText: "Security configuration inserted!" })
+    ).toBeVisible({ timeout: 10000 });
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toMatchObject({
+      config: {
+        identity_stores: [{ realm: "local", path: "/etc/caddy/users.json" }],
+        authentication_portals: [
+          { name: "myportal", identity_stores: ["local"], cookie: { domain: ".example.com" } },
+        ],
+        authorization_policies: [{ name: "myportal-policy" }],
+      },
+    });
   });
 });

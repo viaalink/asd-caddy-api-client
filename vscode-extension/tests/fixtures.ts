@@ -1,74 +1,200 @@
 /**
- * Playwright test fixtures for code-server extension testing
+ * Playwright fixtures for code-server extension testing.
+ *
+ * The workbench is loaded ONCE per worker (`workbench`, worker-scoped) and
+ * shared by every test in that worker; the test-scoped `page` fixture hands
+ * out that shared page after resetting it to a clean state (no editors, no
+ * quick input, no notifications, no panel, explorer visible). Loading the
+ * workbench takes several seconds, so paying it once instead of per test is
+ * most of this suite's wall time.
+ *
+ * Any spec file can reuse this by importing `test`/`expect` from here:
+ *
+ *   import { test, expect, openFile } from "./fixtures";
+ *   test("my provider", async ({ page, scratchFile }) => { ... });
+ *
+ * Tests stay independent in outcome: every test starts from the reset state,
+ * and anything a test writes to disk goes through `scratchFile`, which
+ * deletes it afterwards. The workspace code-server serves is a throwaway
+ * copy of tests/test-files/ (see global-setup.ts), so fixtures in git are
+ * never modified.
  */
 
-import { test as base, expect, Page } from "@playwright/test";
+import { test as base, expect, type Locator, type Page } from "@playwright/test";
+import { parse as parseJsonc, printParseErrorCode, type ParseError } from "jsonc-parser";
 import * as path from "path";
 import * as fs from "fs";
 
-/**
- * Custom test fixture that provides code-server URL
- */
-export const test = base.extend<{
+export { expect };
+
+export const PORT_FILE = path.join(__dirname, ".codeserver-port");
+export const WORKSPACE_FILE = path.join(__dirname, ".codeserver-workspace");
+
+/** The extension's diagnostics debounce (src/providers/diagnostics.ts DEBOUNCE_MS) plus margin. */
+export const DIAGNOSTICS_SETTLE_MS = 1200;
+
+export interface Workbench {
+  page: Page;
+  url: string;
+  /** Every console message the workbench page logged since it loaded. */
+  consoleMessages: string[];
+}
+
+export type ScratchFileFactory = (name: string, content?: string) => Promise<string>;
+
+interface WorkerFixtures {
   codeServerUrl: string;
-}>({
-  codeServerUrl: async ({}, use) => {
-    // Read port from file written by global setup
-    const portFile = path.join(__dirname, ".codeserver-port");
-    if (!fs.existsSync(portFile)) {
-      throw new Error("code-server port file not found. Did global setup run?");
-    }
+  /** Absolute path of the workspace folder code-server has open. */
+  workspaceDir: string;
+  workbench: Workbench;
+}
 
-    const port = fs.readFileSync(portFile, "utf-8").trim();
-    const url = `http://127.0.0.1:${port}`;
+interface TestFixtures {
+  /** Every console message logged by the shared workbench page. */
+  consoleMessages: string[];
+  /**
+   * Create a file in the workspace (deleted after the test) and return its
+   * basename. Name it to match the schema you want active, e.g.
+   * `foo.caddy.json` for the route schema.
+   */
+  scratchFile: ScratchFileFactory;
+}
 
-    await use(url);
+function readSetupFile(file: string, what: string): string {
+  if (!fs.existsSync(file)) {
+    throw new Error(`code-server ${what} file not found (${file}). Did global setup run?`);
+  }
+  return fs.readFileSync(file, "utf-8").trim();
+}
+
+export const test = base.extend<TestFixtures, WorkerFixtures>({
+  codeServerUrl: [
+    async ({}, use) => {
+      await use(`http://127.0.0.1:${readSetupFile(PORT_FILE, "port")}`);
+    },
+    { scope: "worker" },
+  ],
+
+  workspaceDir: [
+    async ({}, use) => {
+      await use(readSetupFile(WORKSPACE_FILE, "workspace"));
+    },
+    { scope: "worker" },
+  ],
+
+  workbench: [
+    async ({ browser, codeServerUrl, workspaceDir }, use) => {
+      const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+      const page = await context.newPage();
+      const consoleMessages: string[] = [];
+      page.on("console", (msg) => consoleMessages.push(msg.text()));
+      // Name the folder explicitly: code-server otherwise reopens the folder it
+      // remembers from an earlier run instead of this run's workspace copy.
+      const url = `${codeServerUrl}/?folder=${encodeURIComponent(workspaceDir)}`;
+      await loadWorkbench(page, url);
+      await use({ page, url, consoleMessages });
+      await context.close();
+    },
+    { scope: "worker" },
+  ],
+
+  page: async ({ workbench }, use) => {
+    await resetWorkbench(workbench);
+    await use(workbench.page);
+  },
+
+  consoleMessages: async ({ workbench }, use) => {
+    await use(workbench.consoleMessages);
+  },
+
+  scratchFile: async ({ page, workspaceDir }, use) => {
+    const created: string[] = [];
+    await use(async (name, content = "") => {
+      const file = path.join(workspaceDir, name);
+      fs.writeFileSync(file, content);
+      created.push(file);
+      return name;
+    });
+    // Close editors first so deleting the file can't leave a "(deleted)" tab behind.
+    await closeAllEditors(page);
+    for (const file of created) fs.rmSync(file, { force: true });
   },
 });
 
-export { expect };
+// ============================================================================
+// Workbench lifecycle
+// ============================================================================
+
+async function loadWorkbench(page: Page, url: string): Promise<void> {
+  await page.goto(url);
+  await page.waitForSelector(".monaco-workbench", { timeout: 30000 });
+  // The explorer tree rendering the workspace is the "ready to use" signal.
+  await page.locator(".explorer-folders-view .monaco-list-row").first().waitFor({ timeout: 30000 });
+  await handleTrustDialog(page);
+  await closeNotifications(page);
+}
+
+/** Bring the shared workbench back to a clean state between tests. */
+export async function resetWorkbench(workbench: Workbench): Promise<void> {
+  const { page, url } = workbench;
+  const alive =
+    !page.isClosed() &&
+    (await page
+      .locator(".monaco-workbench")
+      .isVisible()
+      .catch(() => false));
+  if (!alive) {
+    await loadWorkbench(page, url);
+    return;
+  }
+
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await closeAllEditors(page);
+  await closeNotifications(page);
+
+  // Close the bottom panel (Problems/Output) if a test opened it.
+  if (await page.locator(".part.panel").isVisible()) {
+    await page.keyboard.press("Control+j");
+    await page.locator(".part.panel").waitFor({ state: "hidden", timeout: 3000 });
+  }
+
+  // Back to the explorer if a test switched the sidebar (e.g. Extensions view).
+  if (!(await page.locator(".explorer-folders-view").isVisible())) {
+    await page.keyboard.press("Control+Shift+e");
+    await page.locator(".explorer-folders-view").waitFor({ timeout: 5000 });
+  }
+}
 
 /**
  * Helper to dismiss the workspace trust dialog if present
  */
 export async function handleTrustDialog(page: Page): Promise<void> {
-  // Quick check for trust dialog with shorter timeout
-  try {
-    const trustButton = page.locator('button:has-text("Yes, I trust the authors")');
-    await trustButton.waitFor({ state: "visible", timeout: 2000 });
+  // Trust is disabled in settings (global-setup.ts); this is a safety net.
+  const trustButton = page.locator('button:has-text("Yes, I trust the authors")');
+  if (await trustButton.isVisible({ timeout: 1000 }).catch(() => false)) {
     await trustButton.click();
-    // Wait for dialog to close
-    await trustButton.waitFor({ state: "hidden", timeout: 1000 }).catch(() => {});
-    console.log("Trust dialog dismissed");
-  } catch {
-    // Trust dialog not present, continue
+    await trustButton.waitFor({ state: "hidden", timeout: 2000 }).catch(() => {});
   }
 }
 
 /**
- * Helper to close any notification dialogs
+ * Helper to close any notification toasts
  */
 export async function closeNotifications(page: Page): Promise<void> {
-  try {
-    // Close notification toasts by pressing Escape or clicking X
-    const closeButtons = page.locator(
-      '.notification-toast .codicon-close, .notifications-center .action-item[title="Clear"]'
-    );
-    const count = await closeButtons.count();
-    for (let i = 0; i < count; i++) {
-      try {
-        await closeButtons.nth(i).click({ timeout: 300 });
-      } catch {
-        // Button may have disappeared
-      }
+  const toasts = page.locator(".notifications-toasts .notification-toast");
+  const closeButtons = page.locator(".notification-toast .codicon-notifications-clear");
+  for (let i = 0; i < 10 && (await toasts.count()) > 0; i++) {
+    const button = closeButtons.first();
+    if (!(await button.isVisible().catch(() => false))) {
+      // The clear button only renders on hover.
+      await toasts
+        .first()
+        .hover()
+        .catch(() => {});
     }
-  } catch {
-    // No notifications present
+    await button.click({ timeout: 1000 }).catch(() => {});
   }
-
-  // Press Escape to close any dialogs/quick picks (batched, no waits)
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Escape");
 }
 
 /**
@@ -76,244 +202,270 @@ export async function closeNotifications(page: Page): Promise<void> {
  */
 async function dismissDialogs(page: Page): Promise<void> {
   const modalBlock = page.locator(".monaco-dialog-modal-block");
-  if (await modalBlock.isVisible({ timeout: 100 }).catch(() => false)) {
-    // Try "Don't Save" button first
-    const dontSaveButton = page.locator('button:has-text("Don\'t Save")').first();
-    if (await dontSaveButton.isVisible({ timeout: 100 }).catch(() => false)) {
+  if (await modalBlock.isVisible().catch(() => false)) {
+    // Dialog buttons are <a role="button">, not <button>.
+    const dontSaveButton = page
+      .locator(".monaco-dialog-box")
+      .getByRole("button", { name: "Don't Save", exact: true });
+    if (await dontSaveButton.isVisible().catch(() => false)) {
       await dontSaveButton.click();
-      await modalBlock.waitFor({ state: "hidden", timeout: 1000 }).catch(() => {});
-      return;
+    } else {
+      await page.keyboard.press("Escape");
     }
-    // Press Escape as fallback
-    await page.keyboard.press("Escape");
+    await modalBlock.waitFor({ state: "hidden", timeout: 3000 }).catch(() => {});
   }
 }
 
 /**
- * Helper to close all editors, handling "Don't Save" dialogs
+ * Close all editors, answering "Don't Save" for dirty ones.
  */
 export async function closeAllEditors(page: Page): Promise<void> {
-  // Dismiss any existing dialogs first
   await dismissDialogs(page);
-
-  // Press Escape to close quick picks
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Escape");
-
-  // Close all editors - loop until no tabs remain
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const tabs = page.locator('[role="tab"]');
-    const tabCount = await tabs.count().catch(() => 0);
-    if (tabCount === 0) break;
-
-    // Close all editors shortcut
+  const tabs = page.locator('.tabs-container [role="tab"]');
+  const modalBlock = page.locator(".monaco-dialog-modal-block");
+  for (let attempt = 0; attempt < 5 && (await tabs.count()) > 0; attempt++) {
+    await page.keyboard.press("Escape");
+    // workbench.action.closeAllEditors
     await page.keyboard.press("Control+k");
     await page.keyboard.press("Control+w");
-
-    // Handle save dialog if it appears
+    await Promise.race([
+      modalBlock.waitFor({ state: "visible", timeout: 2000 }),
+      expect(tabs).toHaveCount(0, { timeout: 2000 }),
+    ]).catch(() => {});
     await dismissDialogs(page);
   }
+  await expect(tabs).toHaveCount(0, { timeout: 5000 });
 }
 
-/**
- * Helper to cleanup open editors and dialogs
- */
-export async function cleanupEditor(page: Page): Promise<void> {
-  await closeAllEditors(page);
-}
+// ============================================================================
+// Editor helpers
+// ============================================================================
 
 /**
- * Helper to wait for Monaco editor to be fully loaded
+ * Wait for the active Monaco editor to be ready for input.
  */
 export async function waitForEditor(page: Page): Promise<void> {
-  // Wait for the Monaco editor to be present
-  await page.waitForSelector(".monaco-editor", { timeout: 30000 });
-
-  // Wait for editor to be interactive (includes cursor line visible)
   await page.waitForFunction(
     () => {
-      const editor = document.querySelector(".monaco-editor");
-      const cursorLine = document.querySelector(".monaco-editor .cursor");
-      return editor && !editor.classList.contains("loading") && cursorLine;
+      const editor = document.querySelector(".editor-instance .monaco-editor");
+      return editor !== null && editor.querySelector(".cursor") !== null;
     },
+    undefined,
     { timeout: 30000 }
   );
 }
 
 /**
- * Helper to create a new file in the editor
- */
-export async function createFile(
-  page: Page,
-  filename: string,
-  content: string = ""
-): Promise<void> {
-  // Use keyboard shortcut to create new file
-  await page.keyboard.press("Control+n");
-  await waitForEditor(page);
-
-  // Type content if provided
-  if (content) {
-    await page.keyboard.type(content, { delay: 10 });
-  }
-
-  // Save with specific name using Ctrl+S which opens Save As for new files
-  await page.keyboard.press("Control+s");
-
-  // Wait for the Save As dialog (Quick Input in code-server)
-  try {
-    // code-server uses a quick input for Save As
-    const quickInput = page.locator(".quick-input-box input, input.input[aria-label]").first();
-    await quickInput.waitFor({ state: "visible", timeout: 5000 });
-
-    // Clear any existing text and type filename
-    await quickInput.fill(filename);
-    await page.keyboard.press("Enter");
-  } catch {
-    // Try the standard input selector
-    const input = page.locator('input[type="text"]').first();
-    if (await input.isVisible({ timeout: 2000 })) {
-      await input.fill(filename);
-      await page.keyboard.press("Enter");
-    }
-  }
-
-  // Wait for file to be saved by checking tab title loses the dot indicator
-  await page
-    .waitForFunction(
-      (fn) => {
-        const tab = document.querySelector(`[role="tab"][aria-label*="${fn}"]`);
-        return tab && !tab.getAttribute("aria-label")?.includes("●");
-      },
-      filename,
-      { timeout: 5000 }
-    )
-    .catch(() => {});
-}
-
-/**
- * Helper to open an existing file
+ * Open a workspace file by name and wait until its tab is active and the
+ * editor ready. Goes through File > Open File (Ctrl+O), whose simple dialog
+ * reads the disk directly -- Quick Open (Ctrl+P) misses just-created scratch
+ * files (stale search cache) and ranks "recently opened" fuzzy matches
+ * (invalid.caddy.json for "valid.caddy.json") above exact ones.
  */
 export async function openFile(page: Page, filename: string): Promise<void> {
-  // Dismiss any blocking dialogs
+  const workspaceDir = readSetupFile(WORKSPACE_FILE, "workspace");
   await dismissDialogs(page);
-
-  // First try to find and click the file in the explorer using exact aria-label match
-  const fileInExplorer = page.locator(`.monaco-list-row[aria-label="${filename}"]`).first();
-  if (await fileInExplorer.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await fileInExplorer.dblclick();
-    await waitForEditor(page);
-    return;
-  }
-
-  // If not visible in explorer, try expanding the folder first
-  const folderItem = page.locator('.monaco-list-row:has-text("test-files")').first();
-  if (await folderItem.isVisible({ timeout: 1000 }).catch(() => false)) {
-    const twistie = folderItem.locator(".twistie").first();
-    if (await twistie.isVisible({ timeout: 500 }).catch(() => false)) {
-      await twistie.click();
-      // Wait for folder to expand by checking for children
-      await page
-        .waitForFunction(() => document.querySelectorAll(".monaco-list-row").length > 1, {
-          timeout: 2000,
-        })
-        .catch(() => {});
-    }
-
-    // Try again to find the file with exact aria-label match
-    const fileAfterExpand = page.locator(`.monaco-list-row[aria-label="${filename}"]`).first();
-    if (await fileAfterExpand.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await fileAfterExpand.dblclick();
-      await waitForEditor(page);
-      return;
-    }
-
-    // Try partial match as fallback (must start with filename)
-    const filePartial = page.locator(`.monaco-list-row[aria-label^="${filename}"]`).first();
-    if (await filePartial.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await filePartial.dblclick();
-      await waitForEditor(page);
-      return;
-    }
-  }
-
-  // Fall back to quick open (Ctrl+P)
-  await page.keyboard.press("Control+p");
-  const quickInput = page.locator(".quick-input-box input");
-  await quickInput.waitFor({ state: "visible", timeout: 5000 });
-
-  // Type filename and wait for results to appear
-  await quickInput.fill(filename);
-  await page
-    .waitForFunction(() => document.querySelectorAll('[role="option"]').length > 0, {
-      timeout: 3000,
-    })
-    .catch(() => {});
-
-  // Wait for exact match first, then any result
-  const exactMatch = page.locator(`[role="option"]:has-text("${filename}")`).first();
-  if (await exactMatch.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await exactMatch.click();
-  } else {
-    await page.keyboard.press("Enter");
-  }
-
+  await page.keyboard.press("Control+o");
+  const dialog = quickInputTitled(page, "Open File");
+  await dialog.waitFor({ state: "visible", timeout: 5000 });
+  const input = dialog.locator(".quick-input-box input");
+  // The dialog sets its value to the current folder once it has listed it;
+  // filling before that gets overwritten.
+  await expect(input).toHaveValue(/\/$/, { timeout: 5000 });
+  await expect(dialog.locator('[role="option"]').first()).toBeVisible({ timeout: 5000 });
+  const target = path.join(workspaceDir, filename);
+  await input.fill(target);
+  await expect(input).toHaveValue(target);
+  await input.press("Enter");
+  await expect(page.locator(".tabs-container .tab.active .label-name")).toHaveText(filename, {
+    timeout: 10000,
+  });
   await waitForEditor(page);
+  await focusEditor(page);
+}
+
+/** Give keyboard focus to the active editor (workbench.action.focusFirstEditorGroup). */
+export async function focusEditor(page: Page): Promise<void> {
+  await page.keyboard.press("Control+1");
+  await expect(page.locator(".editor-instance .monaco-editor.focused")).toHaveCount(1, {
+    timeout: 5000,
+  });
+}
+
+/** Open a new untitled editor with the JSON language mode. */
+export async function newUntitledJson(page: Page): Promise<void> {
+  await page.keyboard.press("Control+n");
+  await waitForEditor(page);
+  await page.keyboard.press("Control+k");
+  await page.keyboard.press("m");
+  const langInput = page.locator(".quick-input-widget .quick-input-box input");
+  await langInput.waitFor({ state: "visible", timeout: 5000 });
+  await langInput.fill("JSON");
+  await page
+    .locator('.quick-input-widget [role="option"][aria-label^="JSON"]')
+    .first()
+    .waitFor({ timeout: 5000 });
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#status\\.editor\\.mode")).toContainText("JSON", { timeout: 5000 });
+}
+
+/** Move the cursor to `line` (1-based) via Go to Line, then to the line's end. */
+export async function goToLineEnd(page: Page, line: number): Promise<void> {
+  await page.keyboard.press("Control+g");
+  const input = page.locator(".quick-input-widget .quick-input-box input");
+  await input.waitFor({ state: "visible", timeout: 5000 });
+  await input.fill(`:${line}`);
+  await page.keyboard.press("Enter");
+  await input.waitFor({ state: "hidden", timeout: 5000 });
+  await page.keyboard.press("End");
+}
+
+/** The suggest widget, once it is showing. */
+export function suggestWidget(page: Page): Locator {
+  return page.locator(".editor-widget.suggest-widget.visible");
+}
+
+/** Suggest rows whose label is exactly `label`. */
+export function suggestItem(page: Page, label: string): Locator {
+  return suggestWidget(page)
+    .locator(".monaco-list-row")
+    .filter({ has: page.locator(".label-name", { hasText: new RegExp(`^${escapeRe(label)}$`) }) });
 }
 
 /**
- * Helper to trigger autocomplete
+ * Trigger completion (Ctrl+Space) and wait for the suggest widget to show
+ * at least one real row (not the "Loading..." / "No suggestions" message).
  */
 export async function triggerCompletion(page: Page): Promise<void> {
   await page.keyboard.press("Control+Space");
-  // Wait for completion list to appear
-  await page.waitForSelector(".monaco-list.suggest-widget", { timeout: 5000 });
+  await suggestWidget(page).locator(".monaco-list-row").first().waitFor({ timeout: 10000 });
+}
+
+/** Labels of every row currently rendered in the suggest widget. */
+export async function suggestLabels(page: Page): Promise<string[]> {
+  return suggestWidget(page).locator(".monaco-list-row .label-name").allTextContents();
 }
 
 /**
- * Helper to trigger hover
+ * Save the active editor: waits for it to be dirty first (edits from
+ * commands/snippets apply asynchronously -- saving before they land would
+ * save the old content), then for the dirty marker to clear.
  */
-export async function triggerHover(page: Page, text: string): Promise<void> {
-  // Find the text in the editor and hover over it
-  const editorContent = page.locator(".view-lines");
-  const textSpan = editorContent.locator(`text="${text}"`).first();
-
-  if (await textSpan.isVisible()) {
-    await textSpan.hover();
-    // Wait for hover widget
-    await page.waitForSelector(".monaco-hover", { timeout: 5000 });
-  }
+export async function saveActiveEditor(page: Page): Promise<void> {
+  await expect(page.locator(".tabs-container .tab.active.dirty")).toHaveCount(1, {
+    timeout: 5000,
+  });
+  await page.keyboard.press("Control+s");
+  await expect(page.locator(".tabs-container .tab.active.dirty")).toHaveCount(0, {
+    timeout: 5000,
+  });
 }
 
 /**
- * Helper to check for diagnostic markers
+ * Parse `text` with jsonc-parser in strict-JSON mode and fail with the
+ * parser's error codes (and the text) if it isn't valid JSON.
  */
-export async function hasDiagnostics(page: Page): Promise<boolean> {
-  // Check for error/warning squiggles
-  const squiggles = page.locator(".squiggly-error, .squiggly-warning");
-  return (await squiggles.count()) > 0;
+export function expectValidJson(text: string): unknown {
+  const errors: ParseError[] = [];
+  const value: unknown = parseJsonc(text, errors, {
+    allowTrailingComma: false,
+    disallowComments: true,
+  });
+  const described = errors.map((e) => `${printParseErrorCode(e.error)} at offset ${e.offset}`);
+  expect(described, `buffer is not valid JSON:\n${text}`).toEqual([]);
+  return value;
 }
+
+/** Read a workspace file from disk. */
+export function readWorkspaceFile(workspaceDir: string, name: string): string {
+  return fs.readFileSync(path.join(workspaceDir, name), "utf-8");
+}
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ============================================================================
+// Problems panel
+// ============================================================================
+
+/** Open (focus) the Problems panel and return the locator of its marker rows. */
+export async function openProblems(page: Page): Promise<Locator> {
+  await page.keyboard.press("Control+Shift+m");
+  const panel = page.locator(".markers-panel");
+  await panel.waitFor({ state: "visible", timeout: 5000 });
+  return panel.locator(".monaco-list-row");
+}
+
+/**
+ * Problems-panel marker rows (one per diagnostic, file header rows excluded)
+ * from any source: VS Code's JSON language service validating against the
+ * schemas this extension contributes (`jsonValidation`), and the extension's
+ * own diagnostics provider.
+ */
+export async function problemRows(page: Page): Promise<Locator> {
+  const rows = await openProblems(page);
+  return rows.filter({ has: page.locator(".marker-message") });
+}
+
+/**
+ * Problems-panel marker rows reported by this extension's own diagnostics
+ * provider (diagnostic source "caddy", rendered in `.marker-source`).
+ */
+export async function caddyProblemRows(page: Page): Promise<Locator> {
+  const rows = await openProblems(page);
+  return rows.filter({ has: page.locator(".marker-source", { hasText: /^caddy/ }) });
+}
+
+// ============================================================================
+// Command palette and quick input
+// ============================================================================
 
 /**
  * Helper to open command palette
  */
 export async function openCommandPalette(page: Page): Promise<void> {
   await page.keyboard.press("F1");
-  await page.waitForSelector(".quick-input-box input", { timeout: 5000 });
+  await page.locator(".quick-input-widget .quick-input-box input").waitFor({ timeout: 5000 });
 }
 
 /**
- * Helper to run a command from command palette
+ * Run a command by its exact palette title (e.g. "Caddy: Insert Route
+ * Configuration"); fails if the command isn't listed.
  */
-export async function runCommand(page: Page, command: string): Promise<void> {
+export async function runCommand(page: Page, title: string): Promise<void> {
   await openCommandPalette(page);
-  await page.keyboard.type(command);
-  // Wait for filtering by checking for options
-  await page
-    .waitForFunction(
-      () => document.querySelectorAll('.quick-input-list [role="option"]').length > 0,
-      { timeout: 3000 }
-    )
-    .catch(() => {});
-  await page.keyboard.press("Enter");
+  await page.locator(".quick-input-widget .quick-input-box input").fill(`>${title}`);
+  await pickQuickOption(page, title);
+}
+
+/** The quick input (pick or input box) currently showing, by its title. */
+export function quickInputTitled(page: Page, title: string | RegExp): Locator {
+  return page
+    .locator(".quick-input-widget")
+    .filter({ has: page.locator(".quick-input-title", { hasText: title }) });
+}
+
+/** Rows of the visible quick pick. */
+export function quickOptions(page: Page): Locator {
+  return page.locator('.quick-input-widget .quick-input-list [role="option"]');
+}
+
+/** Pick an option in the visible quick pick by its label. */
+export async function pickQuickOption(page: Page, label: string): Promise<void> {
+  const option = page.locator(
+    `.quick-input-widget .quick-input-list [role="option"][aria-label^="${label}"]`
+  );
+  await option.first().waitFor({ state: "visible", timeout: 5000 });
+  await option.first().click();
+}
+
+/** Fill the input box titled `title` (keeping its default when `value` is omitted) and submit. */
+export async function answerInputBox(page: Page, title: string, value?: string): Promise<void> {
+  const widget = quickInputTitled(page, title);
+  await widget.waitFor({ state: "visible", timeout: 5000 });
+  const input = widget.locator(".quick-input-box input");
+  if (value !== undefined) await input.fill(value);
+  await input.press("Enter");
+  await widget.waitFor({ state: "hidden", timeout: 5000 });
 }

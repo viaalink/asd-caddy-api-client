@@ -306,9 +306,17 @@ glog:
 claude:
     claude --allow-dangerously-skip-permissions
 
-# VSCode Extension: run Playwright tests (headless)
-vscode-test:
-    cd vscode-extension && npm test
+# VSCode Extension: run Playwright tests against code-server (headless); extra args go to playwright, e.g. `just vscode-test -g Snippets`
+[positional-arguments]
+vscode-test *args:
+    cd vscode-extension && npm test -- "$@"
+
+# VSCode Extension: run the API-level integration tests in real desktop VS Code (headless via xvfb)
+vscode-test-desktop:
+    cd vscode-extension && xvfb-run -a npm run test:desktop
+
+# VSCode Extension: run both test tiers (desktop VS Code, then code-server)
+vscode-test-all: vscode-test-desktop vscode-test
 
 # VSCode Extension: run Playwright tests with visible browser
 vscode-test-headed:
