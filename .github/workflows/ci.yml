@@ -312,6 +312,12 @@ jobs:
         working-directory: vscode-extension
         run: npm ci
 
+      # esbuild bundles without type checking; this is what catches a typo'd
+      # VS Code API call (appendCodeBlock once broke every handler hover).
+      - name: Type check extension
+        working-directory: vscode-extension
+        run: npm run typecheck
+
       - name: Install Playwright browsers
         working-directory: vscode-extension
         run: npx playwright install chromium --with-deps

@@ -946,20 +946,19 @@ test.describe("Extension Features", () => {
     const handlerText = page.locator('.view-lines:has-text("reverse_proxy")');
     await expect(handlerText).toBeVisible();
 
-    // Try to hover over the handler text
-    const reverseProxySpan = page.locator('text="reverse_proxy"').first();
-    if (await reverseProxySpan.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await reverseProxySpan.hover();
-      await page.waitForTimeout(800);
+    // Hover the handler name: our provider must render its docs, including
+    // the example (a typo'd appendCodeBlock once made it throw silently).
+    const reverseProxySpan = page
+      .locator(".view-lines span")
+      .filter({ hasText: /^"reverse_proxy"$/ })
+      .first();
+    await expect(reverseProxySpan).toBeVisible();
+    await reverseProxySpan.hover();
 
-      // Check if hover widget appeared
-      const hoverWidget = page.locator(".monaco-hover, .hover-contents");
-      const hoverVisible = await hoverWidget
-        .first()
-        .isVisible({ timeout: 3000 })
-        .catch(() => false);
-      console.log(`Hover widget visible: ${hoverVisible}`);
-    }
+    const hoverWidget = page.locator(".monaco-hover").filter({ hasText: "Handler" }).first();
+    await expect(hoverWidget).toBeVisible({ timeout: 5000 });
+    await expect(hoverWidget).toContainText("Reverse Proxy Handler");
+    await expect(hoverWidget).toContainText("Example");
   });
 
   test("snippets work in JSON files", async ({ page }) => {

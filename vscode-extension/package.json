@@ -148,6 +148,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
+    "typecheck": "tsc --noEmit -p .",
     "build": "npm run copy-schemas && npm run copy-license && npm run generate-snippets && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --minify",
     "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --watch",
     "copy-schemas": "shx mkdir -p schemas && shx cp ../src/generated/schemas/*.json ./schemas/",
