@@ -3,6 +3,9 @@
 node_modules/**
 src/**
 tests/**
+test-desktop/**
+.vscode-test/**
+.vscode-test.mjs
 test-results/**
 playwright-report/**
 playwright.config.ts
