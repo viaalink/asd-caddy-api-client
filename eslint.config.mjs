@@ -20,6 +20,7 @@ export default tseslint.config(
       "scripts/**", // Build/generation scripts
       "tests/integration/**/*.js", // Docker test helper scripts (Node.js)
       "vscode-extension/**", // VSCode extension has its own tsconfig/linting
+      "legacy-package/**", // One-line re-exports published under the old package name
       "*.config.ts",
       "*.config.js",
       "*.config.mjs",
