@@ -892,7 +892,11 @@ export const StaticResponseHandlerSchema = z.object({
 });
 
 /**
- * Authentication handler schema - HTTP basic auth
+ * Authentication handler schema - HTTP basic auth, or caddy-security's
+ * `authorizer` provider (`http.authentication.providers.authorizer`), which
+ * plugs into this same core handler. Without `authorizer` here, a route built
+ * by `buildProtectedRoute()` failed the route JSON schema the VS Code
+ * extension applies to `*.caddy.json`.
  *
  * @example
  * ```typescript
@@ -929,6 +933,7 @@ export const AuthenticationHandlerSchema = z.object({
             .optional(),
         })
         .optional(),
+      authorizer: SecurityAuthorizerProviderSchema.optional(),
     })
     .optional(),
 });
@@ -1006,7 +1011,10 @@ import {
 } from "./generated/caddy-reverseproxy.zod.js";
 
 // Plugin schemas
-import { SecurityAuthenticatorHandlerSchema } from "./plugins/caddy-security/schemas.js";
+import {
+  SecurityAuthenticatorHandlerSchema,
+  SecurityAuthorizerProviderSchema,
+} from "./plugins/caddy-security/schemas.js";
 
 /**
  * File server handler schema - serves static files from disk

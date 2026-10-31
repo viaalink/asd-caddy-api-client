@@ -72,6 +72,7 @@ describe("SimpleSchemaValidator.validate", () => {
         path: "upstream",
         message: "Unexpected property: upstream",
         keyword: "additionalProperties",
+        allowed: ["handler"],
       },
     ]);
   });
@@ -272,5 +273,48 @@ describe("SimpleSchemaValidator.getSchemaForFile", () => {
     // behavior, not asserted correct.
     expect(v.getSchemaForFile("caddy-server.json")).toBeUndefined();
     expect(v.getSchemaForFile("caddy-full.json")).toBeUndefined();
+  });
+});
+
+describe("SimpleSchemaValidator -- real generated schemas", () => {
+  // Every generated schema is rooted in a $ref; before $ref support the
+  // validator returned [] for anything, so the extension's own checks were
+  // a silent no-op.
+  const real = new SimpleSchemaValidator(join(__dirname, "../generated"));
+  const route = real.getSchemaForFile("app.caddy.json")!;
+
+  test("resolves the root $ref and reports a missing required field", () => {
+    const errors = real.validate({ match: [{ host: ["a.com"] }] }, route);
+    expect(errors.map((e) => e.message)).toContain("Missing required property: handle");
+  });
+
+  test("a typo'd handler field surfaces with its path and the allowed names", () => {
+    const errors = real.validate(
+      { handle: [{ handler: "reverse_proxy", upstream: [{ dial: "localhost:3000" }] }] },
+      route
+    );
+    const typo = errors.find((e) => e.keyword === "additionalProperties");
+    expect(typo?.path).toBe("handle[0].upstream");
+    expect(typo?.allowed).toContain("upstreams");
+  });
+
+  test("a valid route has no errors", () => {
+    expect(
+      real.validate(
+        {
+          "@id": "app",
+          match: [{ host: ["app.example.com"] }],
+          handle: [{ handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] }],
+          terminal: true,
+        },
+        route
+      )
+    ).toEqual([]);
+  });
+
+  test("integer fields accept integral numbers and reject fractions", () => {
+    const schema = { type: "integer" };
+    expect(real.validate(3, schema)).toEqual([]);
+    expect(real.validate(3.5, schema)).toHaveLength(1);
   });
 });
