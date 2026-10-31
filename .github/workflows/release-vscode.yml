@@ -39,6 +39,12 @@ jobs:
         working-directory: vscode-extension
         run: npm ci
 
+      # esbuild bundles without type checking; this is what catches a typo'd
+      # VS Code API call (appendCodeBlock once broke every handler hover).
+      - name: Type check extension
+        working-directory: vscode-extension
+        run: npm run typecheck
+
       - name: Install Playwright browsers
         working-directory: vscode-extension
         run: npx playwright install chromium --with-deps
@@ -54,7 +60,7 @@ jobs:
         run: npm run package
 
       # Requires the VSCE_PAT repo secret: an Azure DevOps Personal Access
-      # Token scoped to "Marketplace (Publish)" for the "asd-host" publisher.
+      # Token scoped to "Marketplace (Publish)" for the "viaalink" publisher.
       # Create one at https://dev.azure.com under User Settings > Personal
       # Access Tokens, then add it at Settings > Secrets and variables >
       # Actions in this repo.
@@ -67,12 +73,18 @@ jobs:
       # Optional: also publish to Open VSX (serves VSCodium and other
       # non-Microsoft-branded editors). Requires the OVSX_PAT repo secret
       # from https://open-vsx.org — skipped entirely if not configured.
+      # `secrets` is not allowed in a step `if` (it made this whole workflow
+      # file invalid); the token goes through env and the step checks that.
       - name: Publish to Open VSX
-        if: ${{ secrets.OVSX_PAT != '' }}
         working-directory: vscode-extension
-        run: npm run publish:ovsx
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "OVSX_PAT not configured; skipping Open VSX" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          npm run publish:ovsx
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1

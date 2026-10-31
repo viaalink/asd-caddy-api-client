@@ -13,6 +13,9 @@ local/
 
 # Generated files
 *.tsbuildinfo
+# Written by the extension build (copy-schemas, generate-snippets); gitignored
+vscode-extension/schemas/
+vscode-extension/snippets/
 
 # Lock files
 package-lock.json

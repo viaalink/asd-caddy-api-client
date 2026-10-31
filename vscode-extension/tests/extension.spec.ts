@@ -50,7 +50,7 @@ test.describe("Extension Activation", () => {
   test("activates without error", async ({ page, codeServerUrl }) => {
     const activationErrors: string[] = [];
     page.on("console", (msg) => {
-      if (/Activating extension 'asd-host\.vscode-caddy-tools' failed/.test(msg.text())) {
+      if (/Activating extension 'viaalink\.vscode-caddy-tools' failed/.test(msg.text())) {
         activationErrors.push(msg.text());
       }
     });
@@ -887,10 +887,8 @@ test.describe("Extension Listing", () => {
 
     const entry = page.locator('.extension-list-item:has-text("Caddy Configuration Tools")');
     await expect(entry).toBeVisible({ timeout: 10000 });
-    await expect(entry).toContainText("asd-host");
-    // Not asserting on a custom icon src here: package.json has no "icon"
-    // field committed yet, so VS Code falls back to a generic icon -- that's
-    // current, correct behavior, not a bug this test should flag.
+    await expect(entry.locator("img")).toHaveAttribute("src", /icon\.png|\.png$/);
+    await expect(entry).toContainText("viaalink");
 
     await entry.click();
     const detailsPane = page.locator(".extension-editor");
@@ -899,7 +897,7 @@ test.describe("Extension Listing", () => {
     ).toBeVisible({
       timeout: 10000,
     });
-    await expect(detailsPane).toContainText("asd-host");
+    await expect(detailsPane).toContainText("viaalink");
 
     // README.md renders two webview iframes deep (outer sandbox shell ->
     // inner content frame) -- proves it actually rendered, not a blank pane.
@@ -948,20 +946,19 @@ test.describe("Extension Features", () => {
     const handlerText = page.locator('.view-lines:has-text("reverse_proxy")');
     await expect(handlerText).toBeVisible();
 
-    // Try to hover over the handler text
-    const reverseProxySpan = page.locator('text="reverse_proxy"').first();
-    if (await reverseProxySpan.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await reverseProxySpan.hover();
-      await page.waitForTimeout(800);
+    // Hover the handler name: our provider must render its docs, including
+    // the example (a typo'd appendCodeBlock once made it throw silently).
+    const reverseProxySpan = page
+      .locator(".view-lines span")
+      .filter({ hasText: /^"reverse_proxy"$/ })
+      .first();
+    await expect(reverseProxySpan).toBeVisible();
+    await reverseProxySpan.hover();
 
-      // Check if hover widget appeared
-      const hoverWidget = page.locator(".monaco-hover, .hover-contents");
-      const hoverVisible = await hoverWidget
-        .first()
-        .isVisible({ timeout: 3000 })
-        .catch(() => false);
-      console.log(`Hover widget visible: ${hoverVisible}`);
-    }
+    const hoverWidget = page.locator(".monaco-hover").filter({ hasText: "Handler" }).first();
+    await expect(hoverWidget).toBeVisible({ timeout: 5000 });
+    await expect(hoverWidget).toContainText("Reverse Proxy Handler");
+    await expect(hoverWidget).toContainText("Example");
   });
 
   test("snippets work in JSON files", async ({ page }) => {

@@ -3,7 +3,8 @@
   "displayName": "Caddy Configuration Tools",
   "description": "IntelliSense, snippets, and validation for Caddy and caddy-security configurations",
   "version": "0.2.0",
-  "publisher": "asd-host",
+  "publisher": "viaalink",
+  "icon": "icon.png",
   "author": {
     "name": "Viaalink",
     "email": "info@viaalink.com",
@@ -147,6 +148,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
+    "typecheck": "tsc --noEmit -p .",
     "build": "npm run copy-schemas && npm run copy-license && npm run generate-snippets && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --minify",
     "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --watch",
     "copy-schemas": "shx mkdir -p schemas && shx cp ../src/generated/schemas/*.json ./schemas/",

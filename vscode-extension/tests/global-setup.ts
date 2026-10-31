@@ -161,6 +161,24 @@ export default async function globalSetup() {
   // Ensure extensions directory exists
   fs.mkdirSync(extensionsDir, { recursive: true });
 
+  // Remove copies of this extension from earlier runs, under any publisher:
+  // the directory outlives a run on a self-hosted runner, and an old
+  // asd-host.vscode-caddy-tools next to viaalink.vscode-caddy-tools made
+  // activation fail ("command 'caddy.showHandlerDocs' already exists").
+  for (const entry of fs.readdirSync(extensionsDir)) {
+    if (/^[^.]+\.vscode-caddy-tools-/.test(entry)) {
+      fs.rmSync(path.join(extensionsDir, entry), { recursive: true, force: true });
+    }
+  }
+  const registry = path.join(extensionsDir, "extensions.json");
+  if (fs.existsSync(registry)) {
+    const installed = JSON.parse(fs.readFileSync(registry, "utf-8")) as Array<{
+      identifier?: { id?: string };
+    }>;
+    const others = installed.filter((e) => !/\.vscode-caddy-tools$/.test(e.identifier?.id ?? ""));
+    fs.writeFileSync(registry, JSON.stringify(others));
+  }
+
   // Install extension
   console.log("📦 Installing extension in code-server...");
   try {
