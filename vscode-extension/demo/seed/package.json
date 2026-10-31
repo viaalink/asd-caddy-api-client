@@ -1,0 +1,8 @@
+{
+  "name": "my-gateway",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@viaalink/caddy-api-client": "^0.10.1"
+  }
+}

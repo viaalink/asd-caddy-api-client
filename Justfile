@@ -326,6 +326,25 @@ vscode-build:
 vscode-install:
     cd vscode-extension && code --install-extension vscode-caddy-tools-*.vsix --force
 
+# VSCode Extension: record the demo/promo film (voice → record → render → contact sheet).
+# variant: promo (title/end cards, captions, voice) · qa (numbered captions, slower, no cards).
+# Storyboard: vscode-extension/demo/storyboard.ts. Output: vscode-extension/local/video/ (gitignored).
+vscode-demo-video variant="promo":
+    bash vscode-extension/demo/scripts/video.sh {{variant}}
+
+# VSCode Extension: both demo films, one after the other
+vscode-demo-video-all:
+    bash vscode-extension/demo/scripts/video.sh promo
+    CADDY_DEMO_REUSE_VSIX=1 bash vscode-extension/demo/scripts/video.sh qa
+
+# VSCode Extension: install the English piper voice for the demo narration (once, ~110 MB, gitignored)
+vscode-demo-voice-install voice="en_US-lessac-high":
+    bash vscode-extension/demo/scripts/voice-install.sh {{voice}}
+
+# VSCode Extension: 3×3 contact sheet of any film, to review it without watching
+vscode-demo-contact-sheet film:
+    bash vscode-extension/demo/scripts/contact-sheet.sh {{film}}
+
 # MITMproxy demo: just demo start|stop|url
 [no-cd]
 demo action:
