@@ -1,7 +1,11 @@
 # @viaalink/caddy-api-client
 
 TypeScript client for Caddy Admin API with MITMproxy integration.
-Maintained by [Viaalink](https://github.com/viaalink).
+Maintained by [Viaalink](https://viaalink.com).
+
+> Formerly `@accelerated-software-development/caddy-api-client`. Same API: replace the
+> package name in your `package.json` and imports; subpaths stay the same. The old name is
+> deprecated and its last version (0.10.1) only re-exports this package.
 
 Package pages:
 

@@ -1,0 +1,68 @@
+{
+  "name": "@accelerated-software-development/caddy-api-client",
+  "version": "0.10.1",
+  "description": "Moved to @viaalink/caddy-api-client. This package only re-exports it.",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./mitm": {
+      "types": "./mitm.d.ts",
+      "import": "./mitm.js"
+    },
+    "./caddy": {
+      "types": "./caddy.d.ts",
+      "import": "./caddy.js"
+    },
+    "./plugins": {
+      "types": "./plugins.d.ts",
+      "import": "./plugins.js"
+    },
+    "./caddy-types": {
+      "types": "./caddy-types.d.ts",
+      "import": "./caddy-types.js"
+    },
+    "./extension-assets": {
+      "types": "./extension-assets.d.ts",
+      "import": "./extension-assets.js"
+    },
+    "./plugins/caddy-dns": {
+      "types": "./plugins/caddy-dns.d.ts",
+      "import": "./plugins/caddy-dns.js"
+    },
+    "./plugins/caddy-security": {
+      "types": "./plugins/caddy-security.d.ts",
+      "import": "./plugins/caddy-security.js"
+    }
+  },
+  "files": [
+    "**/*.js",
+    "**/*.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@viaalink/caddy-api-client": "^0.10.0"
+  },
+  "peerDependencies": {
+    "zod": "^3.22.0"
+  },
+  "author": "Viaalink <info@viaalink.com> (https://viaalink.com)",
+  "license": "MIT",
+  "homepage": "https://www.npmjs.com/package/@viaalink/caddy-api-client",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/viaalink/asd-caddy-api-client.git",
+    "directory": "legacy-package"
+  },
+  "bugs": {
+    "url": "https://github.com/viaalink/asd-caddy-api-client/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
