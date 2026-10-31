@@ -534,6 +534,26 @@ describe("buildIframeHeadersHandler", () => {
     ]);
   });
 
+  test("a frame-ancestors list sets no CORS headers", () => {
+    const list = "https://*.localhost http://hub.localhost:* https://*.eu.viaal.ink";
+    const handler = buildIframeHeadersHandler(list) as Record<string, unknown>;
+    const response = handler.response as { set: Record<string, string[]> };
+
+    expect(response.set["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(response.set["Access-Control-Allow-Methods"]).toBeUndefined();
+    expect(response.set["Content-Security-Policy"]).toEqual([`frame-ancestors ${list}`]);
+  });
+
+  test("a wildcard origin sets no CORS headers", () => {
+    const handler = buildIframeHeadersHandler("https://*.example.com") as Record<string, unknown>;
+    const response = handler.response as { set: Record<string, string[]> };
+
+    expect(response.set["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(response.set["Content-Security-Policy"]).toEqual([
+      "frame-ancestors https://*.example.com",
+    ]);
+  });
+
   test("includes CORS headers", () => {
     const handler = buildIframeHeadersHandler() as Record<string, unknown>;
     const response = handler.response as { set: Record<string, string[]> };
