@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # Marketplace trusted publishing (OIDC), no PAT
 
 jobs:
   release:
@@ -59,16 +60,13 @@ jobs:
         working-directory: vscode-extension
         run: npm run package
 
-      # Requires the VSCE_PAT repo secret: an Azure DevOps Personal Access
-      # Token scoped to "Marketplace (Publish)" for the "viaalink" publisher.
-      # Create one at https://dev.azure.com under User Settings > Personal
-      # Access Tokens, then add it at Settings > Secrets and variables >
-      # Actions in this repo.
+      # Trusted publishing: the "viaalink" publisher trusts this workflow
+      # (viaalink/asd-caddy-api-client, release-vscode.yml) through OIDC, so
+      # no Azure DevOps token is stored. Publishes the .vsix built and tested
+      # above instead of packaging again.
       - name: Publish to Visual Studio Marketplace
         working-directory: vscode-extension
-        run: npm run publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --oidc --packagePath vscode-caddy-tools-*.vsix
 
       # Optional: also publish to Open VSX (serves VSCodium and other
       # non-Microsoft-branded editors). Requires the OVSX_PAT repo secret
