@@ -493,7 +493,7 @@ describeIntegration("Critical Modules Integration Tests", () => {
 
       const expiringSoon = isCertificateExpiringSoon(certPem, 30);
 
-      // Certificate is valid for ~365 days, should not be expiring soon
+      // Certificate is valid for ~10 years, should not be expiring soon
       expect(expiringSoon).toBe(false);
     });
 
