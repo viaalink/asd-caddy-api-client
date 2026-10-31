@@ -33,6 +33,24 @@ interface SnippetDefinition {
   body: string | string[];
 }
 
+/** A route with a URL as dial (dial-url) and a reused @id (duplicate-id). */
+const LINT_ROUTE = JSON.stringify(
+  {
+    "@id": "lint-demo",
+    match: [{ host: ["example.com"] }],
+    handle: [
+      {
+        handler: "reverse_proxy",
+        "@id": "lint-demo",
+        upstreams: [{ dial: "http://localhost:3000" }],
+      },
+    ],
+    terminal: true,
+  },
+  null,
+  2
+);
+
 after(async () => {
   await closeAllEditors();
   removeScratchDir();
@@ -56,12 +74,17 @@ describe("activation", () => {
     const contributed = (ext.packageJSON.contributes.commands as ContributedCommand[]).map(
       (c) => c.command
     );
-    assert.deepStrictEqual(contributed.sort(), [
+    assert.deepStrictEqual([...contributed].sort(), [
+      "caddy.applyToCaddy",
       "caddy.insertRoute",
       "caddy.insertSecurityConfig",
+      "caddy.newConfigFile",
+      "caddy.openWalkthrough",
       "caddy.runRouteWizard",
       "caddy.runSecurityWizard",
       "caddy.showHandlerDocs",
+      "caddy.showMenu",
+      "caddy.showRunningConfig",
     ]);
     const registered = new Set(await vscode.commands.getCommands(true));
     const missing = contributed.filter((c) => !registered.has(c));
@@ -97,20 +120,28 @@ describe("diagnostics", () => {
     });
   }
 
-  // The extension's own validator (diagnostic source "caddy").
-  // SKIPPED -- extension bug in src/providers/schema-validator.ts:
-  // SimpleSchemaValidator never resolves "$ref", and every generated schema's
-  // root is {"$ref": "#/definitions/<name>"}, so it validates against an
-  // empty schema and never reports anything. Un-skip once $ref resolves.
-  for (const [file] of invalid) {
-    it.skip(`reports caddy-source errors for ${file} (skipped: validator ignores $ref)`, async () => {
-      const doc = await openFixture(file);
-      await waitFor(`caddy diagnostics on ${file}`, () => {
-        const found = caddyDiagnostics(doc.uri);
-        return found.length > 0 ? found : undefined;
-      });
+  // The extension's own diagnostics (source "caddy") are Caddy lint, not
+  // schema validation.
+  it("reports caddy lint findings with their codes", async () => {
+    const doc = await openScratch("lint.caddy.json", LINT_ROUTE);
+    const codes = await waitFor("caddy lint diagnostics", () => {
+      const found = caddyDiagnostics(doc.uri).map((d) => String(d.code));
+      return found.includes("dial-url") && found.includes("duplicate-id") ? found : undefined;
     });
-  }
+    assert.ok(codes.includes("dial-url"), codes.join(", "));
+  });
+
+  it("schema-invalid fixtures carry no caddy lint findings", async () => {
+    // Schema errors are VS Code's ("json"); lint must not double-report them.
+    const doc = await openFixture("invalid-missing-handle.caddy.json");
+    await waitFor("json diagnostics", () =>
+      vscode.languages.getDiagnostics(doc.uri).length > 0 ? true : undefined
+    );
+    assert.deepStrictEqual(
+      caddyDiagnostics(doc.uri).map((d) => d.message),
+      []
+    );
+  });
 
   for (const file of ["valid.caddy.json", "valid-route.caddy.json", "valid.caddy-security.json"]) {
     it(`reports no diagnostics at all for ${file}`, async () => {
@@ -169,6 +200,49 @@ describe("completions", () => {
   });
 });
 
+describe("code actions", () => {
+  async function actionTitles(uri: vscode.Uri, range: vscode.Range): Promise<string[]> {
+    const actions = await vscode.commands.executeCommand<Array<vscode.CodeAction | vscode.Command>>(
+      "vscode.executeCodeActionProvider",
+      uri,
+      range
+    );
+    return actions.map((a) => a.title);
+  }
+
+  it('offers Change to "localhost:3000" for a URL dial', async () => {
+    const doc = await openScratch("fix-dial.caddy.json", LINT_ROUTE);
+    const diagnostic = await waitFor("dial-url diagnostic", () =>
+      caddyDiagnostics(doc.uri).find((d) => d.code === "dial-url")
+    );
+    const titles = await actionTitles(doc.uri, diagnostic.range);
+    assert.ok(titles.includes('Change to "localhost:3000"'), titles.join(" | "));
+  });
+
+  it('offers Did you mean "upstreams"? for an "upstream" typo', async () => {
+    const doc = await openScratch(
+      "fix-typo.caddy.json",
+      JSON.stringify(
+        {
+          handle: [{ handler: "reverse_proxy", upstream: [{ dial: "localhost:3000" }] }],
+        },
+        null,
+        2
+      )
+    );
+    const diagnostic = await waitFor(
+      "unknown-property diagnostic",
+      () =>
+        vscode.languages
+          .getDiagnostics(doc.uri)
+          .find((d) => /upstream\b.*not allowed/.test(d.message)),
+      20000
+    );
+    const titles = await actionTitles(doc.uri, diagnostic.range);
+    assert.ok(titles.includes('Did you mean "upstreams"?'), titles.join(" | "));
+  });
+});
+
 describe("hover", () => {
   it("shows the handler docs on reverse_proxy", async () => {
     const doc = await openFixture("valid.caddy.json");
@@ -209,11 +283,9 @@ describe("JSON snippets", () => {
   // Every contributed JSON snippet, expanded with its placeholder defaults,
   // must be valid JSON. Read from the built snippets file, so snippets added
   // later are covered automatically.
-  const KNOWN_BROKEN: Record<string, string> = {
-    // ${4:"upstreams": [{ "dial": "${5:localhost:3000}" }]} -- the unescaped
-    // "}" closes placeholder 4 early, leaving `... "localhost:3000" ]}`.
-    "caddy-route": 'unescaped "}" inside placeholder ${4:...}',
-  };
+  // prefix -> reason, for snippets known to be broken (they are skipped).
+  const KNOWN_BROKEN: Record<string, string> = {};
+
   const snippetsFile = path.join(EXTENSION_DIR, "snippets", "caddy-json.json");
   const snippets = JSON.parse(fs.readFileSync(snippetsFile, "utf-8")) as Record<
     string,
