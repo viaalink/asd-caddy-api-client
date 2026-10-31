@@ -54,6 +54,7 @@ const skipIfNoSecurityStack = !process.env.CADDY_SECURITY_TEST;
 
 describe.skipIf(skipIfNoSecurityStack)(
   "caddy-security OIDC Integration",
+  { timeout: 30000 },
   () => {
     let client: CaddyClient;
     let serverName: string;
@@ -535,6 +536,5 @@ describe.skipIf(skipIfNoSecurityStack)(
         expect(googleProvider.params?.driver).toBe("google");
       });
     });
-  },
-  { timeout: 30000 }
+  }
 );

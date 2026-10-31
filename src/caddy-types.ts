@@ -13,7 +13,7 @@
  *
  * @example
  * ```typescript
- * import type { Config, Server, Route } from "@accelerated-software-development/caddy-api-client/caddy-types";
+ * import type { Config, Server, Route } from "@viaalink/caddy-api-client/caddy-types";
  *
  * const config: Config = {
  *   apps: {

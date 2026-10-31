@@ -1,10 +1,7 @@
 /**
- * Basic usage examples for @accelerated-software-development/caddy-api-client
+ * Basic usage examples for @viaalink/caddy-api-client
  */
-import {
-  CaddyClient,
-  buildServiceRoutes,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { CaddyClient, buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 async function main() {
   // Create a Caddy API client

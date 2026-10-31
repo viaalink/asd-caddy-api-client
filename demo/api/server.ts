@@ -1,7 +1,7 @@
 /**
  * Demo API Server
  *
- * Showcases @accelerated-software-development/caddy-api-client library for:
+ * Showcases @viaalink/caddy-api-client library for:
  * - Dynamic route management via Caddy Admin API
  * - Hot-swappable MITMproxy traffic interception using MitmproxyManager
  * - Multiple services with independent monitoring control
@@ -735,7 +735,7 @@ const server = Bun.serve({
         return Response.json(
           {
             status: "ok",
-            library: "@asd/caddy-api-client",
+            library: "@viaalink/caddy-api-client",
             services: mitmManager.getRegisteredServices(),
             proxies: mitmManager.getAvailableProxies(),
           },
@@ -785,5 +785,5 @@ const server = Bun.serve({
 });
 
 console.log(`Demo API server running on http://localhost:${server.port}`);
-console.log("Using @accelerated-software-development/caddy-api-client library");
+console.log("Using @viaalink/caddy-api-client library");
 console.log("MitmproxyManager configured with services:", mitmManager.getRegisteredServices());

@@ -493,7 +493,7 @@ describeIntegration("Critical Modules Integration Tests", () => {
 
       const expiringSoon = isCertificateExpiringSoon(certPem, 30);
 
-      // Certificate is valid for ~365 days, should not be expiring soon
+      // Certificate is valid for ~10 years, should not be expiring soon
       expect(expiringSoon).toBe(false);
     });
 
@@ -501,8 +501,8 @@ describeIntegration("Critical Modules Integration Tests", () => {
       const certPath = path.join(process.cwd(), "test/certs/test.crt");
       const certPem = fs.readFileSync(certPath, "utf-8");
 
-      // Check if expiring within 400 days (it's only valid for 365)
-      const expiringSoon = isCertificateExpiringSoon(certPem, 400);
+      // Check if expiring within 4000 days (it's only valid for ten years)
+      const expiringSoon = isCertificateExpiringSoon(certPem, 4000);
 
       expect(expiringSoon).toBe(true);
     });

@@ -4,7 +4,7 @@
  * same pattern as completion-data.ts.
  */
 import { getLocation, parseTree, findNodeAtLocation, type Segment, type Node } from "jsonc-parser";
-import { HANDLER_METADATA } from "@accelerated-software-development/caddy-api-client/extension-assets";
+import { HANDLER_METADATA } from "@viaalink/caddy-api-client/extension-assets";
 
 export type CompletionContext =
   | { type: "route-property" }

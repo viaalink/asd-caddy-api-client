@@ -6,7 +6,7 @@
  */
 
 import * as vscode from "vscode";
-import { HANDLER_METADATA } from "@accelerated-software-development/caddy-api-client/extension-assets";
+import { HANDLER_METADATA } from "@viaalink/caddy-api-client/extension-assets";
 
 const CADDY_DOCS_BASE = "https://caddyserver.com";
 const MAX_FILE_SIZE = 100 * 1024; // 100KB - skip code lens for large files

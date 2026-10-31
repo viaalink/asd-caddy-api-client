@@ -1,5 +1,5 @@
 {
-  "name": "@accelerated-software-development/caddy-api-client",
+  "name": "@viaalink/caddy-api-client",
   "version": "0.10.0",
   "description": "TypeScript client for Caddy Admin API with MITMproxy integration",
   "type": "module",
@@ -116,17 +116,17 @@
     "api-client",
     "typescript"
   ],
-  "author": "ASD Team (https://asd.host)",
+  "author": "Viaalink (https://github.com/viaalink)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/asd-engineering/asd-caddy-api-client.git"
+    "url": "https://github.com/viaalink/asd-caddy-api-client.git"
   },
   "bugs": {
-    "url": "https://github.com/asd-engineering/asd-caddy-api-client/issues"
+    "url": "https://github.com/viaalink/asd-caddy-api-client/issues"
   },
-  "homepage": "https://asd.host",
-  "documentation": "https://asd-engineering.github.io/asd-caddy-api-client",
+  "homepage": "https://github.com/viaalink/asd-caddy-api-client",
+  "documentation": "https://viaalink.github.io/asd-caddy-api-client",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -142,8 +142,8 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.57.0",
-    "@types/node": "^20.10.0",
-    "@vitest/coverage-v8": "^1.0.0",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^5.0.3",
     "ajv": "^8.17.1",
     "bcryptjs": "^3.0.3",
     "eslint": "^9.32.0",
@@ -157,7 +157,7 @@
     "typedoc": "^0.28.14",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.0.0",
-    "vitest": "^1.0.0",
+    "vitest": "^5.0.3",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.25.1"
   },

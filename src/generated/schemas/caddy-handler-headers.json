@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://asd-engineering.github.io/asd-caddy-api-client/schemas/caddy-handler-headers.json",
+  "$id": "https://viaalink.github.io/asd-caddy-api-client/schemas/caddy-handler-headers.json",
   "title": "Caddy Handler Headers",
   "description": "Caddy headers handler configuration",
   "$ref": "#/definitions/caddy-handler-headers",
