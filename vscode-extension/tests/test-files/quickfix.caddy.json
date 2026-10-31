@@ -1,0 +1,11 @@
+{
+  "@id": "quickfix-demo",
+  "match": [{ "host": ["app.example.com"] }],
+  "handle": [
+    {
+      "handler": "reverse_proxy",
+      "upstreams": [{ "dial": "http://localhost:3000" }]
+    }
+  ],
+  "terminal": true
+}
