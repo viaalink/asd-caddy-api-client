@@ -439,10 +439,10 @@ describe("CaddyClient", () => {
       const mockAbort = vi.fn();
       const originalAbortController = global.AbortController;
 
-      global.AbortController = vi.fn().mockImplementation(() => ({
-        signal: {},
-        abort: mockAbort,
-      })) as unknown as typeof AbortController;
+      // A `function` implementation: the client calls it with `new`.
+      global.AbortController = vi.fn().mockImplementation(function () {
+        return { signal: {}, abort: mockAbort };
+      }) as unknown as typeof AbortController;
 
       mockFetch.mockImplementationOnce(
         () =>
@@ -451,10 +451,12 @@ describe("CaddyClient", () => {
           })
       );
 
-      const client = new CaddyClient({ timeout: 50 });
-      await expect(client.getConfig()).rejects.toThrow(TimeoutError);
-
-      global.AbortController = originalAbortController;
+      try {
+        const client = new CaddyClient({ timeout: 50 });
+        await expect(client.getConfig()).rejects.toThrow(TimeoutError);
+      } finally {
+        global.AbortController = originalAbortController;
+      }
     });
 
     test("clears timeout on successful request", async () => {
