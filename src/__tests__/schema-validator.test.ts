@@ -267,12 +267,15 @@ describe("SimpleSchemaValidator.getSchemaForFile", () => {
     expect(v.getSchemaForFile("package.json")).toBeUndefined();
   });
 
-  test("caddy-server.json and caddy-full.json are NOT recognized, unlike VS Code's own jsonValidation contribution", () => {
-    // getSchemaForFile has no branch for these two patterns, unlike
-    // package.json's jsonValidation contribution -- documented current
-    // behavior, not asserted correct.
+  test("caddy-server.json and caddy-full.json resolve like VS Code's jsonValidation contribution", () => {
+    // Fixture dir has no caddy-full-config.json, so the lookup comes back empty
+    // -- but it now asks for that schema rather than having no branch at all.
     expect(v.getSchemaForFile("caddy-server.json")).toBeUndefined();
-    expect(v.getSchemaForFile("caddy-full.json")).toBeUndefined();
+    expect(
+      new SimpleSchemaValidator(join(__dirname, "../generated")).getSchemaForFile(
+        "caddy-server.json"
+      )
+    ).toBeDefined();
   });
 });
 

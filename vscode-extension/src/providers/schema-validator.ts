@@ -6,6 +6,7 @@
  */
 import * as path from "path";
 import * as fs from "fs";
+import { caddyFileKind } from "./file-kinds";
 
 export interface ValidationError {
   path: string;
@@ -57,28 +58,8 @@ export class SimpleSchemaValidator {
   }
 
   getSchemaForFile(fileName: string): object | undefined {
-    const basename = path.basename(fileName).toLowerCase();
-
-    // Portal/policy checked before the generic caddy-security check: a
-    // filename like "auth.caddy-security-portal.json" also contains the
-    // substring "caddy-security" and would otherwise match that branch first.
-    if (basename.includes("portal")) {
-      return this.schemas.get("caddy-security-portal.json");
-    }
-
-    if (basename.includes("policy")) {
-      return this.schemas.get("caddy-security-policy.json");
-    }
-
-    if (basename.includes("caddy-security") || basename.includes("security-config")) {
-      return this.schemas.get("caddy-security-config.json");
-    }
-
-    if (basename.endsWith(".caddy.json") || basename === "caddy.json") {
-      return this.schemas.get("caddy-route.json");
-    }
-
-    return undefined;
+    const kind = caddyFileKind(fileName);
+    return kind ? this.schemas.get(kind.schemaFile) : undefined;
   }
 
   /**

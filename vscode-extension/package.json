@@ -1,8 +1,8 @@
 {
   "name": "vscode-caddy-tools",
   "displayName": "Caddy Configuration Tools",
-  "description": "IntelliSense, snippets, and validation for Caddy and caddy-security configurations",
-  "version": "0.2.0",
+  "description": "IntelliSense, validated snippets, quick fixes and live apply for Caddy JSON configs and the caddy-security (AuthCrunch) plugin",
+  "version": "0.3.0",
   "publisher": "viaalink",
   "icon": "icon.png",
   "author": {
@@ -29,15 +29,22 @@
   "keywords": [
     "caddy",
     "caddy-security",
+    "authcrunch",
     "reverse-proxy",
+    "reverse proxy",
     "web-server",
-    "configuration"
+    "json",
+    "admin-api",
+    "configuration",
+    "snippets"
   ],
   "activationEvents": [
     "onLanguage:json",
     "onLanguage:jsonc",
     "onLanguage:typescript",
-    "onLanguage:javascript"
+    "onLanguage:javascript",
+    "workspaceContains:**/*.caddy.json",
+    "workspaceContains:**/caddy-server.json"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -100,24 +107,57 @@
     ],
     "commands": [
       {
-        "command": "caddy.showHandlerDocs",
-        "title": "Caddy: Show Handler Documentation"
+        "command": "caddy.showMenu",
+        "title": "Show All Commands",
+        "category": "Caddy"
       },
       {
-        "command": "caddy.insertRoute",
-        "title": "Caddy: Insert Route Configuration"
-      },
-      {
-        "command": "caddy.insertSecurityConfig",
-        "title": "Caddy: Insert Security Configuration"
+        "command": "caddy.newConfigFile",
+        "title": "New Config File...",
+        "category": "Caddy",
+        "icon": "$(new-file)"
       },
       {
         "command": "caddy.runRouteWizard",
-        "title": "Caddy: Route Configuration Wizard"
+        "title": "Route Configuration Wizard",
+        "category": "Caddy"
       },
       {
         "command": "caddy.runSecurityWizard",
-        "title": "Caddy: Security Configuration Wizard"
+        "title": "Security Configuration Wizard",
+        "category": "Caddy"
+      },
+      {
+        "command": "caddy.insertRoute",
+        "title": "Insert Route Configuration",
+        "category": "Caddy"
+      },
+      {
+        "command": "caddy.insertSecurityConfig",
+        "title": "Insert Security Configuration",
+        "category": "Caddy"
+      },
+      {
+        "command": "caddy.applyToCaddy",
+        "title": "Apply File to Running Caddy",
+        "category": "Caddy",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "caddy.showRunningConfig",
+        "title": "Show Running Config",
+        "category": "Caddy",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "caddy.showHandlerDocs",
+        "title": "Show Handler Documentation",
+        "category": "Caddy"
+      },
+      {
+        "command": "caddy.openWalkthrough",
+        "title": "Get Started",
+        "category": "Caddy"
       }
     ],
     "configuration": {
@@ -141,16 +181,116 @@
         "caddy.enableDiagnostics": {
           "type": "boolean",
           "default": true,
-          "description": "Enable real-time validation of Caddy configurations"
+          "description": "Report Caddy-specific problems (dial/host format, duplicate @id, LDAP %s placeholder, undefined policy/portal/store names) in addition to VS Code's JSON schema validation"
+        },
+        "caddy.adminUrl": {
+          "type": "string",
+          "default": "http://localhost:2019",
+          "format": "uri",
+          "markdownDescription": "Caddy admin API URL used by **Caddy: Apply File to Running Caddy** and **Caddy: Show Running Config**. Caddy 2.11+ checks the `Origin` header; the extension sends this URL's origin."
         }
       }
-    }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "caddy.applyToCaddy",
+          "when": "resourceFilename =~ /(^|\\.)(caddy|caddy-server|caddy-full|caddy-config)\\.json$/",
+          "group": "navigation@90"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "caddy.insertRoute",
+          "when": "editorLangId =~ /^jsonc?$/"
+        },
+        {
+          "command": "caddy.insertSecurityConfig",
+          "when": "editorLangId =~ /^jsonc?$/"
+        },
+        {
+          "command": "caddy.applyToCaddy",
+          "when": "editorLangId =~ /^jsonc?$/"
+        }
+      ]
+    },
+    "walkthroughs": [
+      {
+        "id": "caddy.gettingStarted",
+        "title": "Get Started with Caddy Tools",
+        "description": "Write, check and apply Caddy JSON configs without leaving the editor.",
+        "steps": [
+          {
+            "id": "createFile",
+            "title": "Create a Caddy config file",
+            "description": "The file name decides how a file is validated.\n[New Config File](command:caddy.newConfigFile)",
+            "media": {
+              "markdown": "walkthrough/create-file.md"
+            },
+            "completionEvents": [
+              "onCommand:caddy.newConfigFile"
+            ]
+          },
+          {
+            "id": "intellisense",
+            "title": "Write routes with IntelliSense and snippets",
+            "description": "Handler-aware completions, hover docs, and validated `caddy-*` snippets.\n[Insert a Route](command:caddy.insertRoute)",
+            "media": {
+              "markdown": "walkthrough/intellisense.md"
+            },
+            "completionEvents": [
+              "onCommand:caddy.insertRoute"
+            ]
+          },
+          {
+            "id": "lint",
+            "title": "Catch what Caddy would reject",
+            "description": "Typos, unusable dial/host values, duplicate IDs and broken references, each with a quick fix.",
+            "media": {
+              "markdown": "walkthrough/lint.md"
+            }
+          },
+          {
+            "id": "wizards",
+            "title": "Use a wizard",
+            "description": "Step-by-step route and caddy-security setup.\n[Route Wizard](command:caddy.runRouteWizard)\n[Security Wizard](command:caddy.runSecurityWizard)",
+            "media": {
+              "markdown": "walkthrough/wizards.md"
+            },
+            "completionEvents": [
+              "onCommand:caddy.runRouteWizard",
+              "onCommand:caddy.runSecurityWizard"
+            ]
+          },
+          {
+            "id": "live",
+            "title": "Apply it to a running Caddy",
+            "description": "Push a full config or individual routes through the admin API.\n[Show Running Config](command:caddy.showRunningConfig)",
+            "media": {
+              "markdown": "walkthrough/live.md"
+            },
+            "completionEvents": [
+              "onCommand:caddy.applyToCaddy",
+              "onCommand:caddy.showRunningConfig"
+            ]
+          },
+          {
+            "id": "typescript",
+            "title": "Or build configs in TypeScript",
+            "description": "Builder completions with auto-import from @viaalink/caddy-api-client.",
+            "media": {
+              "markdown": "walkthrough/typescript.md"
+            }
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
     "typecheck": "tsc --noEmit -p .",
-    "build": "npm run copy-schemas && npm run copy-license && npm run generate-snippets && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --minify",
-    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --main-fields=module,main --watch",
+    "build": "npm run copy-schemas && npm run copy-license && npm run generate-snippets && esbuild src/extension.ts src/providers/live-caddy.ts src/wizards/security-wizard.ts --outbase=src --outdir=dist --bundle --external:vscode --format=cjs --platform=node --main-fields=module,main --minify",
+    "watch": "esbuild src/extension.ts src/providers/live-caddy.ts src/wizards/security-wizard.ts --outbase=src --outdir=dist --bundle --external:vscode --format=cjs --platform=node --main-fields=module,main --watch",
     "copy-schemas": "shx mkdir -p schemas && shx cp ../src/generated/schemas/*.json ./schemas/",
     "copy-license": "shx cp ../LICENSE ./LICENSE",
     "generate-snippets": "node scripts/generate-snippets.js",
@@ -174,5 +314,12 @@
   "dependencies": {
     "@viaalink/caddy-api-client": "file:..",
     "jsonc-parser": "^3.3.1"
+  },
+  "bugs": {
+    "url": "https://github.com/viaalink/asd-caddy-api-client/issues"
+  },
+  "galleryBanner": {
+    "color": "#0F1B2A",
+    "theme": "dark"
   }
 }
