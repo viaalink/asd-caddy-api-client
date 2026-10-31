@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.10.1](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.0...v0.10.1) (2026-10-31)
+
+The package is now `@viaalink/caddy-api-client`, maintained by [Viaalink](https://viaalink.com).
+The first release under that name, 0.10.0 (published 2026-10-31), already contained the
+changes below; this release corrects its homepage.
+
+### ⚠ BREAKING CHANGES
+
+- **Package name:** `@accelerated-software-development/caddy-api-client` is now
+  `@viaalink/caddy-api-client`. Same API and subpaths: replace the name in `package.json` and
+  your imports. The old name is deprecated; its last version (0.10.1) re-exports this package.
+
+### Bug Fixes
+
+- **routes:** iframe headers set `Access-Control-Allow-Origin` only for `*` or a single origin. A
+  frame-ancestors source list goes into `Content-Security-Policy` only; before, it produced an
+  invalid (and, through a second proxy, duplicated) CORS header.
+- **package:** homepage is https://viaalink.com; author is Viaalink <info@viaalink.com>.
+
+### Dependencies
+
+- vitest and @vitest/coverage-v8 1 → 5, @types/node 20 → 22, and the open dependabot updates
+  (including the VS Code extension's).
+
 ## [0.10.0](https://github.com/asd-engineering/asd-caddy-api-client/compare/v0.9.0...v0.10.0) (2026-08-12)
 
 Closes the test-coverage gaps identified right after 0.9.0 shipped: several real bugs in that

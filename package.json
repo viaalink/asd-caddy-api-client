@@ -1,6 +1,6 @@
 {
   "name": "@viaalink/caddy-api-client",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "TypeScript client for Caddy Admin API with MITMproxy integration",
   "type": "module",
   "main": "./dist/index.js",
@@ -125,7 +125,7 @@
   "bugs": {
     "url": "https://github.com/viaalink/asd-caddy-api-client/issues"
   },
-  "homepage": "https://github.com/viaalink/asd-caddy-api-client",
+  "homepage": "https://viaalink.com",
   "documentation": "https://viaalink.github.io/asd-caddy-api-client",
   "publishConfig": {
     "access": "public",
