@@ -54,10 +54,7 @@ bun add @viaalink/caddy-api-client zod
 ## Quick Start
 
 ```typescript
-import {
-  CaddyClient,
-  buildServiceRoutes,
-} from "@viaalink/caddy-api-client/caddy";
+import { CaddyClient, buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 // Create client
 const client = new CaddyClient({
@@ -92,10 +89,7 @@ await client.addRoutes("https_server", routes);
 ### Basic Route Management
 
 ```typescript
-import {
-  CaddyClient,
-  buildServiceRoutes,
-} from "@viaalink/caddy-api-client/caddy";
+import { CaddyClient, buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient();
 
@@ -134,10 +128,7 @@ const routes = buildServiceRoutes({
 ### Load Balancing
 
 ```typescript
-import {
-  CaddyClient,
-  buildLoadBalancerRoute,
-} from "@viaalink/caddy-api-client/caddy";
+import { CaddyClient, buildLoadBalancerRoute } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient();
 
@@ -209,10 +200,7 @@ docker run -d \
 
 ```typescript
 // 2. Enable traffic inspection (zero downtime)
-import {
-  CaddyClient,
-  buildMitmproxyRoute,
-} from "@viaalink/caddy-api-client/caddy";
+import { CaddyClient, buildMitmproxyRoute } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient({ adminUrl: "http://localhost:2019" });
 
@@ -235,10 +223,7 @@ await client.removeRouteById("https_server", "api_debug");
 Use `buildMitmproxyRoutePair()` to easily toggle traffic inspection on/off:
 
 ```typescript
-import {
-  CaddyClient,
-  buildMitmproxyRoutePair,
-} from "@viaalink/caddy-api-client/caddy";
+import { CaddyClient, buildMitmproxyRoutePair } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient({ adminUrl: "http://localhost:2019" });
 
@@ -269,10 +254,7 @@ await client.addRoute("https_server", routes.direct, routes.direct["@id"]);
 Route some traffic through MITMproxy while keeping the rest direct:
 
 ```typescript
-import {
-  CaddyClient,
-  buildLoadBalancerRoute,
-} from "@viaalink/caddy-api-client/caddy";
+import { CaddyClient, buildLoadBalancerRoute } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient();
 const lbRoute = buildLoadBalancerRoute({
@@ -327,10 +309,7 @@ services:
 ### Domain Management
 
 ```typescript
-import {
-  addDomainWithAutoTls,
-  deleteDomain,
-} from "@viaalink/caddy-api-client/caddy";
+import { addDomainWithAutoTls, deleteDomain } from "@viaalink/caddy-api-client/caddy";
 
 // Add domain with automatic TLS (Let's Encrypt)
 const domain = await addDomainWithAutoTls({

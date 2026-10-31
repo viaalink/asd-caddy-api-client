@@ -6,10 +6,7 @@
  */
 
 import * as vscode from "vscode";
-import {
-  HANDLER_METADATA,
-  BUILDER_METADATA,
-} from "@viaalink/caddy-api-client/extension-assets";
+import { HANDLER_METADATA, BUILDER_METADATA } from "@viaalink/caddy-api-client/extension-assets";
 
 const CADDY_DOCS_BASE = "https://caddyserver.com";
 

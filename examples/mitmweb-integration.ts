@@ -8,10 +8,7 @@ import {
   isMitmproxyInstalled,
   autoInstallMitmproxy,
 } from "@viaalink/caddy-api-client/mitm";
-import {
-  CaddyClient,
-  buildLoadBalancerRoute,
-} from "@viaalink/caddy-api-client/caddy";
+import { CaddyClient, buildLoadBalancerRoute } from "@viaalink/caddy-api-client/caddy";
 
 async function main() {
   // Check if mitmproxy is installed
