@@ -5,14 +5,14 @@
   "version": "0.2.0",
   "publisher": "asd-host",
   "author": {
-    "name": "Accelerated Software Development B.V.",
-    "url": "https://asd.host"
+    "name": "Viaalink",
+    "url": "https://github.com/viaalink"
   },
   "license": "MIT",
-  "homepage": "https://asd.host",
+  "homepage": "https://github.com/viaalink/asd-caddy-api-client",
   "repository": {
     "type": "git",
-    "url": "https://github.com/asd-engineering/asd-caddy-api-client.git",
+    "url": "https://github.com/viaalink/asd-caddy-api-client.git",
     "directory": "vscode-extension"
   },
   "engines": {
@@ -169,7 +169,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@accelerated-software-development/caddy-api-client": "file:..",
+    "@viaalink/caddy-api-client": "file:..",
     "jsonc-parser": "^3.3.1"
   }
 }

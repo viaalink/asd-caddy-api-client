@@ -14,7 +14,7 @@
  * import type {
  *   SecurityAuthenticatorHandler,
  *   SecurityAuthorizationHandler
- * } from "@accelerated-software-development/caddy-api-client/plugins/caddy-security";
+ * } from "@viaalink/caddy-api-client/plugins/caddy-security";
  *
  * // Portal handler (serves login UI)
  * const portalHandler: SecurityAuthenticatorHandler = {

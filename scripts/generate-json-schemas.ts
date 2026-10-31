@@ -382,7 +382,7 @@ function generateJsonSchema(definition: SchemaDefinition): object {
   // Enrich with metadata
   return {
     $schema: "http://json-schema.org/draft-07/schema#",
-    $id: `https://asd-engineering.github.io/asd-caddy-api-client/schemas/${definition.name}.json`,
+    $id: `https://viaalink.github.io/asd-caddy-api-client/schemas/${definition.name}.json`,
     title: definition.name
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

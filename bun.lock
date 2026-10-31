@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "@asd/caddy-api-client",
+      "name": "@viaalink/caddy-api-client",
       "dependencies": {
         "@peculiar/x509": "^1.14.2",
       },

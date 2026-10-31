@@ -13,7 +13,7 @@ import {
   CaddyClient,
   buildReverseProxyHandler,
   buildSecurityHeadersHandler,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+} from "@viaalink/caddy-api-client/caddy";
 
 async function main() {
   const client = new CaddyClient({

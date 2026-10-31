@@ -8,7 +8,7 @@ import * as vscode from "vscode";
 import {
   HANDLER_METADATA,
   BUILDER_METADATA,
-} from "@accelerated-software-development/caddy-api-client/extension-assets";
+} from "@viaalink/caddy-api-client/extension-assets";
 
 const CADDY_DOCS_BASE = "https://caddyserver.com";
 

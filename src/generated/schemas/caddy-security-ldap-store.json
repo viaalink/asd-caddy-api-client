@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://asd-engineering.github.io/asd-caddy-api-client/schemas/caddy-security-ldap-store.json",
+  "$id": "https://viaalink.github.io/asd-caddy-api-client/schemas/caddy-security-ldap-store.json",
   "title": "Caddy Security Ldap Store",
   "description": "caddy-security LDAP identity store configuration",
   "$ref": "#/definitions/caddy-security-ldap-store",

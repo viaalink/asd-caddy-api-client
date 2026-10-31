@@ -1,12 +1,12 @@
 /**
- * Error handling patterns for @accelerated-software-development/caddy-api-client
+ * Error handling patterns for @viaalink/caddy-api-client
  *
  * This example demonstrates:
  * 1. Distinguishing between error types
  * 2. Retry patterns for network errors
  * 3. Idempotent vs non-idempotent operations
  */
-import type { CaddyRoute } from "@accelerated-software-development/caddy-api-client";
+import type { CaddyRoute } from "@viaalink/caddy-api-client";
 import {
   CaddyClient,
   buildServiceRoutes,
@@ -16,7 +16,7 @@ import {
   NetworkError,
   TimeoutError,
   DomainAlreadyExistsError,
-} from "@accelerated-software-development/caddy-api-client";
+} from "@viaalink/caddy-api-client";
 
 // ============================================================================
 // Example 1: Distinguishing Error Types
