@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://asd-engineering.github.io/asd-caddy-api-client/schemas/caddy-security-portal.json",
+  "$id": "https://viaalink.github.io/asd-caddy-api-client/schemas/caddy-security-portal.json",
   "title": "Caddy Security Portal",
   "description": "caddy-security authentication portal configuration",
   "$ref": "#/definitions/caddy-security-portal",

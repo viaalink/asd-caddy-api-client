@@ -1,12 +1,12 @@
-# @accelerated-software-development/caddy-api-client
+# @viaalink/caddy-api-client
 
 TypeScript client for Caddy Admin API with MITMproxy integration.
-Maintained by [asd.host](https://asd.host).
+Maintained by [Viaalink](https://github.com/viaalink).
 
 Package pages:
 
-- npm: https://www.npmjs.com/package/@accelerated-software-development/caddy-api-client
-- Yarn Classic: https://classic.yarnpkg.com/en/package/@accelerated-software-development/caddy-api-client
+- npm: https://www.npmjs.com/package/@viaalink/caddy-api-client
+- Yarn Classic: https://classic.yarnpkg.com/en/package/@viaalink/caddy-api-client
 
 ## Features
 
@@ -44,20 +44,17 @@ Run locally: `docker compose -f demo/docker-compose.yml up -d` → http://localh
 ## Installation
 
 ```bash
-npm install @accelerated-software-development/caddy-api-client zod
+npm install @viaalink/caddy-api-client zod
 # or
-yarn add @accelerated-software-development/caddy-api-client zod
+yarn add @viaalink/caddy-api-client zod
 # or
-bun add @accelerated-software-development/caddy-api-client zod
+bun add @viaalink/caddy-api-client zod
 ```
 
 ## Quick Start
 
 ```typescript
-import {
-  CaddyClient,
-  buildServiceRoutes,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { CaddyClient, buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 // Create client
 const client = new CaddyClient({
@@ -92,10 +89,7 @@ await client.addRoutes("https_server", routes);
 ### Basic Route Management
 
 ```typescript
-import {
-  CaddyClient,
-  buildServiceRoutes,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { CaddyClient, buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient();
 
@@ -121,7 +115,7 @@ const removed = await client.removeRoutesByHost("old-api.localhost");
 ### Path-based Routes
 
 ```typescript
-import { buildServiceRoutes } from "@accelerated-software-development/caddy-api-client/caddy";
+import { buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 const routes = buildServiceRoutes({
   path: "/api",
@@ -134,10 +128,7 @@ const routes = buildServiceRoutes({
 ### Load Balancing
 
 ```typescript
-import {
-  CaddyClient,
-  buildLoadBalancerRoute,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { CaddyClient, buildLoadBalancerRoute } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient();
 
@@ -155,7 +146,7 @@ await client.addRoute("https_server", lbRoute);
 ### Security Headers
 
 ```typescript
-import { buildServiceRoutes } from "@accelerated-software-development/caddy-api-client/caddy";
+import { buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 const routes = buildServiceRoutes({
   host: "secure.localhost",
@@ -172,7 +163,7 @@ const routes = buildServiceRoutes({
 ### Basic Authentication
 
 ```typescript
-import { buildServiceRoutes } from "@accelerated-software-development/caddy-api-client/caddy";
+import { buildServiceRoutes } from "@viaalink/caddy-api-client/caddy";
 
 const routes = buildServiceRoutes({
   host: "admin.localhost",
@@ -209,10 +200,7 @@ docker run -d \
 
 ```typescript
 // 2. Enable traffic inspection (zero downtime)
-import {
-  CaddyClient,
-  buildMitmproxyRoute,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { CaddyClient, buildMitmproxyRoute } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient({ adminUrl: "http://localhost:2019" });
 
@@ -235,10 +223,7 @@ await client.removeRouteById("https_server", "api_debug");
 Use `buildMitmproxyRoutePair()` to easily toggle traffic inspection on/off:
 
 ```typescript
-import {
-  CaddyClient,
-  buildMitmproxyRoutePair,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { CaddyClient, buildMitmproxyRoutePair } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient({ adminUrl: "http://localhost:2019" });
 
@@ -269,10 +254,7 @@ await client.addRoute("https_server", routes.direct, routes.direct["@id"]);
 Route some traffic through MITMproxy while keeping the rest direct:
 
 ```typescript
-import {
-  CaddyClient,
-  buildLoadBalancerRoute,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { CaddyClient, buildLoadBalancerRoute } from "@viaalink/caddy-api-client/caddy";
 
 const client = new CaddyClient();
 const lbRoute = buildLoadBalancerRoute({
@@ -322,15 +304,12 @@ services:
 - ✅ Web UI for viewing captured traffic
 - ✅ Production-safe (tested with concurrent requests)
 
-**Troubleshooting:** See the [MITMproxy Troubleshooting Guide](https://github.com/asd-engineering/asd-caddy-api-client/blob/main/docs/mitmproxy-troubleshooting.md) for common issues and solutions.
+**Troubleshooting:** See the [MITMproxy Troubleshooting Guide](https://github.com/viaalink/asd-caddy-api-client/blob/main/docs/mitmproxy-troubleshooting.md) for common issues and solutions.
 
 ### Domain Management
 
 ```typescript
-import {
-  addDomainWithAutoTls,
-  deleteDomain,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+import { addDomainWithAutoTls, deleteDomain } from "@viaalink/caddy-api-client/caddy";
 
 // Add domain with automatic TLS (Let's Encrypt)
 const domain = await addDomainWithAutoTls({
@@ -470,7 +449,7 @@ import {
 
   // Handler
   ReverseProxyHandlerSchema, // Full reverse proxy with health checks + load balancing
-} from "@accelerated-software-development/caddy-api-client";
+} from "@viaalink/caddy-api-client";
 ```
 
 ### Handler Types (v0.3.0)
@@ -510,7 +489,7 @@ import {
   PushHandlerSchema, // HTTP/2 server push
   TracingHandlerSchema, // Distributed tracing
   LogAppendHandlerSchema, // Custom log fields
-} from "@accelerated-software-development/caddy-api-client";
+} from "@viaalink/caddy-api-client";
 ```
 
 **Route builders for common patterns:**
@@ -524,7 +503,7 @@ import {
   buildVarsHandler, // Set variables
   buildMapHandler, // Variable mapping
   buildTracingHandler, // Tracing spans
-} from "@accelerated-software-development/caddy-api-client/caddy";
+} from "@viaalink/caddy-api-client/caddy";
 
 // Example: Serve static files with browsing
 const fileRoute = buildFileServerRoute({
@@ -564,7 +543,7 @@ import type {
   IModulesCaddyhttpRoute,
   IModulesCaddyhttpReverseproxyHandler,
   IModulesCaddytlsConnectionPolicy,
-} from "@accelerated-software-development/caddy-api-client/caddy-types";
+} from "@viaalink/caddy-api-client/caddy-types";
 ```
 
 **Includes 591 types covering:**
@@ -588,7 +567,7 @@ import {
   TimeoutError,
   DomainNotFoundError,
   MitmproxyNotInstalledError,
-} from "@accelerated-software-development/caddy-api-client";
+} from "@viaalink/caddy-api-client";
 
 try {
   await client.addRoute("https_server", route);
@@ -638,7 +617,7 @@ See the [`examples/`](./examples/) directory for standalone examples (require pu
 
 ## API Documentation
 
-📚 **[View Full API Documentation](https://asd-engineering.github.io/asd-caddy-api-client/)** ← Auto-generated from source code
+📚 **[View Full API Documentation](https://viaalink.github.io/asd-caddy-api-client/)** ← Auto-generated from source code
 
 Full API documentation is generated using TypeDoc and hosted on GitHub Pages. It includes detailed information for all exported functions, classes, and types with examples.
 
@@ -673,7 +652,7 @@ bun run format
 
 ## Contributing
 
-Contributions are welcome! Please [open an issue](https://github.com/asd-engineering/asd-caddy-api-client/issues) or submit a pull request if you have any improvements or fixes.
+Contributions are welcome! Please [open an issue](https://github.com/viaalink/asd-caddy-api-client/issues) or submit a pull request if you have any improvements or fixes.
 
 1. Fork the repository
 2. Create a new branch (`git checkout -b my-feature-branch`)

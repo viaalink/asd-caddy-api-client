@@ -62,8 +62,8 @@ this package does not reimplement that resolution. Pass any subset of the fields
 ### Building it with this package
 
 ```typescript
-import { buildAcmeDnsPolicy } from "@accelerated-software-development/caddy-api-client/caddy";
-import { buildAcmeDnsProviderConfig } from "@accelerated-software-development/caddy-api-client/plugins/caddy-dns";
+import { buildAcmeDnsPolicy } from "@viaalink/caddy-api-client/caddy";
+import { buildAcmeDnsProviderConfig } from "@viaalink/caddy-api-client/plugins/caddy-dns";
 
 const { providerConfig, envVars } = buildAcmeDnsProviderConfig("cloudflare");
 // envVars: ["CLOUDFLARE_API_TOKEN"] — check these are set before issuing
@@ -82,7 +82,7 @@ exported directly for callers that already know the provider at compile time.
 ### Route53 with an explicit typed `providerConfig`
 
 ```typescript
-import { buildRoute53DnsConfig } from "@accelerated-software-development/caddy-api-client/plugins/caddy-dns";
+import { buildRoute53DnsConfig } from "@viaalink/caddy-api-client/plugins/caddy-dns";
 
 // Default: no providerConfig, relies on the AWS SDK's own credential chain
 buildRoute53DnsConfig();

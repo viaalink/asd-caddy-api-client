@@ -12,8 +12,8 @@
  *
  * @example
  * ```typescript
- * import { buildAcmeDnsPolicy } from "@accelerated-software-development/caddy-api-client/caddy";
- * import { buildAcmeDnsProviderConfig } from "@accelerated-software-development/caddy-api-client/plugins/caddy-dns";
+ * import { buildAcmeDnsPolicy } from "@viaalink/caddy-api-client/caddy";
+ * import { buildAcmeDnsProviderConfig } from "@viaalink/caddy-api-client/plugins/caddy-dns";
  *
  * const { providerConfig } = buildAcmeDnsProviderConfig("cloudflare");
  * const policy = buildAcmeDnsPolicy({

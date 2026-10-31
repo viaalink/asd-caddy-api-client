@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://asd-engineering.github.io/asd-caddy-api-client/schemas/caddy-full-config.json",
+  "$id": "https://viaalink.github.io/asd-caddy-api-client/schemas/caddy-full-config.json",
   "title": "Caddy Full Config",
   "description": "Complete Caddy server configuration (admin, logging, apps: http/tls/security)",
   "$ref": "#/definitions/caddy-full-config",

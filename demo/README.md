@@ -1,6 +1,6 @@
 # MITMproxy Traffic Inspection Demo
 
-This demo showcases the `@accelerated-software-development/caddy-api-client` library's ability to dynamically insert MITMproxy between services **without restarts**.
+This demo showcases the `@viaalink/caddy-api-client` library's ability to dynamically insert MITMproxy between services **without restarts**.
 
 ## What This Demo Shows
 
@@ -57,7 +57,7 @@ import {
   CaddyClient,
   buildReverseProxyHandler,
   buildRewriteHandler,
-} from "@accelerated-software-development/caddy-api-client";
+} from "@viaalink/caddy-api-client";
 
 const caddy = new CaddyClient({ adminUrl: "http://caddy:2019" });
 

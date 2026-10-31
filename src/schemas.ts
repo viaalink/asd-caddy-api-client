@@ -64,7 +64,7 @@ import {
  *
  * @example
  * ```typescript
- * import { DomainSchema } from "@accelerated-software-development/caddy-api-client";
+ * import { DomainSchema } from "@viaalink/caddy-api-client";
  *
  * // Validate domain name
  * const domain = DomainSchema.parse("api.example.com");
@@ -89,7 +89,7 @@ export const DomainSchema = z
  *
  * @example
  * ```typescript
- * import { DialAddressSchema } from "@accelerated-software-development/caddy-api-client";
+ * import { DialAddressSchema } from "@viaalink/caddy-api-client";
  *
  * // Valid addresses
  * DialAddressSchema.parse("localhost:3000");     // OK
@@ -149,7 +149,7 @@ export const TlsIssuerSchema = z.enum(["letsencrypt", "zerossl", "acme"]);
  * Query string matcher - validates URL query parameter matching
  * @example
  * ```typescript
- * import { MatchQuerySchema } from "@accelerated-software-development/caddy-api-client";
+ * import { MatchQuerySchema } from "@viaalink/caddy-api-client";
  *
  * // Match requests with specific query parameters
  * const query = MatchQuerySchema.parse({
@@ -164,7 +164,7 @@ export const MatchQuerySchema = z.record(z.string(), z.array(z.string()));
  * Header matcher - validates HTTP header matching
  * @example
  * ```typescript
- * import { MatchHeaderSchema } from "@accelerated-software-development/caddy-api-client";
+ * import { MatchHeaderSchema } from "@viaalink/caddy-api-client";
  *
  * // Match requests with specific headers
  * const headers = MatchHeaderSchema.parse({
@@ -253,7 +253,7 @@ export const CaddyRouteHandlerSchema: z.ZodType<{
  *
  * @example
  * ```typescript
- * import { CaddyRouteSchema } from "@accelerated-software-development/caddy-api-client";
+ * import { CaddyRouteSchema } from "@viaalink/caddy-api-client";
  *
  * // Validate a route before adding to Caddy
  * const route = CaddyRouteSchema.parse({
@@ -298,7 +298,7 @@ export const CaddyClientOptionsSchema = z.object({
  *
  * @example
  * ```typescript
- * import { CaddyAdapterSchema } from "@accelerated-software-development/caddy-api-client";
+ * import { CaddyAdapterSchema } from "@viaalink/caddy-api-client";
  *
  * // Validate user input before calling adapt()
  * const adapter = CaddyAdapterSchema.parse(userInput);
@@ -1372,7 +1372,7 @@ export type SubrouteHandler = z.infer<typeof SubrouteHandlerSchema>;
  *
  * @example
  * ```typescript
- * import { UpstreamStatusSchema } from "@accelerated-software-development/caddy-api-client";
+ * import { UpstreamStatusSchema } from "@viaalink/caddy-api-client";
  *
  * // Get and validate upstream status
  * const upstreams = await client.getUpstreams();
@@ -1429,7 +1429,7 @@ export const MitmwebOptionsSchema = z.object({
  *
  * @example
  * ```typescript
- * import { validate, DomainSchema } from "@accelerated-software-development/caddy-api-client";
+ * import { validate, DomainSchema } from "@viaalink/caddy-api-client";
  *
  * try {
  *   const domain = validate(DomainSchema, userInput);

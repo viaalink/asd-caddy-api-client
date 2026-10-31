@@ -10,7 +10,7 @@ export default defineConfig({
       // resolved through vscode-extension/node_modules (npm) -- which
       // doesn't exist in this repo's bun-only root test run. Alias straight
       // to source instead.
-      "@accelerated-software-development/caddy-api-client/extension-assets": `${__dirname}src/generated/extension-assets.ts`,
+      "@viaalink/caddy-api-client/extension-assets": `${__dirname}src/generated/extension-assets.ts`,
     },
   },
   test: {

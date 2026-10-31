@@ -1,12 +1,12 @@
 # Caddy Configuration Tools
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/asd-engineering/asd-caddy-api-client)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/viaalink/asd-caddy-api-client)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85+-blue.svg)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Full-featured IntelliSense, validation, and snippets for [Caddy](https://caddyserver.com/) web server configurations, including the [caddy-security](https://authp.github.io/) authentication plugin.
 
-![Feature Overview](https://raw.githubusercontent.com/asd-engineering/asd-caddy-api-client/main/vscode-extension/docs/images/feature-overview.png)
+![Feature Overview](https://raw.githubusercontent.com/viaalink/asd-caddy-api-client/main/vscode-extension/docs/images/feature-overview.png)
 
 ---
 
@@ -73,7 +73,7 @@ code --install-extension vscode-caddy-tools-0.1.5.vsix
 
 ```bash
 # Clone and install dependencies
-git clone https://github.com/asd-engineering/asd-caddy-api-client.git
+git clone https://github.com/viaalink/asd-caddy-api-client.git
 cd asd-caddy-api-client/vscode-extension
 npm install
 
@@ -137,7 +137,7 @@ For use in `.json` files:
 
 ### TypeScript/JavaScript Snippets
 
-For programmatic configuration building with the `@asd/caddy-api-client` library:
+For programmatic configuration building with the `@viaalink/caddy-api-client` library:
 
 | Prefix                        | Description                                  |
 | ----------------------------- | -------------------------------------------- |
@@ -356,10 +356,10 @@ npm run package       # Creates .vsix file
 - [Caddy Documentation](https://caddyserver.com/docs/) - Official Caddy docs
 - [Caddy JSON Config](https://caddyserver.com/docs/json/) - JSON configuration reference
 - [caddy-security Plugin](https://authp.github.io/) - Authentication plugin docs
-- [@asd/caddy-api-client](https://github.com/asd-engineering/asd-caddy-api-client) - TypeScript library for Caddy API
+- [@viaalink/caddy-api-client](https://github.com/viaalink/asd-caddy-api-client) - TypeScript library for Caddy API
 
 ---
 
 ## License
 
-MIT - [Accelerated Software Development B.V.](https://asd.host)
+MIT - [Viaalink](https://github.com/viaalink)

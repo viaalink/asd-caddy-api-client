@@ -1,9 +1,9 @@
 # Agent Instructions
 
-Rules and guidelines for AI agents working on `@accelerated-software-development/caddy-api-client` —
+Rules and guidelines for AI agents working on `@viaalink/caddy-api-client` —
 a TypeScript client for the Caddy Admin API (Zod-validated route/config builders, MITMproxy
 integration, `caddy-security`/go-authcrunch plugin support) with a companion VSCode extension that
-consumes the library's generated metadata. Maintained by [asd.host](https://asd.host).
+consumes the library's generated metadata. Maintained by [Viaalink](https://github.com/viaalink).
 
 ## Commands: Always Use `just`
 
@@ -106,7 +106,7 @@ docs. Don't hand-maintain duplicate docs in `vscode-extension/`.
 ## VSCode Extension Synergy: Single Source of Truth
 
 The extension is a **thin view**: it imports `BUILDER_METADATA`/`HANDLER_METADATA` from
-`@asd/caddy-api-client/extension-assets` rather than duplicating types, docs, or snippets.
+`@viaalink/caddy-api-client/extension-assets` rather than duplicating types, docs, or snippets.
 
 | Source               | Extracted to                        | Used for                  |
 | -------------------- | ----------------------------------- | ------------------------- |

@@ -13,7 +13,7 @@ import {
   CaddyClient,
   buildMitmproxyRoute,
   buildMitmproxyRoutePair,
-} from "@accelerated-software-development/caddy-api-client/caddy";
+} from "@viaalink/caddy-api-client/caddy";
 
 async function main() {
   console.log("MITMproxy Integration Example\n");

@@ -651,19 +651,34 @@ export function buildProjectIdHeadersHandler(projectId: string): CaddyRouteHandl
   } as CaddyRouteHandler;
 }
 
+/** One exact origin (`https://host[:port]`), the only list-free value CORS allows besides `*`. */
+const SINGLE_ORIGIN = /^https?:\/\/[^\s*/]+$/;
+
 /**
  * Build CORS/CSP headers for iframe embedding
- * @param allowedOrigin - Allowed origin (optional, defaults to "*")
+ *
+ * `allowedOrigin` is a CSP `frame-ancestors` source list: one source or
+ * several, space-separated, wildcards allowed. CORS headers are added only
+ * when it is `*` or one exact origin, because `Access-Control-Allow-Origin`
+ * takes nothing else; a list there is invalid, and a browser rejects it.
+ * @param allowedOrigin - Allowed origin or frame-ancestors source list (optional, defaults to "*")
  * @returns Headers handler
  */
 export function buildIframeHeadersHandler(allowedOrigin = "*"): CaddyRouteHandler {
+  const corsOrigin = allowedOrigin.trim();
+  const cors =
+    corsOrigin === "*" || SINGLE_ORIGIN.test(corsOrigin)
+      ? {
+          "Access-Control-Allow-Origin": [corsOrigin],
+          "Access-Control-Allow-Methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+          "Access-Control-Allow-Headers": ["Content-Type", "Authorization"],
+        }
+      : {};
   return {
     handler: "headers",
     response: {
       set: {
-        "Access-Control-Allow-Origin": [allowedOrigin],
-        "Access-Control-Allow-Methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "Access-Control-Allow-Headers": ["Content-Type", "Authorization"],
+        ...cors,
         "Content-Security-Policy": [`frame-ancestors ${allowedOrigin}`],
       },
     },

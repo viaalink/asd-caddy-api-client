@@ -16,7 +16,7 @@ import {
   HANDLER_METADATA,
   BUILDER_METADATA,
   type HandlerMetadata,
-} from "@accelerated-software-development/caddy-api-client/extension-assets";
+} from "@viaalink/caddy-api-client/extension-assets";
 import {
   ROUTE_PROPERTIES,
   MATCH_PROPERTIES,

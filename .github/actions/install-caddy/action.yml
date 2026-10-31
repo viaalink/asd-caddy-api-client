@@ -7,7 +7,7 @@ description: >
 inputs:
   version:
     description: Caddy version to install when none is on PATH
-    default: '2.11.4'
+    default: "2.11.4"
 runs:
   using: composite
   steps:

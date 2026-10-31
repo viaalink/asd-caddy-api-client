@@ -14,7 +14,7 @@
  *   buildAuthorizationHandler,
  *   buildProtectedRoute,
  *   SecurityAuthenticatorHandlerSchema,
- * } from "@accelerated-software-development/caddy-api-client/plugins/caddy-security";
+ * } from "@viaalink/caddy-api-client/plugins/caddy-security";
  *
  * // Build handlers with validation
  * const authHandler = buildAuthenticatorHandler({ portalName: "myportal" });

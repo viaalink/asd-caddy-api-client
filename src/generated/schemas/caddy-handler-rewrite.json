@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://asd-engineering.github.io/asd-caddy-api-client/schemas/caddy-handler-rewrite.json",
+  "$id": "https://viaalink.github.io/asd-caddy-api-client/schemas/caddy-handler-rewrite.json",
   "title": "Caddy Handler Rewrite",
   "description": "Caddy rewrite handler configuration",
   "$ref": "#/definitions/caddy-handler-rewrite",

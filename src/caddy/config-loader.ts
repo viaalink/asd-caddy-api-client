@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { loadConfig, loadCaddyfile, CaddyClient } from "@accelerated-software-development/caddy-api-client";
+ * import { loadConfig, loadCaddyfile, CaddyClient } from "@viaalink/caddy-api-client";
  *
  * // Load and apply a Caddyfile
  * const config = await loadCaddyfile("./Caddyfile");

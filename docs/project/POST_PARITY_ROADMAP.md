@@ -17,7 +17,7 @@ For completed features, see [CHANGELOG.md](../../CHANGELOG.md).
 **Tasks**:
 
 - [x] Finalize package.json metadata
-  - Package name: `@accelerated-software-development/caddy-api-client`
+  - Package name: `@viaalink/caddy-api-client`
   - Description, keywords, repository links
   - License verification (MIT)
 - [x] Set up npm publishing workflow
@@ -25,7 +25,7 @@ For completed features, see [CHANGELOG.md](../../CHANGELOG.md).
   - Semantic versioning strategy
   - Pre-release vs stable releases
 - [x] Publish to npm registry
-  - Announce to Accelerated Software Development B.V. team
+  - Announce to the Viaalink team
 
 ---
 

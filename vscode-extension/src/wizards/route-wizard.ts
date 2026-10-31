@@ -6,7 +6,7 @@
  */
 
 import * as vscode from "vscode";
-import { HANDLER_METADATA } from "@accelerated-software-development/caddy-api-client/extension-assets";
+import { HANDLER_METADATA } from "@viaalink/caddy-api-client/extension-assets";
 import { generateRouteCode, type RouteConfig } from "./route-config-generator";
 
 /**
