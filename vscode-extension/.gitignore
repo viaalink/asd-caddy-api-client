@@ -6,8 +6,8 @@ out/
 # mirrored from src/generated/schemas/ and src/plugins/caddy-security/templates.ts
 # respectively, never hand-edited. Committing them meant every schema/template
 # change had to touch two identical copies to stay in sync.
-schemas/
-snippets/
+/schemas/
+/snippets/
 LICENSE
 
 # Test artifacts
