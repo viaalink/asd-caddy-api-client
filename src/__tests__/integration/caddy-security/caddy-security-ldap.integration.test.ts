@@ -51,6 +51,7 @@ const skipIfNoSecurityStack = !process.env.CADDY_SECURITY_TEST;
 
 describe.skipIf(skipIfNoSecurityStack)(
   "caddy-security LDAP Integration",
+  { timeout: 30000 },
   () => {
     let client: CaddyClient;
     let serverName: string;
@@ -420,6 +421,5 @@ describe.skipIf(skipIfNoSecurityStack)(
         expect(policy).toBeDefined();
       });
     });
-  },
-  { timeout: 30000 }
+  }
 );

@@ -93,6 +93,7 @@ const skipIfNoSecurityStack = !process.env.CADDY_SECURITY_TEST;
 
 describe.skipIf(skipIfNoSecurityStack)(
   "caddy-security Authentication Flows",
+  { timeout: 120000 },
   () => {
     let client: CaddyClient;
     let cookieJar: CookieJar;
@@ -617,6 +618,5 @@ describe.skipIf(skipIfNoSecurityStack)(
         redirect: "manual",
       });
     }
-  },
-  { timeout: 120000 }
+  }
 );
