@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Activation is lighter: live-apply and the security wizard are loaded on first use, so `extension.js` is 107 KB instead of 437 KB.
+- Activation is lighter: live-apply and the security wizard are loaded on first use, so `extension.js` is about 170 KB instead of 437 KB (most of it is builder documentation for hovers and completions).
 - Logging goes to a _Caddy Tools_ log channel at debug level, instead of a "Caddy Tools Debug" channel that logged every keystroke.
 - Commands are grouped under the **Caddy** category.
 
