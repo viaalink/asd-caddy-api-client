@@ -89,7 +89,7 @@ export class CaddyHoverProvider implements vscode.HoverProvider {
 
     // JSON example
     md.appendMarkdown(`### Example\n\n`);
-    md.appendCodeBlock(
+    md.appendCodeblock(
       JSON.stringify(
         {
           handler: handler.name,
@@ -152,7 +152,7 @@ export class CaddyHoverProvider implements vscode.HoverProvider {
     // Example
     if (builder.example) {
       md.appendMarkdown(`### Example\n\n`);
-      md.appendCodeBlock(builder.example, "typescript");
+      md.appendCodeblock(builder.example, "typescript");
     }
 
     return new vscode.Hover(md, range);
