@@ -6,7 +6,8 @@
   "publisher": "asd-host",
   "author": {
     "name": "Viaalink",
-    "url": "https://github.com/viaalink"
+    "email": "info@viaalink.com",
+    "url": "https://viaalink.com"
   },
   "license": "MIT",
   "homepage": "https://github.com/viaalink/asd-caddy-api-client",
