@@ -317,6 +317,7 @@ export async function goToLineEnd(page: Page, line: number): Promise<void> {
   await input.fill(`:${line}`);
   await page.keyboard.press("Enter");
   await input.waitFor({ state: "hidden", timeout: 5000 });
+  await expect(page.locator(".editor-instance .monaco-editor.focused")).toHaveCount(1);
   await page.keyboard.press("End");
 }
 
@@ -337,13 +338,32 @@ export function suggestItem(page: Page, label: string): Locator {
  * at least one real row (not the "Loading..." / "No suggestions" message).
  */
 export async function triggerCompletion(page: Page): Promise<void> {
-  await page.keyboard.press("Control+Space");
-  await suggestWidget(page).locator(".monaco-list-row").first().waitFor({ timeout: 10000 });
+  // A Ctrl+Space that lands while focus is still returning from a quick
+  // input (e.g. Go to Line) is dropped, so retry until the widget shows.
+  await expect(async () => {
+    if (!(await suggestWidget(page).isVisible())) await page.keyboard.press("Control+Space");
+    await suggestWidget(page).locator(".monaco-list-row").first().waitFor({ timeout: 2000 });
+  }).toPass({ timeout: 15000 });
 }
 
-/** Labels of every row currently rendered in the suggest widget. */
+/**
+ * Labels of every item in the open suggest widget. The list is virtualized
+ * (only ~12 rows exist in the DOM), so this pages through it with PageDown
+ * until the selection reaches the last item (it moves the selection, nothing else).
+ */
 export async function suggestLabels(page: Page): Promise<string[]> {
-  return suggestWidget(page).locator(".monaco-list-row .label-name").allTextContents();
+  const labels = new Set<string>();
+  const rows = suggestWidget(page).locator(".monaco-list-row");
+  const focused = suggestWidget(page).locator(".monaco-list-row.focused");
+  for (let i = 0; i < 50; i++) {
+    for (const label of await rows.locator(".label-name").allTextContents()) labels.add(label);
+    const pos = await focused.getAttribute("aria-posinset").catch(() => null);
+    const size = await focused.getAttribute("aria-setsize").catch(() => null);
+    if (pos === null || pos === size) break;
+    await page.keyboard.press("PageDown");
+    await expect(focused).not.toHaveAttribute("aria-posinset", pos);
+  }
+  return [...labels];
 }
 
 /**

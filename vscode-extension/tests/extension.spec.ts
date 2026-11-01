@@ -37,11 +37,16 @@ import {
 import type { Page } from "@playwright/test";
 
 const CADDY_COMMANDS = [
-  "Caddy: Show Handler Documentation",
-  "Caddy: Insert Route Configuration",
-  "Caddy: Insert Security Configuration",
+  "Caddy: Show All Commands",
+  "Caddy: New Config File...",
   "Caddy: Route Configuration Wizard",
   "Caddy: Security Configuration Wizard",
+  "Caddy: Insert Route Configuration",
+  "Caddy: Insert Security Configuration",
+  "Caddy: Apply File to Running Caddy",
+  "Caddy: Show Running Config",
+  "Caddy: Show Handler Documentation",
+  "Caddy: Get Started",
 ];
 
 /** Create a scratch file with `content` and open it. */
@@ -146,7 +151,7 @@ test.describe("Extension Listing", () => {
       .frameLocator('iframe[src*="webview/browser/pre"]')
       .frameLocator("iframe")
       .first();
-    await expect(readmeFrame.getByText("IntelliSense & Autocompletion")).toBeVisible({
+    await expect(readmeFrame.getByText("Catching what Caddy would reject")).toBeVisible({
       timeout: 10000,
     });
   });
@@ -209,20 +214,12 @@ test.describe("Diagnostics", () => {
     });
   }
 
-  test.fixme(
-    "the extension's own validator reports caddy-source problems",
-    // Extension bug (src/providers/schema-validator.ts): SimpleSchemaValidator
-    // never resolves "$ref", and every generated schema's root is
-    // {"$ref": "#/definitions/<name>"} -- so it validates against an empty
-    // schema and the "caddy" diagnostics collection is always empty. All
-    // problems users see today come from jsonValidation. Remove .fixme once
-    // the validator resolves $ref.
-    async ({ page }) => {
-      await openFile(page, "invalid-missing-handle.caddy.json");
-      const rows = await caddyProblemRows(page);
-      await expect(rows.first()).toBeVisible({ timeout: 10000 });
-    }
-  );
+  test("Caddy lint findings are reported with source caddy", async ({ page }) => {
+    // quickfix.caddy.json dials "http://localhost:3000" (lint code dial-url).
+    await openFile(page, "quickfix.caddy.json");
+    const rows = await caddyProblemRows(page);
+    await expect(rows.filter({ hasText: /dial/i }).first()).toBeVisible({ timeout: 10000 });
+  });
 
   for (const file of ["valid.caddy.json", "valid-route.caddy.json", "valid.caddy-security.json"]) {
     test(`${file} shows no problems`, async ({ page }) => {
@@ -248,9 +245,9 @@ test.describe("Schema-Aware IntelliSense", () => {
     // Cursor between the quotes of "handler": "|"
     for (let i = 0; i < '" }]'.length; i++) await page.keyboard.press("ArrowLeft");
     await triggerCompletion(page);
-    for (const handler of ["reverse_proxy", "file_server", "static_response", "headers"]) {
-      await expect(suggestItem(page, handler)).toHaveCount(1);
-    }
+    const labels = await suggestLabels(page);
+    for (const handler of ["reverse_proxy", "file_server", "static_response", "headers"])
+      expect(labels).toContain(handler);
   });
 
   test("completions show HTTP methods in match config", async ({ page, scratchFile }) => {
@@ -263,18 +260,16 @@ test.describe("Schema-Aware IntelliSense", () => {
     await goToLineEnd(page, 2);
     for (let i = 0; i < '"] }]'.length; i++) await page.keyboard.press("ArrowLeft");
     await triggerCompletion(page);
-    for (const method of ["GET", "POST", "DELETE"]) {
-      await expect(suggestItem(page, method)).toHaveCount(1);
-    }
+    const labels = await suggestLabels(page);
+    for (const method of ["GET", "POST", "DELETE"]) expect(labels).toContain(method);
   });
 
   test("completions show route properties at root level", async ({ page, scratchFile }) => {
     await openScratch(page, scratchFile, "c-root.caddy.json", "{\n  \n}\n");
     await goToLineEnd(page, 2);
     await triggerCompletion(page);
-    for (const prop of ["@id", "match", "handle", "terminal"]) {
-      await expect(suggestItem(page, prop)).toHaveCount(1);
-    }
+    const labels = await suggestLabels(page);
+    for (const prop of ["@id", "match", "handle", "terminal"]) expect(labels).toContain(prop);
   });
 
   test("offers match properties when actually inside a match object", async ({
@@ -284,9 +279,8 @@ test.describe("Schema-Aware IntelliSense", () => {
     await openScratch(page, scratchFile, "c-match.caddy.json", '{\n  "match": [{\n    \n  }]\n}\n');
     await goToLineEnd(page, 3);
     await triggerCompletion(page);
-    for (const prop of ["host", "path", "method"]) {
-      await expect(suggestItem(page, prop)).toHaveCount(1);
-    }
+    const labels = await suggestLabels(page);
+    for (const prop of ["host", "path", "method"]) expect(labels).toContain(prop);
   });
 
   test("does not offer match properties inside a handler's nested object", async ({
@@ -303,13 +297,12 @@ test.describe("Schema-Aware IntelliSense", () => {
       '{\n  "match": [{ "host": ["example.com"] }],\n  "handle": [{\n    "handler": "headers",\n    "response": {\n      \n    }\n  }]\n}\n'
     );
     await goToLineEnd(page, 6);
-    await page.keyboard.press("Control+Space");
-    // Either nothing is offered or what is offered isn't a matcher property;
-    // wait for the widget to settle on one of its states before asserting.
-    const widget = page.locator(".editor-widget.suggest-widget");
-    await expect(widget).toHaveClass(/visible|message/, { timeout: 5000 });
-    await expect(suggestItem(page, "host")).toHaveCount(0);
-    await expect(suggestItem(page, "path")).toHaveCount(0);
+    // The headers schema still offers its own keys here (set, add, ...).
+    await triggerCompletion(page);
+    const labels = await suggestLabels(page);
+    expect(labels).toContain("set");
+    expect(labels).not.toContain("host");
+    expect(labels).not.toContain("path");
   });
 
   test("offers handler-specific fields, not match properties, inside a handle object", async ({
@@ -324,8 +317,9 @@ test.describe("Schema-Aware IntelliSense", () => {
     );
     await goToLineEnd(page, 5);
     await triggerCompletion(page);
-    await expect(suggestItem(page, "upstreams")).toHaveCount(1);
-    await expect(suggestItem(page, "host")).toHaveCount(0);
+    const labels = await suggestLabels(page);
+    expect(labels).toContain("upstreams");
+    expect(labels).not.toContain("host");
   });
 });
 
@@ -344,30 +338,21 @@ test.describe("Snippets", () => {
     }
   });
 
-  test.fixme(
-    "caddy-route snippet inserts a valid route",
-    // Snippet bug (snippets/caddy-json.json, generated by
-    // scripts/generate-snippets.js): placeholder ${4:"upstreams": [{ "dial":
-    // "${5:localhost:3000}" }]} contains an unescaped "}" which closes
-    // placeholder 4 early, so the literal "]}" lands after it and the buffer
-    // becomes `"upstreams": [{ "dial": "localhost:3000" ]}` -- invalid JSON.
-    // Needs "\\}" inside the placeholder. Remove .fixme once fixed.
-    async ({ page, scratchFile, workspaceDir }) => {
-      const name = "s-route.caddy.json";
-      await openScratch(page, scratchFile, name, "{}");
-      // Positive control: the route schema is active for this file name.
-      await expect((await problemRows(page)).first()).toBeVisible({ timeout: 10000 });
-      await page.locator(".editor-instance .view-lines").click();
-      await page.keyboard.press("Control+a");
-      await page.keyboard.press("Delete");
-      await insertSnippetByPrefix(page, "caddy-route");
-      const { value } = await saveAndParse(page, workspaceDir, name);
-      expect(value).toMatchObject({
-        handle: [{ handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] }],
-      });
-      await expectNoProblems(page);
-    }
-  );
+  test("caddy-route snippet inserts a valid route", async ({ page, scratchFile, workspaceDir }) => {
+    const name = "s-route.caddy.json";
+    await openScratch(page, scratchFile, name, "{}");
+    // Positive control: the route schema is active for this file name.
+    await expect((await problemRows(page)).first()).toBeVisible({ timeout: 10000 });
+    await page.locator(".editor-instance .view-lines").click();
+    await page.keyboard.press("Control+a");
+    await page.keyboard.press("Delete");
+    await insertSnippetByPrefix(page, "caddy-route");
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toMatchObject({
+      handle: [{ handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] }],
+    });
+    await expectNoProblems(page);
+  });
 
   test("caddy-handler-proxy snippet inserts a valid handler into a route", async ({
     page,
@@ -385,37 +370,23 @@ test.describe("Snippets", () => {
     await expectNoProblems(page);
   });
 
-  test("caddy-sec-portal snippet inserts a portal as valid JSON", async ({
+  test("caddy-sec-portal snippet inserts a valid portal", async ({
     page,
     scratchFile,
     workspaceDir,
   }) => {
-    const name = "s-portal-json.caddy-security-portal.json";
-    await openScratch(page, scratchFile, name);
+    const name = "s-portal.caddy-security-portal.json";
+    await openScratch(page, scratchFile, name, "{}");
+    // Positive control: the portal schema is active (requires "name").
+    await expect((await problemRows(page)).first()).toBeVisible({ timeout: 10000 });
+    await page.locator(".editor-instance .view-lines").click();
+    await page.keyboard.press("Control+a");
+    await page.keyboard.press("Delete");
     await insertSnippetByPrefix(page, "caddy-sec-portal");
     const { value } = await saveAndParse(page, workspaceDir, name);
     expect(value).toMatchObject({ name: "myportal", identity_stores: ["local"] });
+    await expectNoProblems(page);
   });
-
-  test.fixme(
-    "caddy-sec-portal snippet validates against the portal schema",
-    // Snippet bug (snippets/caddy-json.json via scripts/generate-snippets.js):
-    // it emits "cookie": {...}, but the contributed caddy-security-portal
-    // schema (additionalProperties: false) only knows "cookie_config", so
-    // the inserted portal shows "Property cookie is not allowed".
-    async ({ page, scratchFile, workspaceDir }) => {
-      const name = "s-portal.caddy-security-portal.json";
-      await openScratch(page, scratchFile, name, "{}");
-      // Positive control: the portal schema is active (requires "name").
-      await expect((await problemRows(page)).first()).toBeVisible({ timeout: 10000 });
-      await page.locator(".editor-instance .view-lines").click();
-      await page.keyboard.press("Control+a");
-      await page.keyboard.press("Delete");
-      await insertSnippetByPrefix(page, "caddy-sec-portal");
-      await saveAndParse(page, workspaceDir, name);
-      await expectNoProblems(page);
-    }
-  );
 });
 
 // ============================================================================
@@ -424,6 +395,8 @@ test.describe("Snippets", () => {
 
 test.describe("Commands", () => {
   test("command palette lists every Caddy command", async ({ page }) => {
+    // Insert/Apply are only listed while a JSON editor is active.
+    await openFile(page, "valid.caddy.json");
     await openCommandPalette(page);
     await page.locator(".quick-input-widget .quick-input-box input").fill(">Caddy:");
     for (const title of CADDY_COMMANDS) {
@@ -449,7 +422,8 @@ test.describe("Commands", () => {
       "Reverse Proxy Route",
       "Static File Server",
       "Redirect Route",
-      "Protected Route (caddy-security)",
+      "Path Prefix to Backend",
+      "Load-Balanced Route",
     ]) {
       await expect(
         page.locator(`.quick-input-list [role="option"][aria-label^="${label}"]`)
@@ -469,7 +443,7 @@ test.describe("Commands", () => {
     await page.keyboard.press("Escape"); // leave snippet mode with defaults
     const { value } = await saveAndParse(page, workspaceDir, name);
     expect(value).toMatchObject({
-      match: [{ host: ["example.com"] }],
+      match: [{ host: ["app.example.com"] }],
       handle: [{ handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] }],
     });
     await expectNoProblems(page);
@@ -483,7 +457,7 @@ test.describe("Commands", () => {
       "LDAP Identity Store",
       "Authentication Portal",
       "Authorization Policy",
-      "Complete Security App",
+      "Complete Security Config",
     ]) {
       await expect(
         page.locator(`.quick-input-list [role="option"][aria-label^="${label}"]`)
@@ -502,25 +476,26 @@ test.describe("Commands", () => {
     await pickQuickOption(page, "Local Identity Store");
     await page.keyboard.press("Escape"); // leave snippet mode with defaults
     const { value } = await saveAndParse(page, workspaceDir, name);
-    expect(value).toMatchObject({ realm: "local", path: "/etc/caddy/users.json" });
+    expect(value).toMatchObject({
+      kind: "local",
+      params: { realm: "local", path: "/etc/caddy/users.json" },
+    });
   });
 
-  test.fixme(
-    "Insert Security Config's Authentication Portal validates against the portal schema",
-    // Extension bug (src/providers/commands.ts): the inserted portal uses
-    // "cookie": {...}; the contributed caddy-security-portal schema only
-    // allows "cookie_config" -> "Property cookie is not allowed".
-    async ({ page, scratchFile, workspaceDir }) => {
-      const name = "cmd-portal.caddy-security-portal.json";
-      await openScratch(page, scratchFile, name);
-      await runCommand(page, "Caddy: Insert Security Configuration");
-      await pickQuickOption(page, "Authentication Portal");
-      await page.keyboard.press("Escape");
-      const { value } = await saveAndParse(page, workspaceDir, name);
-      expect(value).toMatchObject({ name: "myportal", identity_stores: ["local"] });
-      await expectNoProblems(page);
-    }
-  );
+  test("Insert Security Config inserts a valid authentication portal", async ({
+    page,
+    scratchFile,
+    workspaceDir,
+  }) => {
+    const name = "cmd-portal.caddy-security-portal.json";
+    await openScratch(page, scratchFile, name);
+    await runCommand(page, "Caddy: Insert Security Configuration");
+    await pickQuickOption(page, "Authentication Portal");
+    await page.keyboard.press("Escape");
+    const { value } = await saveAndParse(page, workspaceDir, name);
+    expect(value).toMatchObject({ name: "myportal", identity_stores: ["local"] });
+    await expectNoProblems(page);
+  });
 });
 
 // ============================================================================
@@ -567,7 +542,7 @@ test.describe("Wizards", () => {
     scratchFile,
     workspaceDir,
   }) => {
-    const name = "wizard-security.json";
+    const name = "wizard.caddy-security.json";
     await openScratch(page, scratchFile, name);
     await runCommand(page, "Caddy: Security Configuration Wizard");
 
@@ -583,13 +558,10 @@ test.describe("Wizards", () => {
     ).toBeVisible({ timeout: 10000 });
     const { value } = await saveAndParse(page, workspaceDir, name);
     expect(value).toMatchObject({
-      config: {
-        identity_stores: [{ realm: "local", path: "/etc/caddy/users.json" }],
-        authentication_portals: [
-          { name: "myportal", identity_stores: ["local"], cookie: { domain: ".example.com" } },
-        ],
-        authorization_policies: [{ name: "myportal-policy" }],
-      },
+      identity_stores: [{ kind: "local", params: { path: "/etc/caddy/users.json" } }],
+      authentication_portals: [{ name: "myportal", identity_stores: ["local"] }],
+      authorization_policies: [{ name: "myportal-policy" }],
     });
+    await expectNoProblems(page);
   });
 });
