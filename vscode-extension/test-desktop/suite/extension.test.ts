@@ -183,10 +183,14 @@ describe("completions", () => {
   it("offers matcher fields inside a match object", async () => {
     const doc = await openScratch("match.caddy.json", '{\n  "match": [{\n    \n  }]\n}\n');
     const items = await complete(doc, new vscode.Position(2, 4));
-    const matchers = items.filter((i) => i.detail === "Matcher property").map(completionLabel);
+    const labels = items.map(completionLabel);
     for (const field of ["host", "path", "method", "header", "query"]) {
-      assert.ok(matchers.includes(field), `missing matcher ${field} in ${matchers.join(", ")}`);
+      assert.ok(labels.includes(field), `missing matcher ${field} in ${labels.join(", ")}`);
     }
+    // In a schema-backed file VS Code's JSON service lists property names; the
+    // extension must not offer them a second time (0.3.0 showed every field twice).
+    const dupes = labels.filter((l, i) => labels.indexOf(l) !== i);
+    assert.deepStrictEqual(dupes, [], `offered twice: ${dupes.join(", ")}`);
   });
 
   it("does not offer matcher fields inside a handler's nested object", async () => {

@@ -12,6 +12,7 @@
  */
 
 import * as vscode from "vscode";
+import { caddyFileKind } from "./file-kinds";
 import {
   HANDLER_METADATA,
   BUILDER_METADATA,
@@ -65,6 +66,21 @@ export class CaddyCompletionProvider implements vscode.CompletionItemProvider {
     // Detect the completion context
     const context = this.detectContext(document, position);
     this.log(`Detected context: ${context.type}`);
+
+    // In files covered by a contributed jsonValidation schema, VS Code's JSON
+    // service already lists property names -- precisely per handler, and more
+    // of them. Offering ours too showed every field twice. Values (handler
+    // names with docs, methods, enums) stay ours.
+    const schemaBacked = caddyFileKind(document.fileName) !== undefined && !document.isUntitled;
+    const propertyContexts = new Set([
+      "route-property",
+      "match-property",
+      "handle-property",
+      "handler-property",
+    ]);
+    if (schemaBacked && propertyContexts.has(context.type)) {
+      return undefined;
+    }
 
     switch (context.type) {
       case "handler-value":

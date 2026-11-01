@@ -67,4 +67,12 @@ test.describe("0.3.0 features", () => {
     await expect(options.filter({ hasText: "<name>.caddy.json" })).toBeVisible();
     await expect(options.filter({ hasText: "caddy-security config" })).toBeVisible();
   });
+
+  test("Caddy: Get Started opens this extension's walkthrough", async ({ page }) => {
+    await runCommand(page, "Caddy: Get Started");
+    await expect(page.locator(".gettingStartedContainer")).toContainText(
+      "Get Started with Caddy Tools",
+      { timeout: 15000 }
+    );
+  });
 });

@@ -216,7 +216,7 @@
     },
     "walkthroughs": [
       {
-        "id": "caddy.gettingStarted",
+        "id": "gettingStarted",
         "title": "Get Started with Caddy Tools",
         "description": "Write, check and apply Caddy JSON configs without leaving the editor.",
         "steps": [

@@ -100,13 +100,15 @@ export function activate(context: vscode.ExtensionContext): void {
       securityWizard().runSecurityWizard()
     ),
     vscode.commands.registerCommand("caddy.newConfigFile", newConfigFile),
-    vscode.commands.registerCommand("caddy.openWalkthrough", () =>
-      vscode.commands.executeCommand(
-        "workbench.action.openWalkthrough",
-        `${context.extension.id}#caddy.gettingStarted`,
-        false
-      )
-    ),
+    vscode.commands.registerCommand("caddy.openWalkthrough", async () => {
+      const category = `${context.extension.id}#gettingStarted`;
+      await vscode.commands.executeCommand("workbench.action.openWalkthrough", category, false);
+      // code-server's welcome page can render before extension walkthroughs are
+      // registered and then falls back to its own default walkthrough. Selecting
+      // ours again once the page exists lands on it (desktop VS Code: a no-op).
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      await vscode.commands.executeCommand("workbench.action.openWalkthrough", category, false);
+    }),
     vscode.commands.registerCommand("caddy.showMenu", async () => {
       const picked = await vscode.window.showQuickPick(MENU, {
         title: "Caddy",

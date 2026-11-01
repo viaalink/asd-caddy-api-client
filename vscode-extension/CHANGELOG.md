@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Protected routes (`authentication` + caddy-security `authorizer`) no longer show schema errors in `*.caddy.json` / `caddy-server.json`.
 - `caddy-server.json` / `caddy-full.json` are recognised everywhere, not only by VS Code's schema contribution. Hover and CodeLens no longer trigger on any file whose name merely contains "security".
 - The `caddy-route` snippet no longer offers a handler choice that left `upstreams` on a `file_server`.
+- Property names are no longer offered twice in schema-backed files: VS Code's schema-driven list (precise per handler) is the only one there; the extension still supplies handler names with docs, methods and enum values.
 
 ### Changed
 
