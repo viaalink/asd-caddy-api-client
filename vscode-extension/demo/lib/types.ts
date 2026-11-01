@@ -51,6 +51,18 @@ export interface Step {
   hold?: number;
 
   /**
+   * Save a clean still (no captions) of how the screen looks at the END of
+   * this step, as stills/<name>.png — for the blog, README and Marketplace.
+   */
+  still?: string;
+
+  /**
+   * Steps sharing a clip name (contiguous) are also cut into <name>.gif:
+   * 960px wide, 12 fps, no captions — for the README.
+   */
+  clip?: string;
+
+  /**
    * Variants this step appears in. Left out means all of them; `[]` parks a
    * step (kept in the storyboard, filmed by nobody) — say why in a comment.
    */
@@ -87,6 +99,8 @@ export interface Storyboard {
 /** One step as it ended up in the recording, in milliseconds from the first step. */
 export interface TimelineEntry {
   scene: string;
+  still?: string;
+  clip?: string;
   caption: string;
   say: string;
   startMs: number;

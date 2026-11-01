@@ -130,3 +130,37 @@ export async function tabToPlaceholder(page: Page, length: number, max = 3): Pro
   }
   throw new Error(`no snippet placeholder of length ${length} after ${max} Tabs`);
 }
+
+/** A quick pick row by its exact label (ignoring codicons), not by any text in it. */
+export const quickPickItem = (page: Page, label: string): Locator =>
+  quickInput(page)
+    .locator(".monaco-list-row")
+    .filter({
+      has: page.locator(".label-name", { hasText: new RegExp(`^\\s*${escape(label)}\\s*$`) }),
+    })
+    .first();
+
+/**
+ * Walk the suggest list with the arrow keys until the focused row (which is
+ * the one that shows its detail text) contains `detail`, then accept it with
+ * Enter. For lists where two providers offer the same label — e.g. the
+ * extension's builder completion and TypeScript's own auto-import entry.
+ */
+export async function acceptSuggestionWithDetail(
+  page: Page,
+  detail: string,
+  max = 8
+): Promise<void> {
+  const focused = suggestWidget(page).locator(".monaco-list-row.focused");
+  for (let i = 0; i < max; i++) {
+    await focused.waitFor({ timeout: 5000 });
+    if ((await focused.innerText()).includes(detail)) {
+      await page.waitForTimeout(500);
+      await press(page, "Enter");
+      return;
+    }
+    await key(page, "ArrowDown");
+    await page.waitForTimeout(180);
+  }
+  throw new Error(`no suggestion with "${detail}" in the first ${max} rows`);
+}

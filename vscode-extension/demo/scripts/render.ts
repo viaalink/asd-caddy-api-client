@@ -246,6 +246,69 @@ function stepSheet(film: string, tl: Timeline, offsetMs: number, out: string, wo
   ]);
 }
 
+/**
+ * Clean stills and GIF clips, cut from the RAW recording (no captions, no
+ * cards) — the cursor and keystroke badge stay, they are part of the story.
+ * Recording time = leaderMs + timeline time.
+ */
+function extras(tl: Timeline, dir: string): string[] {
+  const made: string[] = [];
+  const raw = tl.video;
+  const stillDir = join(dir, "stills");
+  rmSync(stillDir, { recursive: true, force: true });
+  for (const entry of tl.entries) {
+    if (!entry.still) continue;
+    mkdirSync(stillDir, { recursive: true });
+    const out = join(stillDir, `${entry.still}.png`);
+    // Just before the step ends: its result, before the next act begins.
+    const at = (tl.leaderMs + entry.endMs - 250) / 1000;
+    run([
+      "ffmpeg",
+      "-y",
+      "-loglevel",
+      "error",
+      "-ss",
+      String(at),
+      "-i",
+      raw,
+      "-frames:v",
+      "1",
+      out,
+    ]);
+    made.push(resolve(out));
+  }
+  const clips = new Map<string, { from: number; to: number }>();
+  for (const entry of tl.entries) {
+    if (!entry.clip) continue;
+    const span = clips.get(entry.clip);
+    clips.set(entry.clip, {
+      from: Math.min(span?.from ?? entry.startMs, entry.startMs),
+      to: Math.max(span?.to ?? entry.endMs, entry.endMs),
+    });
+  }
+  for (const [name, span] of clips) {
+    const out = join(dir, `${name}.gif`);
+    run([
+      "ffmpeg",
+      "-y",
+      "-loglevel",
+      "error",
+      "-ss",
+      String((tl.leaderMs + span.from) / 1000),
+      "-t",
+      String((span.to - span.from) / 1000),
+      "-i",
+      raw,
+      "-filter_complex",
+      "fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];" +
+        "[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle",
+      out,
+    ]);
+    made.push(resolve(out));
+  }
+  return made;
+}
+
 function main(): void {
   const [name, variant = "promo"] = process.argv.slice(2);
   if (!name) throw new Error("usage: render.ts <storyboard> [promo|qa]");
@@ -418,6 +481,7 @@ function main(): void {
   ]);
 
   stepSheet(film, tl, offsetMs, join(dir, "steps.png"), work);
+  for (const f of extras(tl, dir)) console.error(`extra: ${f}`);
   rmSync(work, { recursive: true, force: true });
   console.log(resolve(film));
 }

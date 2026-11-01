@@ -84,7 +84,15 @@ export async function play(
     const left = Math.max(window - (since() - startMs), SETTLE_MS * pace);
     if (left > 0) await page.waitForTimeout(left);
 
-    entries.push({ scene, caption: step.caption, say: line, startMs, endMs: since() });
+    entries.push({
+      scene,
+      caption: step.caption,
+      say: line,
+      startMs,
+      endMs: since(),
+      ...(step.still ? { still: step.still } : {}),
+      ...(step.clip ? { clip: step.clip } : {}),
+    });
     result.totalMs = since();
   }
 

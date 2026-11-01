@@ -45,7 +45,7 @@ function overlayInit(cfg: OverlayConfig): void {
         animation: __demo_ripple 520ms cubic-bezier(.2,.7,.3,1) forwards; }
       @keyframes __demo_ripple { from { transform: scale(.4); opacity: 1 }
         to { transform: scale(4); opacity: 0 } }
-      #__demo_keys { position: absolute; right: 28px; bottom: 44px; display: flex; gap: 6px;
+      #__demo_keys { position: absolute; left: 64px; bottom: 44px; display: flex; gap: 6px;
         align-items: center; padding: 8px 12px; border-radius: 10px; background: ${cfg.surface}EE;
         border: 1px solid ${cfg.accent}; box-shadow: 0 6px 24px rgba(0,0,0,.45);
         font: 600 15px/1 "Noto Sans", "DejaVu Sans", system-ui, sans-serif; color: ${cfg.text};

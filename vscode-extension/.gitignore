@@ -25,3 +25,4 @@ node_modules/
 # the throwaway code-server profile and the port file. Never committed.
 local/
 demo/.codeserver-port
+demo/.caddy-ports.json

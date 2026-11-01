@@ -21,12 +21,20 @@ import * as path from "path";
 
 declare global {
   var __DEMO_CODE_SERVER__: ChildProcess | undefined;
+  var __DEMO_CADDY__: ChildProcess | undefined;
 }
 
 const EXT_ROOT = path.resolve(__dirname, "..");
 const REPO_ROOT = path.resolve(EXT_ROOT, "..");
 export const DEMO_ROOT = path.join(EXT_ROOT, "local", "video");
 export const PORT_FILE = path.join(__dirname, ".codeserver-port");
+
+/** Where the live Caddy's ports are written for the storyboard (see lib/live.ts). */
+export const CADDY_FILE = path.join(__dirname, ".caddy-ports.json");
+
+/** The real Caddy the "apply to running Caddy" scene talks to. */
+const CADDY_BIN =
+  process.env["CADDY_BIN"] ?? path.join(process.env["HOME"] ?? "", ".local/bin/caddy");
 
 /** The folder name shows in the explorer title, so it is chosen for the camera. */
 export const WORKSPACE_NAME = "my-gateway";
@@ -84,6 +92,9 @@ const SETTINGS: Record<string, unknown> = {
   "typescript.surveys.enabled": false,
   "npm.fetchOnlinePackageInfo": false,
   "terminal.integrated.enablePersistentSessions": false,
+  // DOM renderer: crisp in the screencast, and its text is assertable.
+  "terminal.integrated.gpuAcceleration": "off",
+  "terminal.integrated.fontSize": 15,
   // JSON quick-suggests inside strings, so typing a value ("api.example.com")
   // pops a list of unrelated snippets over the shot. Explicit Ctrl+Space and
   // the '"' trigger character still work.
@@ -105,12 +116,64 @@ async function findFreePort(): Promise<number> {
   });
 }
 
-async function waitForServer(url: string, timeout = 30000): Promise<void> {
+/** A port that is free right now, preferring a memorable one for the camera. */
+async function portPreferring(preferred: number): Promise<number> {
+  const free = await new Promise<boolean>((resolve) => {
+    const server = net.createServer();
+    server.once("error", () => resolve(false));
+    server.listen(preferred, "127.0.0.1", () => server.close(() => resolve(true)));
+  });
+  return free ? preferred : findFreePort();
+}
+
+/**
+ * Start a throwaway Caddy: admin API on one port, one empty HTTP server on
+ * another. The live-apply scene adds a route to it and curls it. Skipped (and
+ * the scene with it) when there is no caddy binary.
+ */
+async function startCaddy(): Promise<{ admin: number; http: number } | null> {
+  fs.rmSync(CADDY_FILE, { force: true });
+  if (!fs.existsSync(CADDY_BIN)) {
+    console.warn(`⚠️  no caddy at ${CADDY_BIN} — the live-apply scene will fail; set CADDY_BIN`);
+    return null;
+  }
+  const admin = await portPreferring(2019);
+  const http = await portPreferring(8080);
+  const config = {
+    admin: { listen: `localhost:${admin}` },
+    apps: {
+      http: {
+        servers: {
+          srv0: { listen: [`:${http}`], automatic_https: { disable: true }, routes: [] },
+        },
+      },
+    },
+  };
+  const configFile = path.join(DEMO_ROOT, "caddy.json");
+  fs.writeFileSync(configFile, JSON.stringify(config));
+  const caddy = spawn(CADDY_BIN, ["run", "--config", configFile], {
+    detached: true,
+    stdio: "ignore",
+    env: {
+      ...process.env,
+      XDG_DATA_HOME: path.join(DEMO_ROOT, "caddy-data"),
+      XDG_CONFIG_HOME: path.join(DEMO_ROOT, "caddy-config"),
+    },
+  });
+  globalThis.__DEMO_CADDY__ = caddy;
+  await waitForServer(`http://localhost:${admin}/config/`, 15000, `http://localhost:${admin}`);
+  fs.writeFileSync(CADDY_FILE, JSON.stringify({ admin, http }));
+  console.log(`✅ live Caddy: admin :${admin}, http :${http}`);
+  return { admin, http };
+}
+
+async function waitForServer(url: string, timeout = 30000, origin?: string): Promise<void> {
   const start = Date.now();
   let delay = 100;
   while (Date.now() - start < timeout) {
     try {
-      const response = await fetch(url);
+      // Caddy ≥ 2.11 rejects admin requests without a matching Origin (CVE-2026-27589).
+      const response = await fetch(url, origin ? { headers: { Origin: origin } } : undefined);
       if (response.ok) return;
     } catch {
       // not up yet
@@ -118,7 +181,7 @@ async function waitForServer(url: string, timeout = 30000): Promise<void> {
     await new Promise((r) => setTimeout(r, delay));
     delay = Math.min(delay * 2, 2000);
   }
-  throw new Error(`code-server at ${url} did not start within ${timeout}ms`);
+  throw new Error(`${url} did not come up within ${timeout}ms`);
 }
 
 /** Newest `vscode-caddy-tools-x.y.z.vsix` by numeric semver (see tests/global-setup.ts). */
@@ -167,10 +230,16 @@ export default async function globalSetup(): Promise<void> {
   fs.rmSync(userDataDir, { recursive: true, force: true });
   fs.rmSync(extensionsDir, { recursive: true, force: true });
   fs.mkdirSync(path.join(userDataDir, "User"), { recursive: true });
+  fs.mkdirSync(DEMO_ROOT, { recursive: true });
+  const caddy = await startCaddy();
   fs.mkdirSync(extensionsDir, { recursive: true });
   fs.writeFileSync(
     path.join(userDataDir, "User", "settings.json"),
-    JSON.stringify(SETTINGS, null, 2)
+    JSON.stringify(
+      caddy ? { ...SETTINGS, "caddy.adminUrl": `http://localhost:${caddy.admin}` } : SETTINGS,
+      null,
+      2
+    )
   );
   seedWorkspace(workspace);
 
