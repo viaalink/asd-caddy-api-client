@@ -1,0 +1,21 @@
+{
+  "config": {
+    "authentication_portals": [
+      {
+        "name": "myportal",
+        "identity_stores": ["localdb"],
+        "cookie_config": {
+          "domains": {
+            "example.com": { "domain": ".example.com", "lifetime": 86400 }
+          }
+        }
+      }
+    ],
+    "authorization_policies": [
+      {
+        "name": "admins",
+        "access_lists": [{ "action": "allow", "claim": "roles", "values": ["admin"] }]
+      }
+    ]
+  }
+}

@@ -23,3 +23,9 @@ node_modules/
 
 # IDE
 .vscode/
+
+# Demo film pipeline (just vscode-demo-video): recordings, renders, piper voices,
+# the throwaway code-server profile and the port file. Never committed.
+local/
+demo/.codeserver-port
+demo/.caddy-ports.json

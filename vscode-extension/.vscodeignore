@@ -15,3 +15,5 @@ package-lock.json
 *.vsix
 **/*.ts
 !dist/**
+demo/**
+local/**
