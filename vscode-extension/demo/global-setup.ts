@@ -95,6 +95,16 @@ const SETTINGS: Record<string, unknown> = {
   // DOM renderer: crisp in the screencast, and its text is assertable.
   "terminal.integrated.gpuAcceleration": "off",
   "terminal.integrated.fontSize": 15,
+  // A clean prompt: no user name, host name or home path in a public video.
+  "terminal.integrated.profiles.linux": {
+    demo: {
+      path: "bash",
+      args: ["--norc", "--noprofile"],
+      env: { PS1: "\\[\\e[36m\\]my-gateway\\[\\e[0m\\] $ " },
+    },
+  },
+  "terminal.integrated.defaultProfile.linux": "demo",
+  "terminal.integrated.showExitAlert": false,
   // JSON quick-suggests inside strings, so typing a value ("api.example.com")
   // pops a list of unrelated snippets over the shot. Explicit Ctrl+Space and
   // the '"' trigger character still work.
