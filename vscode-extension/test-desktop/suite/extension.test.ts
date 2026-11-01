@@ -193,6 +193,31 @@ describe("completions", () => {
     assert.deepStrictEqual(dupes, [], `offered twice: ${dupes.join(", ")}`);
   });
 
+  it("schema completions insert useful skeletons (defaultSnippets)", async () => {
+    const doc = await openScratch(
+      "skeleton.caddy.json",
+      '{\n  "match": [{ "" }],\n  "handle": [{ "handler": "reverse_proxy", "" }]\n}\n'
+    );
+    const insertText = (i: vscode.CompletionItem): string =>
+      typeof i.insertText === "string" ? i.insertText : (i.insertText?.value ?? "");
+    const upstreams = (await complete(doc, positionAfter(doc, '"reverse_proxy", "'))).find(
+      (i) => completionLabel(i) === "upstreams"
+    );
+    assert.ok(upstreams, "no upstreams completion");
+    // Ranked first via suggestSortText, not alphabetically behind circuit_breaker.
+    const rp = await complete(doc, positionAfter(doc, '"reverse_proxy", "'));
+    const first = [...rp].sort((a, b) =>
+      (a.sortText ?? completionLabel(a)).localeCompare(b.sortText ?? completionLabel(b))
+    )[0];
+    assert.strictEqual(completionLabel(first), "upstreams");
+    assert.match(insertText(upstreams), /"dial": "\$\{1:localhost:3000\}"/);
+    const host = (await complete(doc, positionAfter(doc, '[{ "'))).find(
+      (i) => completionLabel(i) === "host"
+    );
+    assert.ok(host, "no host completion");
+    assert.match(insertText(host), /\[\s*"\$\{1:example\.com\}"\s*\]/);
+  });
+
   it("does not offer matcher fields inside a handler's nested object", async () => {
     const doc = await openScratch(
       "nested.caddy.json",

@@ -87,19 +87,19 @@ const intellisense: Scene = {
         await press(page, "Control+Space");
       },
       check: async (page) => {
-        await expect(suggestRow(page, "host", "Matcher property")).toBeVisible({ timeout: 10000 });
+        await expect(suggestRow(page, "host")).toBeVisible({ timeout: 10000 });
       },
       hold: 2000,
     },
     {
       caption: "Pick host, type the domain.",
       act: async (page) => {
-        await pickSuggestion(page, "host", "Matcher property");
+        await pickSuggestion(page, "host");
         await type(page, "api.example.com");
         await key(page, "Escape");
       },
       check: async (page) => {
-        await expect(editorLine(page, '"host": ["api.example.com"]')).toBeVisible();
+        await expect(editorLine(page, '"api.example.com"')).toBeVisible();
       },
       hold: 1200,
     },
@@ -108,7 +108,8 @@ const intellisense: Scene = {
       say: "Start a handler, and every Caddy handler is suggested.",
       act: async (page) => {
         await park(page);
-        await caretToLineEnd(page, 9);
+        // Line 11 is the handle object: the host completion inserted a 3-line array.
+        await caretToLineEnd(page, 11);
         await key(page, "Enter");
         await type(page, '"handler": "rev');
       },
@@ -128,11 +129,11 @@ const intellisense: Scene = {
         await type(page, ",");
         await key(page, "Enter");
         await press(page, "Control+Space");
-        await expect(suggestRow(page, "upstreams", "Reverse Proxy field")).toBeVisible({
+        await expect(suggestRow(page, "upstreams")).toBeVisible({
           timeout: 10000,
         });
         await beat(page, 900);
-        await pickSuggestion(page, "upstreams", "Reverse Proxy field");
+        await pickSuggestion(page, "upstreams");
         // Out of habit, a URL where Caddy wants host:port — the next scene catches it.
         await type(page, "http://localhost:3000");
         await key(page, "Escape");
@@ -458,9 +459,7 @@ const security: Scene = {
       hold: 2400,
     },
     {
-      // PARKED: the Security Configuration Wizard's Quick Setup wrote JSON in a
-      // shape the caddy-security schema rejects (being fixed in a sibling
-      // worktree). Drop `only: []` once that has landed and this check passes.
+      // QA only: the promo already shows caddy-security via the snippet.
       caption: "Or answer three questions in the Security Configuration Wizard.",
       act: async (page) => {
         await openFile(page, "caddy-security.json");
@@ -471,7 +470,7 @@ const security: Scene = {
       check: async (page) => {
         await expect(quickInput(page)).toContainText("Portal Name", { timeout: 5000 });
       },
-      only: [],
+      only: ["qa"],
     },
   ],
 };
@@ -540,12 +539,7 @@ const getStarted: Scene = {
       say: "and a get started walkthrough is there whenever you need it.",
       act: async (page) => {
         await key(page, "Escape");
-        // Via VS Code's own walkthrough picker: in code-server 4.102 the
-        // extension's "Caddy: Get Started" command (and its status-bar menu
-        // entry) opens VS Code's default walkthrough instead of this one.
-        // Switch back to the menu entry once that is fixed.
-        await runCommand(page, "Welcome: Open Walkthrough");
-        await click(page, quickInputRow(page, "Get Started with Caddy Tools"));
+        await runCommand(page, "Caddy: Get Started");
         await park(page, { x: 1200, y: 690 });
       },
       check: async (page) => {
