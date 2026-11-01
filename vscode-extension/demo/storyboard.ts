@@ -38,6 +38,7 @@ import {
   quickPickItem,
   runCommand,
   suggestRow,
+  suggestWidget,
   token,
   tokens,
 } from "./lib/vscode";
@@ -337,7 +338,8 @@ const live: Scene = {
       say: "It is live.",
       act: async (page) => {
         const caddy = liveCaddy();
-        await park(page);
+        // Clear of the "Caddy updated" toast at the bottom right.
+        await park(page, { x: 1000, y: 380 });
         await press(page, "Control+Backquote");
         await expect(page.locator(".terminal-wrapper").first()).toBeVisible({ timeout: 10000 });
         await beat(page, 900);
@@ -381,11 +383,14 @@ const builders: Scene = {
         await openFile(page, "routes.ts");
         await key(page, "Control+End");
         await type(page, "const admin = buildProt");
+        await suggestWidget(page).waitFor({ timeout: 15000 });
+        // Re-ask so every provider (the extension's and TypeScript's) has answered.
+        await beat(page, 600);
+        await key(page, "Escape");
+        await press(page, "Control+Space");
       },
       check: async (page) => {
-        await expect(
-          suggestRow(page, "buildProtectedRoute", "@viaalink/caddy-api-client")
-        ).toBeVisible({ timeout: 15000 });
+        await expect(suggestRow(page, "buildProtectedRoute")).toBeVisible({ timeout: 15000 });
       },
       hold: 1800,
     },

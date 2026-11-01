@@ -149,18 +149,25 @@ export const quickPickItem = (page: Page, label: string): Locator =>
 export async function acceptSuggestionWithDetail(
   page: Page,
   detail: string,
-  max = 8
+  max = 12
 ): Promise<void> {
   const focused = suggestWidget(page).locator(".monaco-list-row.focused");
-  for (let i = 0; i < max; i++) {
-    await focused.waitFor({ timeout: 5000 });
-    if ((await focused.innerText()).includes(detail)) {
-      await page.waitForTimeout(500);
-      await press(page, "Enter");
-      return;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    for (let i = 0; i < max; i++) {
+      await focused.waitFor({ timeout: 5000 });
+      if ((await focused.innerText()).includes(detail)) {
+        await page.waitForTimeout(500);
+        await press(page, "Enter");
+        return;
+      }
+      await key(page, "ArrowDown");
+      await page.waitForTimeout(150);
     }
-    await key(page, "ArrowDown");
-    await page.waitForTimeout(180);
+    // A slow provider can miss the first query; ask again.
+    await key(page, "Escape");
+    await press(page, "Control+Space");
+    await suggestWidget(page).waitFor({ timeout: 10000 });
+    await page.waitForTimeout(600);
   }
   throw new Error(`no suggestion with "${detail}" in the first ${max} rows`);
 }

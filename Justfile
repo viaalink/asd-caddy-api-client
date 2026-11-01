@@ -326,9 +326,9 @@ vscode-build:
 vscode-install:
     cd vscode-extension && code --install-extension vscode-caddy-tools-*.vsix --force
 
-# VSCode Extension: record the demo/promo film (voice → record → render → contact sheet).
 # variant: promo (title/end cards, captions, voice) · qa (numbered captions, slower, no cards).
 # Storyboard: vscode-extension/demo/storyboard.ts. Output: vscode-extension/local/video/ (gitignored).
+# VSCode Extension: record the demo film (voice → record → render → contact sheet)
 vscode-demo-video variant="promo":
     bash vscode-extension/demo/scripts/video.sh {{variant}}
 
@@ -336,6 +336,10 @@ vscode-demo-video variant="promo":
 vscode-demo-video-all:
     bash vscode-extension/demo/scripts/video.sh promo
     CADDY_DEMO_REUSE_VSIX=1 bash vscode-extension/demo/scripts/video.sh qa
+
+# VSCode Extension: typecheck the demo pipeline (demo/tsconfig.json)
+vscode-demo-typecheck:
+    cd vscode-extension && npx tsc -p demo/tsconfig.json
 
 # VSCode Extension: install the English piper voice for the demo narration (once, ~110 MB, gitignored)
 vscode-demo-voice-install voice="en_US-lessac-high":
