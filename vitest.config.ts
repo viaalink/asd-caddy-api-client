@@ -11,6 +11,7 @@ export default defineConfig({
       // doesn't exist in this repo's bun-only root test run. Alias straight
       // to source instead.
       "@viaalink/caddy-api-client/extension-assets": `${__dirname}src/generated/extension-assets.ts`,
+      "@viaalink/caddy-api-client/plugins/caddy-security": `${__dirname}src/plugins/caddy-security/index.ts`,
     },
   },
   test: {

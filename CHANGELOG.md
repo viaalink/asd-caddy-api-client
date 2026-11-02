@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## Unreleased
+
+### Fixed
+
+- `AuthenticationHandlerSchema` accepts caddy-security's `authorizer` provider
+  (`providers.authorizer.gatekeeper_name` / `route_matcher`) next to `http_basic`. A route built by
+  `buildProtectedRoute()` used to fail the generated `caddy-route.json` / `caddy-full-config.json`
+  schemas, which the VS Code extension applies to `*.caddy.json` and `caddy-server.json` files.
+
 ## [0.10.1](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.0...v0.10.1) (2026-10-31)
 
 The package is now `@viaalink/caddy-api-client`, maintained by [Viaalink](https://viaalink.com).

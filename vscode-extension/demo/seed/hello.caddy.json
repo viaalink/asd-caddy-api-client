@@ -1,0 +1,12 @@
+{
+  "@id": "hello",
+  "match": [{ "host": ["localhost"] }],
+  "handle": [
+    {
+      "handler": "static_response",
+      "status_code": 200,
+      "body": "Hello from Caddy Tools!\n"
+    }
+  ],
+  "terminal": true
+}

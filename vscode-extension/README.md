@@ -1,365 +1,151 @@
 # Caddy Configuration Tools
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/viaalink/asd-caddy-api-client)
-[![VS Code](https://img.shields.io/badge/VS%20Code-1.85+-blue.svg)](https://code.visualstudio.com/)
+[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/viaalink.vscode-caddy-tools?label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/viaalink.vscode-caddy-tools)](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Full-featured IntelliSense, validation, and snippets for [Caddy](https://caddyserver.com/) web server configurations, including the [caddy-security](https://authp.github.io/) authentication plugin.
+Write [Caddy](https://caddyserver.com/) JSON configs with IntelliSense that knows Caddy. The extension catches the mistakes Caddy would only reject at load time, and applies the result to a running server, all without leaving the editor. It includes first-class support for the [caddy-security](https://github.com/greenpau/caddy-security) (AuthCrunch) plugin.
 
-![Feature Overview](https://raw.githubusercontent.com/viaalink/asd-caddy-api-client/main/vscode-extension/docs/images/feature-overview.png)
+[![Watch the 1:43 demo on YouTube](https://img.youtube.com/vi/YPGhe91KaD4/maxresdefault.jpg)](https://youtu.be/YPGhe91KaD4)
 
----
+▶ **[Watch the demo on YouTube](https://youtu.be/YPGhe91KaD4)** (1:43): every feature in it is the real extension against a real Caddy.
 
-## Features
-
-### IntelliSense & Autocompletion
-
-Context-aware completions that understand where you are in your configuration:
-
-| Context                          | Completions                                                                                                                                   |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route object `{ \| }`            | `@id`, `match`, `handle`, `terminal`, `priority`                                                                                              |
-| Match object `"match": [{ \| }]` | `host`, `path`, `path_regexp`, `method`, `header`, `header_regexp`, `query`, `protocol`, `client_ip`, `remote_ip`, `tls`, `not`, `expression` |
-| Method array `"method": ["\|"]`  | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `CONNECT`, `TRACE`                                                                |
-| Handler type `"handler": "\|"`   | All 21 Caddy handlers with documentation                                                                                                      |
-| Inside handler                   | Handler-specific fields (e.g., `upstreams` for `reverse_proxy`)                                                                               |
-| Enum fields                      | `selection_policy`, `encodings`/`prefer`, `protocol` values                                                                                   |
-
-### JSON Schema Validation
-
-Real-time validation with detailed error messages. Schemas are automatically applied based on filename:
-
-| Filename Pattern                           | Schema      | Description                                     |
-| ------------------------------------------ | ----------- | ----------------------------------------------- |
-| `caddy-server.json`, `*.caddy-server.json` | Full Config | Complete Caddy config with servers, TLS, routes |
-| `caddy.json`, `*.caddy.json`               | Route       | Single route or route array                     |
-| `caddy-security.json`                      | Security    | Security plugin configuration                   |
-| `*.caddy-security-portal.json`             | Portal      | Authentication portal                           |
-| `*.caddy-security-policy.json`             | Policy      | Authorization policy                            |
-
-### Hover Documentation
-
-Hover over any handler type to see:
-
-- Handler description
-- Common fields
-- Link to official Caddy documentation
-
-### CodeLens
-
-Quick documentation links appear above handler definitions for instant access to Caddy docs.
-
-### Configuration Wizards
-
-Interactive wizards guide you through creating configurations:
-
-- **Route Configuration Wizard** - Step-by-step route creation
-- **Security Configuration Wizard** - Set up authentication and authorization
-
----
-
-## Installation
-
-### From VSIX (Local)
-
-```bash
-# Build and install
-cd vscode-extension
-npm run build && npm run package
-code --install-extension vscode-caddy-tools-0.1.5.vsix
+```
+ext install Viaalink.vscode-caddy-tools
 ```
 
-### From Source (Development)
+## What it does
 
-```bash
-# Clone and install dependencies
-git clone https://github.com/viaalink/asd-caddy-api-client.git
-cd asd-caddy-api-client/vscode-extension
-npm install
+|                  |                                                                                                                                                                                                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **IntelliSense** | All 21 handlers inside `"handler": "…"`, the right fields for _that_ handler, matchers inside `"match"`, and enum values (`selection_policy`, `encodings`, …).                                                                                                                                                      |
+| **Validation**   | Your file is checked against JSON Schemas generated from the [`@viaalink/caddy-api-client`](https://www.npmjs.com/package/@viaalink/caddy-api-client) Zod schemas. Typos get a _Did you mean …?_ quick fix.                                                                                                         |
+| **Caddy checks** | Catches the problems a schema can't: a `dial` written as a URL or without a port, `host` matchers with a scheme or port, duplicate `@id`s, redirects with no `Location`, the LDAP `{username}` placeholder that the JSON API never replaces, and policies, portals or stores that are referenced but never defined. |
+| **Quick fixes**  | `Ctrl+.` on a squiggle.                                                                                                                                                                                                                                                                                             |
+| **Snippets**     | 21 JSON snippets (`caddy-…`) and 59 TypeScript snippets (42 builders + 17 caddy-security templates). Each one is validated against the schema or type-checked against the library before it ships.                                                                                                                  |
+| **Wizards**      | A route wizard, and a caddy-security wizard for local/LDAP/OAuth2/OIDC logins, portals and policies.                                                                                                                                                                                                                |
+| **Live Caddy**   | _Apply File to Running Caddy_ (`POST /load`, or add or replace routes by `@id`) and a read-only _Show Running Config_.                                                                                                                                                                                              |
+| **Docs at hand** | Hover any handler for its documentation and an example; a CodeLens above each handler links to caddyserver.com and authcrunch.com.                                                                                                                                                                                  |
 
-# Launch in development mode
-# Press F5 in VS Code to start Extension Development Host
+## Getting started
+
+1. Run **Caddy: New Config File…** (or open **Caddy: Get Started**).
+2. Pick a full config, a route, or a caddy-security config. The file name is what turns validation on:
+
+   | File name                                                              | Validated as                          |
+   | ---------------------------------------------------------------------- | ------------------------------------- |
+   | `caddy-server.json`, `caddy-full.json`, `*.caddy-server.json`          | Complete Caddy config                 |
+   | `caddy.json`, `caddy-config.json`, `*.caddy.json`                      | Route (or array of routes)            |
+   | `caddy-security.json`, `security-config.json`, `*.caddy-security.json` | caddy-security `apps.security.config` |
+   | `*.caddy-security-portal.json`                                         | Authentication portal                 |
+   | `*.caddy-security-policy.json`                                         | Authorization policy                  |
+
+   The status bar shows what the open file is validated as. Click it for every Caddy command.
+
+3. Type, or type `caddy-` for snippets.
+
+## Catching what Caddy would reject
+
+```jsonc
+{
+  "@id": "app",
+  "match": [{ "host": ["https://app.example.com"] }], // ✗ host matchers take bare hostnames
+  "handle": [
+    {
+      "handler": "reverse_proxy",
+      "upstream": [{ "dial": "http://localhost:3000" }], // ✗ Did you mean "upstreams"?
+    },
+  ], // ✗ dial takes host:port, not a URL
+}
 ```
 
----
-
-## Quick Start
-
-1. **Create a configuration file** using one of the supported naming patterns:
-
-   ```
-   my-app.caddy.json      # Route configuration
-   caddy-server.json      # Full server configuration
-   caddy-security.json    # Security plugin configuration
-   ```
-
-2. **Start typing** - IntelliSense will suggest valid properties and values
-
-3. **Use snippets** - Type `caddy-` to see available snippets
-
-4. **Run wizards** - Press `Ctrl+Shift+P` and search for "Caddy"
-
----
-
-## Commands
-
-Access via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
-
-| Command                                | Description                                    |
-| -------------------------------------- | ---------------------------------------------- |
-| `Caddy: Show Handler Documentation`    | Browse handler reference with docs links       |
-| `Caddy: Insert Route Configuration`    | Insert a route template with handler selection |
-| `Caddy: Insert Security Configuration` | Insert security config (portal, policy, store) |
-| `Caddy: Route Configuration Wizard`    | Guided multi-step route creation               |
-| `Caddy: Security Configuration Wizard` | Guided security setup                          |
-
----
+Every one of these has a one-keystroke fix. In a full config, a `gatekeeper_name` that doesn't match any `authorization_policies[].name` is flagged too, with the closest defined name offered as the fix.
 
 ## Snippets
 
-### JSON Snippets
+### JSON (`.json` files)
 
-For use in `.json` files:
+| Prefix                                                                             | Inserts                                                             |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `caddy-server`                                                                     | Complete config: admin endpoint plus an HTTPS server with one route |
+| `caddy-route`                                                                      | Route: host → reverse proxy                                         |
+| `caddy-route-files`                                                                | Route: static files with zstd/gzip                                  |
+| `caddy-route-redirect`                                                             | Route: 301/302/307/308 redirect that keeps the path                 |
+| `caddy-route-path`                                                                 | Route: `/api/*` → backend, prefix stripped                          |
+| `caddy-route-lb`                                                                   | Route: load-balanced upstreams with active health checks            |
+| `caddy-handler-proxy` / `-files` / `-headers` / `-static` / `-encode` / `-rewrite` | Single handlers                                                     |
+| `caddy-sec-config`                                                                 | caddy-security: local users, a portal and a policy                  |
+| `caddy-sec-local-store` / `caddy-sec-ldap-store`                                   | Identity stores (LDAP uses the `%s` filter placeholder)             |
+| `caddy-sec-portal` / `caddy-sec-policy`                                            | Portal with session cookie / policy with `access_list_rules`        |
+| `caddy-sec-route-protected` / `caddy-sec-route-portal`                             | Protected app route / login portal route                            |
+| `caddy-sec-authorizer` / `caddy-sec-authenticator`                                 | caddy-security handlers                                             |
 
-| Prefix                    | Description                                 |
-| ------------------------- | ------------------------------------------- |
-| `caddy-route`             | Complete route with match, handle, terminal |
-| `caddy-handler-proxy`     | Reverse proxy handler                       |
-| `caddy-handler-files`     | File server handler                         |
-| `caddy-handler-headers`   | Headers manipulation handler                |
-| `caddy-handler-static`    | Static response handler                     |
-| `caddy-sec-authenticator` | caddy-security authenticator handler        |
-| `caddy-sec-authorizer`    | caddy-security authorization handler        |
-| `caddy-sec-portal`        | Authentication portal configuration         |
-| `caddy-sec-policy`        | Authorization policy configuration          |
-| `caddy-sec-local-store`   | Local identity store                        |
-| `caddy-sec-ldap-store`    | LDAP identity store                         |
+### TypeScript and JavaScript
 
-### TypeScript/JavaScript Snippets
+Type `build` for every builder in [`@viaalink/caddy-api-client`](https://www.npmjs.com/package/@viaalink/caddy-api-client). Accepting one fills in the required options and adds the import. You can also use the `caddy-…` prefixes directly. The 17 `caddy-sec-…` templates (GitHub/Google OAuth2, Keycloak/Okta/Auth0 OIDC, portals, policies, complete local or OIDC setups) are each built and validated in the library's test suite.
 
-For programmatic configuration building with the `@viaalink/caddy-api-client` library:
+```ts
+import { buildProtectedRoute } from "@viaalink/caddy-api-client";
 
-| Prefix                        | Description                                  |
-| ----------------------------- | -------------------------------------------- |
-| `caddy-reverse-proxy-handler` | `buildReverseProxyHandler()`                 |
-| `caddy-protected-route`       | `buildProtectedRoute()` with authorization   |
-| `caddy-authenticator-route`   | `buildAuthenticatorRoute()` for login portal |
-| `caddy-security-config`       | `buildSecurityConfig()`                      |
-| `caddy-authentication-portal` | `buildAuthenticationPortal()`                |
-| `caddy-authorization-policy`  | `buildAuthorizationPolicy()`                 |
-| `caddy-local-identity-store`  | `buildLocalIdentityStore()`                  |
-| `caddy-ldap-identity-store`   | `buildLdapIdentityStore()`                   |
-| `caddy-oauth2-provider`       | `buildOAuth2Provider()`                      |
-| `caddy-oidc-provider`         | `buildOidcProvider()`                        |
+const route = buildProtectedRoute({
+  hosts: ["app.example.com"],
+  gatekeeperName: "mypolicy",
+  dial: "localhost:3000",
+});
+```
 
-<details>
-<summary>View all 41 TypeScript snippets</summary>
+## Commands
 
-| Prefix                               | Description                     |
-| ------------------------------------ | ------------------------------- |
-| `caddy-local-identity-store`         | Build local identity store      |
-| `caddy-ldap-identity-store`          | Build LDAP identity store       |
-| `caddy-oauth2-provider`              | Build OAuth2 provider           |
-| `caddy-oidc-provider`                | Build OIDC provider             |
-| `caddy-authentication-portal`        | Build authentication portal     |
-| `caddy-authorization-policy`         | Build authorization policy      |
-| `caddy-security-config`              | Build security config           |
-| `caddy-security-app`                 | Build security app              |
-| `caddy-authenticator-handler`        | Build authenticator handler     |
-| `caddy-authorization-handler`        | Build authorization handler     |
-| `caddy-authenticator-route`          | Build authenticator route       |
-| `caddy-protected-route`              | Build protected route           |
-| `caddy-service-routes`               | Build service routes            |
-| `caddy-health-check-route`           | Build health check route        |
-| `caddy-host-route`                   | Build host-based route          |
-| `caddy-path-route`                   | Build path-based route          |
-| `caddy-load-balancer-route`          | Build load balancer route       |
-| `caddy-reverse-proxy-handler`        | Build reverse proxy handler     |
-| `caddy-security-headers-handler`     | Build security headers handler  |
-| `caddy-basic-auth-handler`           | Build basic auth handler        |
-| `caddy-rewrite-handler`              | Build rewrite handler           |
-| `caddy-compression-handler`          | Build compression handler       |
-| `caddy-www-redirect`                 | Build WWW redirect              |
-| `caddy-redirect-route`               | Build redirect route            |
-| `caddy-file-server-route`            | Build file server route         |
-| `caddy-templates-route`              | Build templates route           |
-| `caddy-error-route`                  | Build error route               |
-| `caddy-request-body-handler`         | Build request body handler      |
-| `caddy-vars-handler`                 | Build vars handler              |
-| `caddy-tracing-handler`              | Build tracing handler           |
-| `caddy-map-handler`                  | Build map handler               |
-| `caddy-iframe-proxy-route`           | Build iframe proxy route        |
-| `caddy-iframe-headers-handler`       | Build iframe headers handler    |
-| `caddy-iframe-permissive-handler`    | Build iframe permissive handler |
-| `caddy-web-socket-proxy-route`       | Build WebSocket proxy route     |
-| `caddy-ingress-tag-headers-handler`  | Build ingress tag headers       |
-| `caddy-dns-rebinding-bypass-handler` | Build DNS rebinding bypass      |
-| `caddy-mitmproxy-route`              | Build MITMproxy route           |
-| `caddy-mitmproxy-route-pair`         | Build MITMproxy route pair      |
-| `caddy-mitmproxy-web-ui-route`       | Build MITMproxy Web UI route    |
-| `caddy-mitmproxy-web-socket-route`   | Build MITMproxy WebSocket route |
+All commands are under **Caddy:** in the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`), or one click away in the status bar.
 
-</details>
+| Command                                                    |                                                                                                        |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| New Config File…                                           | Create a correctly named file with a starter config                                                    |
+| Route Configuration Wizard                                 | Matching, handler, security headers, compression: step by step                                         |
+| Security Configuration Wizard                              | Local / LDAP / OAuth2 / OIDC, portal, policies                                                         |
+| Insert Route Configuration / Insert Security Configuration | Pick from the validated snippets                                                                       |
+| Apply File to Running Caddy                                | `caddy-server.json` → `POST /load`; `*.caddy.json` → add the route(s) to a server, or replace by `@id` |
+| Show Running Config                                        | The live config, read-only, with hover and CodeLens                                                    |
+| Show Handler Documentation                                 | Every handler, linked to caddyserver.com                                                               |
+| Get Started                                                | The walkthrough                                                                                        |
 
----
+### Apply to a running Caddy
+
+The admin URL defaults to `http://localhost:2019`; change it with `caddy.adminUrl`. Every write asks for confirmation first. A full config is loaded atomically, so if Caddy rejects it, the previous config stays active.
+
+Caddy 2.11+ checks the `Origin` header on admin requests. The extension sends the origin of `caddy.adminUrl`. If you map the admin port in Docker (for example `2020:2019`), list both ports in the Caddyfile `admin { origins … }` block.
 
 ## Settings
 
-Configure the extension in VS Code settings (`Ctrl+,`):
+| Setting                    | Default                 |                                                                         |
+| -------------------------- | ----------------------- | ----------------------------------------------------------------------- |
+| `caddy.adminUrl`           | `http://localhost:2019` | Admin API used by Apply / Show Running Config                           |
+| `caddy.enableDiagnostics`  | `true`                  | Caddy-specific checks (schema validation is VS Code's own and stays on) |
+| `caddy.enableHoverDocs`    | `true`                  | Handler documentation on hover                                          |
+| `caddy.showCaddyDocsLinks` | `true`                  | Links to caddyserver.com in hovers                                      |
+| `caddy.showCodeLens`       | `true`                  | Documentation CodeLens above handlers                                   |
 
-| Setting                    | Type    | Default | Description                             |
-| -------------------------- | ------- | ------- | --------------------------------------- |
-| `caddy.enableHoverDocs`    | boolean | `true`  | Show documentation in hover tooltips    |
-| `caddy.showCaddyDocsLinks` | boolean | `true`  | Include links to official Caddy docs    |
-| `caddy.showCodeLens`       | boolean | `true`  | Show documentation links above handlers |
-| `caddy.enableDiagnostics`  | boolean | `true`  | Enable real-time validation             |
+## Works in
 
-Example `settings.json`:
-
-```json
-{
-  "caddy.enableHoverDocs": true,
-  "caddy.showCaddyDocsLinks": true,
-  "caddy.showCodeLens": true,
-  "caddy.enableDiagnostics": true
-}
-```
-
----
-
-## Supported Handlers
-
-The extension provides IntelliSense for all Caddy HTTP handlers:
-
-| Handler                 | Description               | Common Fields                                               |
-| ----------------------- | ------------------------- | ----------------------------------------------------------- |
-| `reverse_proxy`         | Proxy to upstream servers | `upstreams`, `transport`, `load_balancing`, `health_checks` |
-| `file_server`           | Serve static files        | `root`, `index_names`, `browse`, `hide`                     |
-| `static_response`       | Return fixed response     | `status_code`, `body`, `headers`                            |
-| `headers`               | Modify headers            | `request`, `response`                                       |
-| `rewrite`               | Rewrite request URI       | `uri`, `strip_path_prefix`, `strip_path_suffix`             |
-| `encode`                | Compress responses        | `encodings`, `prefer`, `minimum_length`                     |
-| `templates`             | Render Go templates       | `file_root`, `mime_types`, `delimiters`                     |
-| `authentication`        | HTTP authentication       | `providers`                                                 |
-| `subroute`              | Nested routes             | `routes`                                                    |
-| `map`                   | Variable mapping          | `source`, `destinations`, `mappings`                        |
-| `push`                  | HTTP/2 push               | `resources`, `headers`                                      |
-| `request_body`          | Body size limits          | `max_size`                                                  |
-| `vars`                  | Set variables             | (dynamic)                                                   |
-| `tracing`               | Distributed tracing       | `span`                                                      |
-| `error`                 | Trigger error             | `error`, `status_code`                                      |
-| `intercept`             | Modify responses          | `handle_response`                                           |
-| `invoke`                | Call named route          | `name`                                                      |
-| `copy_response`         | Copy response             | `status_code`                                               |
-| `copy_response_headers` | Copy headers              | `include`, `exclude`                                        |
-| `log_append`            | Add log fields            | `key`, `value`                                              |
-| `authenticator`         | caddy-security portal     | `portal_name`                                               |
-
----
-
-## Example Configurations
-
-### Basic Reverse Proxy
-
-```json
-{
-  "@id": "api-proxy",
-  "match": [{ "host": ["api.example.com"] }],
-  "handle": [
-    {
-      "handler": "reverse_proxy",
-      "upstreams": [{ "dial": "localhost:3000" }]
-    }
-  ],
-  "terminal": true
-}
-```
-
-### Protected Route with Authentication
-
-```json
-{
-  "@id": "admin-panel",
-  "match": [{ "host": ["admin.example.com"] }, { "path": ["/admin/*"] }],
-  "handle": [
-    {
-      "handler": "authentication",
-      "providers": {
-        "authorizer": {
-          "gatekeeper_name": "admin-policy"
-        }
-      }
-    },
-    {
-      "handler": "reverse_proxy",
-      "upstreams": [{ "dial": "localhost:8080" }]
-    }
-  ],
-  "terminal": true
-}
-```
-
-### File Server with Compression
-
-```json
-{
-  "@id": "static-files",
-  "match": [{ "path": ["/static/*"] }],
-  "handle": [
-    {
-      "handler": "encode",
-      "encodings": { "gzip": {}, "zstd": {} }
-    },
-    {
-      "handler": "file_server",
-      "root": "/var/www/static"
-    }
-  ]
-}
-```
-
----
+VS Code 1.85+, [code-server](https://github.com/coder/code-server), VSCodium and other Open VSX editors. Every release is tested in desktop VS Code (API-level) and in code-server (UI-level, with Playwright).
 
 ## Development
 
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-- VS Code 1.85+
-
-### Build
-
 ```bash
-npm install
-npm run build
+just install && just build      # library (the extension bundles it)
+just vscode-build               # build + package the .vsix
+just vscode-test                # Playwright UI tests in code-server
+just test                       # unit tests, including snippet validation and type-checks
 ```
 
-### Test
+Snippets live in [`src/snippets/json-snippets.json`](src/snippets/json-snippets.json) (JSON) and are generated from the library's builder JSDoc (TypeScript). Don't edit `snippets/*.json` directly.
 
-```bash
-npm test              # Run Playwright tests
-npm run test:headed   # Run tests with browser visible
-npm run test:debug    # Debug tests
-```
+## Related
 
-### Package
-
-```bash
-npm run package       # Creates .vsix file
-```
-
----
-
-## Related Resources
-
-- [Caddy Documentation](https://caddyserver.com/docs/) - Official Caddy docs
-- [Caddy JSON Config](https://caddyserver.com/docs/json/) - JSON configuration reference
-- [caddy-security Plugin](https://authp.github.io/) - Authentication plugin docs
-- [@viaalink/caddy-api-client](https://github.com/viaalink/asd-caddy-api-client) - TypeScript library for Caddy API
-
----
+- [Caddy JSON config reference](https://caddyserver.com/docs/json/)
+- [caddy-security / AuthCrunch docs](https://docs.authcrunch.com/)
+- [`@viaalink/caddy-api-client`](https://github.com/viaalink/asd-caddy-api-client): the TypeScript library this extension is built on
 
 ## License
 
-MIT - [Viaalink](https://github.com/viaalink)
+MIT © [Viaalink](https://viaalink.com)

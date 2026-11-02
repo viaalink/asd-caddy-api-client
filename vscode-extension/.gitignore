@@ -6,17 +6,26 @@ out/
 # mirrored from src/generated/schemas/ and src/plugins/caddy-security/templates.ts
 # respectively, never hand-edited. Committing them meant every schema/template
 # change had to touch two identical copies to stay in sync.
-schemas/
-snippets/
+/schemas/
+/snippets/
 LICENSE
 
 # Test artifacts
 test-results/
 playwright-report/
 tests/.codeserver-port
+tests/.codeserver-workspace
+test-desktop/out/
+.vscode-test/
 
 # Dependencies
 node_modules/
 
 # IDE
 .vscode/
+
+# Demo film pipeline (just vscode-demo-video): recordings, renders, piper voices,
+# the throwaway code-server profile and the port file. Never committed.
+local/
+demo/.codeserver-port
+demo/.caddy-ports.json

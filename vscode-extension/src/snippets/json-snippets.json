@@ -1,0 +1,394 @@
+[
+  {
+    "name": "Caddy Route: Reverse Proxy",
+    "prefix": "caddy-route",
+    "label": "Reverse Proxy Route",
+    "description": "Route that proxies a host to a backend",
+    "schema": "caddy-route.json",
+    "group": "route",
+    "body": [
+      "{",
+      "  \"@id\": \"${1:my-app}\",",
+      "  \"match\": [{ \"host\": [\"${2:app.example.com}\"] }],",
+      "  \"handle\": [",
+      "    {",
+      "      \"handler\": \"reverse_proxy\",",
+      "      \"upstreams\": [{ \"dial\": \"${3:localhost:3000}\" }]",
+      "    }",
+      "  ],",
+      "  \"terminal\": true",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Route: Static Files",
+    "prefix": "caddy-route-files",
+    "label": "Static File Server",
+    "description": "Route that serves files from disk, compressed",
+    "schema": "caddy-route.json",
+    "group": "route",
+    "body": [
+      "{",
+      "  \"@id\": \"${1:static-site}\",",
+      "  \"match\": [{ \"host\": [\"${2:www.example.com}\"] }],",
+      "  \"handle\": [",
+      "    { \"handler\": \"encode\", \"encodings\": { \"zstd\": {}, \"gzip\": {} } },",
+      "    { \"handler\": \"file_server\", \"root\": \"${3:/var/www/html}\" }",
+      "  ],",
+      "  \"terminal\": true",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Route: Redirect",
+    "prefix": "caddy-route-redirect",
+    "label": "Redirect Route",
+    "description": "Permanent (301) redirect to another URL",
+    "schema": "caddy-route.json",
+    "group": "route",
+    "body": [
+      "{",
+      "  \"@id\": \"${1:redirect}\",",
+      "  \"match\": [{ \"host\": [\"${2:old.example.com}\"] }],",
+      "  \"handle\": [",
+      "    {",
+      "      \"handler\": \"static_response\",",
+      "      \"status_code\": ${3|301,302,307,308|},",
+      "      \"headers\": { \"Location\": [\"${4:https://new.example.com}{http.request.uri}\"] }",
+      "    }",
+      "  ],",
+      "  \"terminal\": true",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Route: API Path Prefix",
+    "prefix": "caddy-route-path",
+    "label": "Path Prefix to Backend",
+    "description": "Proxy a path prefix (e.g. /api/*) to a backend, stripping the prefix",
+    "schema": "caddy-route.json",
+    "group": "route",
+    "body": [
+      "{",
+      "  \"@id\": \"${1:api}\",",
+      "  \"match\": [{ \"path\": [\"${2:/api}/*\"] }],",
+      "  \"handle\": [",
+      "    { \"handler\": \"rewrite\", \"strip_path_prefix\": \"${2:/api}\" },",
+      "    {",
+      "      \"handler\": \"reverse_proxy\",",
+      "      \"upstreams\": [{ \"dial\": \"${3:localhost:8080}\" }]",
+      "    }",
+      "  ]",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Route: Load Balanced",
+    "prefix": "caddy-route-lb",
+    "label": "Load-Balanced Route",
+    "description": "Proxy to several upstreams with a selection policy and health checks",
+    "schema": "caddy-route.json",
+    "group": "route",
+    "body": [
+      "{",
+      "  \"@id\": \"${1:api-pool}\",",
+      "  \"match\": [{ \"host\": [\"${2:api.example.com}\"] }],",
+      "  \"handle\": [",
+      "    {",
+      "      \"handler\": \"reverse_proxy\",",
+      "      \"upstreams\": [{ \"dial\": \"${3:10.0.0.1:8080}\" }, { \"dial\": \"${4:10.0.0.2:8080}\" }],",
+      "      \"load_balancing\": { \"selection_policy\": { \"policy\": \"${5|round_robin,least_conn,random,first,ip_hash,uri_hash|}\" } },",
+      "      \"health_checks\": { \"active\": { \"uri\": \"${6:/health}\", \"interval\": \"${7:10s}\" } }",
+      "    }",
+      "  ],",
+      "  \"terminal\": true",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Route: Protected (caddy-security)",
+    "prefix": "caddy-sec-route-protected",
+    "label": "Protected Route (caddy-security)",
+    "description": "Route that requires an authorization policy before proxying",
+    "schema": "caddy-route.json",
+    "group": "route",
+    "body": [
+      "{",
+      "  \"@id\": \"${1:protected-app}\",",
+      "  \"match\": [{ \"host\": [\"${2:app.example.com}\"] }],",
+      "  \"handle\": [",
+      "    {",
+      "      \"handler\": \"authentication\",",
+      "      \"providers\": { \"authorizer\": { \"gatekeeper_name\": \"${3:mypolicy}\", \"route_matcher\": \"*\" } }",
+      "    },",
+      "    {",
+      "      \"handler\": \"reverse_proxy\",",
+      "      \"upstreams\": [{ \"dial\": \"${4:localhost:3000}\" }]",
+      "    }",
+      "  ],",
+      "  \"terminal\": true",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Route: Login Portal (caddy-security)",
+    "prefix": "caddy-sec-route-portal",
+    "label": "Login Portal Route (caddy-security)",
+    "description": "Route that serves the caddy-security login portal",
+    "schema": "caddy-route.json",
+    "group": "route",
+    "body": [
+      "{",
+      "  \"@id\": \"${1:auth-portal}\",",
+      "  \"match\": [{ \"host\": [\"${2:auth.example.com}\"] }],",
+      "  \"handle\": [{ \"handler\": \"authenticator\", \"portal_name\": \"${3:myportal}\", \"route_matcher\": \"*\" }],",
+      "  \"terminal\": true",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Reverse Proxy Handler",
+    "prefix": "caddy-handler-proxy",
+    "label": "Reverse Proxy Handler",
+    "description": "reverse_proxy handler",
+    "schema": "caddy-handler-reverse-proxy.json",
+    "group": "handler",
+    "body": [
+      "{",
+      "  \"handler\": \"reverse_proxy\",",
+      "  \"upstreams\": [{ \"dial\": \"${1:localhost:3000}\" }]",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy File Server Handler",
+    "prefix": "caddy-handler-files",
+    "label": "File Server Handler",
+    "description": "file_server handler",
+    "schema": "caddy-handler.json",
+    "group": "handler",
+    "body": ["{", "  \"handler\": \"file_server\",", "  \"root\": \"${1:/var/www/html}\"", "}$0"]
+  },
+  {
+    "name": "Caddy Headers Handler",
+    "prefix": "caddy-handler-headers",
+    "label": "Headers Handler",
+    "description": "headers handler: set response headers",
+    "schema": "caddy-handler-headers.json",
+    "group": "handler",
+    "body": [
+      "{",
+      "  \"handler\": \"headers\",",
+      "  \"response\": {",
+      "    \"set\": {",
+      "      \"${1:Strict-Transport-Security}\": [\"${2:max-age=31536000; includeSubDomains}\"]",
+      "    }",
+      "  }",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Static Response Handler",
+    "prefix": "caddy-handler-static",
+    "label": "Static Response Handler",
+    "description": "static_response handler",
+    "schema": "caddy-handler-static-response.json",
+    "group": "handler",
+    "body": [
+      "{",
+      "  \"handler\": \"static_response\",",
+      "  \"status_code\": ${1:200},",
+      "  \"body\": \"${2:Hello, World!}\"",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Encode Handler",
+    "prefix": "caddy-handler-encode",
+    "label": "Encode Handler",
+    "description": "encode handler: zstd + gzip compression",
+    "schema": "caddy-handler-encode.json",
+    "group": "handler",
+    "body": [
+      "{",
+      "  \"handler\": \"encode\",",
+      "  \"encodings\": { \"zstd\": {}, \"gzip\": {} },",
+      "  \"prefer\": [\"zstd\", \"gzip\"]",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Rewrite Handler",
+    "prefix": "caddy-handler-rewrite",
+    "label": "Rewrite Handler",
+    "description": "rewrite handler: strip a path prefix",
+    "schema": "caddy-handler-rewrite.json",
+    "group": "handler",
+    "body": ["{", "  \"handler\": \"rewrite\",", "  \"strip_path_prefix\": \"${1:/api}\"", "}$0"]
+  },
+  {
+    "name": "Caddy Security Authorization Handler",
+    "prefix": "caddy-sec-authorizer",
+    "label": "Security Authorization Handler",
+    "description": "caddy-security authorization (gatekeeper) handler",
+    "schema": "caddy-security-authorization.json",
+    "group": "handler",
+    "body": [
+      "{",
+      "  \"handler\": \"authentication\",",
+      "  \"providers\": {",
+      "    \"authorizer\": { \"gatekeeper_name\": \"${1:mypolicy}\", \"route_matcher\": \"*\" }",
+      "  }",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Security Authenticator Handler",
+    "prefix": "caddy-sec-authenticator",
+    "label": "Security Authenticator Handler",
+    "description": "caddy-security login portal handler",
+    "schema": "caddy-security-authenticator.json",
+    "group": "handler",
+    "body": [
+      "{",
+      "  \"handler\": \"authenticator\",",
+      "  \"portal_name\": \"${1:myportal}\",",
+      "  \"route_matcher\": \"*\"",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Security Local Store",
+    "prefix": "caddy-sec-local-store",
+    "label": "Local Identity Store",
+    "description": "caddy-security local (JSON file) identity store",
+    "schema": "caddy-security-local-store.json",
+    "group": "security",
+    "body": [
+      "{",
+      "  \"name\": \"${1:local}\",",
+      "  \"kind\": \"local\",",
+      "  \"params\": {",
+      "    \"realm\": \"${2:local}\",",
+      "    \"path\": \"${3:/etc/caddy/users.json}\"",
+      "  }",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Security LDAP Store",
+    "prefix": "caddy-sec-ldap-store",
+    "label": "LDAP Identity Store",
+    "description": "caddy-security LDAP identity store (search filter uses %s, as the admin API expects)",
+    "schema": "caddy-security-ldap-store.json",
+    "group": "security",
+    "body": [
+      "{",
+      "  \"name\": \"${1:ldapdb}\",",
+      "  \"kind\": \"ldap\",",
+      "  \"params\": {",
+      "    \"realm\": \"${2:ldap}\",",
+      "    \"servers\": [{ \"address\": \"${3:ldaps://ldap.example.com}\", \"port\": ${4:636} }],",
+      "    \"bind_username\": \"${5:cn=admin,dc=example,dc=com}\",",
+      "    \"bind_password\": \"${6:change-me}\",",
+      "    \"search_base_dn\": \"${7:ou=users,dc=example,dc=com}\",",
+      "    \"search_user_filter\": \"(uid=%s)\",",
+      "    \"groups\": [{ \"dn\": \"${8:cn=admins,ou=groups,dc=example,dc=com}\", \"roles\": [\"${9:authp/admin}\"] }]",
+      "  }",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Security Portal",
+    "prefix": "caddy-sec-portal",
+    "label": "Authentication Portal",
+    "description": "caddy-security authentication portal with a session cookie",
+    "schema": "caddy-security-portal.json",
+    "group": "security",
+    "body": [
+      "{",
+      "  \"name\": \"${1:myportal}\",",
+      "  \"identity_stores\": [\"${2:local}\"],",
+      "  \"cookie_config\": {",
+      "    \"domains\": { \"${3:.example.com}\": { \"lifetime\": ${4:86400} } }",
+      "  }",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Security Policy",
+    "prefix": "caddy-sec-policy",
+    "label": "Authorization Policy",
+    "description": "caddy-security authorization policy (gatekeeper)",
+    "schema": "caddy-security-policy.json",
+    "group": "security",
+    "body": [
+      "{",
+      "  \"name\": \"${1:mypolicy}\",",
+      "  \"access_list_rules\": [",
+      "    { \"action\": \"allow\", \"conditions\": [\"match roles ${2:authp/user authp/admin}\"] }",
+      "  ]",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Security Config",
+    "prefix": "caddy-sec-config",
+    "label": "Complete Security Config",
+    "description": "Complete caddy-security config: local users, a login portal and a policy (for caddy-security.json)",
+    "schema": "caddy-security-config.json",
+    "group": "security",
+    "body": [
+      "{",
+      "  \"identity_stores\": [",
+      "    { \"name\": \"${1:local}\", \"kind\": \"local\", \"params\": { \"realm\": \"${1:local}\", \"path\": \"${2:/etc/caddy/users.json}\" } }",
+      "  ],",
+      "  \"authentication_portals\": [",
+      "    {",
+      "      \"name\": \"${3:myportal}\",",
+      "      \"identity_stores\": [\"${1:local}\"],",
+      "      \"cookie_config\": { \"domains\": { \"${4:.example.com}\": { \"lifetime\": ${5:86400} } } }",
+      "    }",
+      "  ],",
+      "  \"authorization_policies\": [",
+      "    {",
+      "      \"name\": \"${6:mypolicy}\",",
+      "      \"access_list_rules\": [{ \"action\": \"allow\", \"conditions\": [\"match roles ${7:authp/user}\"] }]",
+      "    }",
+      "  ]",
+      "}$0"
+    ]
+  },
+  {
+    "name": "Caddy Server Config",
+    "prefix": "caddy-server",
+    "label": "Server Config",
+    "description": "Complete Caddy config: one HTTPS server with a proxied route",
+    "schema": "caddy-full-config.json",
+    "group": "server",
+    "body": [
+      "{",
+      "  \"admin\": { \"listen\": \"${1:localhost:2019}\" },",
+      "  \"apps\": {",
+      "    \"http\": {",
+      "      \"servers\": {",
+      "        \"${2:srv0}\": {",
+      "          \"listen\": [\":443\"],",
+      "          \"routes\": [",
+      "            {",
+      "              \"@id\": \"${3:my-app}\",",
+      "              \"match\": [{ \"host\": [\"${4:app.example.com}\"] }],",
+      "              \"handle\": [",
+      "                { \"handler\": \"reverse_proxy\", \"upstreams\": [{ \"dial\": \"${5:localhost:3000}\" }] }",
+      "              ],",
+      "              \"terminal\": true",
+      "            }",
+      "          ]",
+      "        }",
+      "      }",
+      "    }",
+      "  }",
+      "}$0"
+    ]
+  }
+]

@@ -6,6 +6,7 @@
  */
 
 import * as vscode from "vscode";
+import { isCaddyJsonFile } from "./file-kinds";
 import { HANDLER_METADATA } from "@viaalink/caddy-api-client/extension-assets";
 
 const CADDY_DOCS_BASE = "https://caddyserver.com";
@@ -14,10 +15,10 @@ const MAX_FILE_SIZE = 100 * 1024; // 100KB - skip code lens for large files
 export class CaddyCodeLensProvider implements vscode.CodeLensProvider {
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
   public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
-  private outputChannel: vscode.OutputChannel | undefined;
+  private outputChannel: vscode.LogOutputChannel | undefined;
   private callCount = 0;
 
-  constructor(outputChannel?: vscode.OutputChannel) {
+  constructor(outputChannel?: vscode.LogOutputChannel) {
     this.outputChannel = outputChannel;
     // Refresh code lenses when configuration changes
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -29,7 +30,7 @@ export class CaddyCodeLensProvider implements vscode.CodeLensProvider {
 
   private log(message: string): void {
     if (this.outputChannel) {
-      this.outputChannel.appendLine(`[CodeLens] ${message}`);
+      this.outputChannel.debug(message);
     }
   }
 
@@ -53,11 +54,7 @@ export class CaddyCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     // Only process Caddy-related files (check filename)
-    const fileName = document.fileName.toLowerCase();
-    const isCaddyFile =
-      fileName.includes("caddy") ||
-      fileName.includes("security") ||
-      fileName.endsWith(".caddy.json");
+    const isCaddyFile = isCaddyJsonFile(document.fileName);
     if (!isCaddyFile) {
       return undefined;
     }
@@ -144,7 +141,7 @@ export class CaddyCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     // Pattern for authorization policies
-    const policyPattern = /"name"\s*:\s*"([^"]+)"[^}]*"access_lists"/g;
+    const policyPattern = /"name"\s*:\s*"([^"]+)"[^}]*"access_(?:list_rules|lists)"/g;
 
     while ((match = policyPattern.exec(text)) !== null) {
       const startPos = document.positionAt(match.index);
@@ -163,12 +160,12 @@ export class CaddyCodeLensProvider implements vscode.CodeLensProvider {
     // Pattern for identity stores
     const storePatterns = [
       {
-        pattern: /"driver"\s*:\s*"local"/g,
+        pattern: /"(?:driver|kind)"\s*:\s*"local"/g,
         title: "Local Store Docs",
         url: "https://authcrunch.com/docs/authenticate/local/",
       },
       {
-        pattern: /"driver"\s*:\s*"ldap"/g,
+        pattern: /"(?:driver|kind)"\s*:\s*"ldap"/g,
         title: "LDAP Store Docs",
         url: "https://authcrunch.com/docs/authenticate/ldap/",
       },

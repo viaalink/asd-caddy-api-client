@@ -172,8 +172,11 @@ function extractBuilderFunctions(
     if (ts.isFunctionDeclaration(node) && node.name) {
       const funcName = node.name.text;
 
-      // Only process build* functions
-      if (!funcName.startsWith("build")) {
+      // Only process exported build* functions -- a module-private helper
+      // (e.g. buildServiceMetadataHeadersHandler) can't be imported, so a
+      // snippet or hover for it would be a dead end.
+      const exported = (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Export) !== 0;
+      if (!funcName.startsWith("build") || !exported) {
         ts.forEachChild(node, visit);
         return;
       }
@@ -191,6 +194,11 @@ function extractBuilderFunctions(
           optionsInterfaceName = firstParam.type.typeName.getText();
           params = extractInterfaceParams(sourceFile, optionsInterfaceName, checker);
         }
+        // Options declared in another file, as a type alias, or as z.infer<>:
+        // ask the type checker instead of only scanning this file's interfaces.
+        if (params.length === 0) {
+          params = extractParamsFromType(firstParam, checker);
+        }
       }
 
       // Get return type
@@ -200,7 +208,7 @@ function extractBuilderFunctions(
       }
 
       // Generate snippet
-      const snippet = generateSnippet(funcName, params);
+      const snippet = generateSnippet(funcName, params, node.parameters[0], checker);
 
       builders.push({
         name: funcName,
@@ -219,9 +227,138 @@ function extractBuilderFunctions(
   return builders;
 }
 
+function extractParamsFromType(
+  param: ts.ParameterDeclaration,
+  checker: ts.TypeChecker
+): ParamMetadata[] {
+  const type = checker.getNonNullableType(checker.getTypeAtLocation(param));
+  return checker.getPropertiesOfType(type).map((prop) => {
+    const propType = checker.getTypeOfSymbolAtLocation(prop, param);
+    const tags = prop.getJsDocTags(checker);
+    const tagText = (name: string): string | undefined => {
+      const tag = tags.find((t) => t.name === name);
+      return tag?.text?.map((t) => t.text).join("");
+    };
+    const defaultValue = tagText("default");
+    const example = tagText("example");
+    return {
+      name: prop.getName(),
+      type: checker.typeToString(checker.getNonNullableType(propType)),
+      required: (prop.flags & ts.SymbolFlags.Optional) === 0,
+      description: ts.displayPartsToString(prop.getDocumentationComment(checker)),
+      ...(defaultValue && { default: defaultValue.replace(/^"(.*)"$/, "$1") }),
+      ...(example && { example: example.replace(/^"(.*)"$/, "$1") }),
+    };
+  });
+}
+
+/**
+ * Builds TypeScript literal text for a value of `type`, with VS Code snippet
+ * tabstops. Strings are quoted, arrays/objects are expanded from their element
+ * / required-property types, so the snippet accepted with its defaults
+ * type-checks against the real builder (see
+ * src/__tests__/vscode-builder-snippets.test.ts).
+ */
+class SnippetValueWriter {
+  private tabstop = 1;
+
+  constructor(
+    private readonly checker: ts.TypeChecker,
+    private readonly location: ts.Node,
+    private readonly funcName: string
+  ) {}
+
+  next(): number {
+    return this.tabstop++;
+  }
+
+  write(
+    type: ts.Type,
+    name: string,
+    preferred: string | undefined,
+    depth = 0,
+    context = ""
+  ): string {
+    const where = `${this.funcName} ${context}`;
+    const checker = this.checker;
+    const t = checker.getNonNullableType(type);
+    const parts = t.isUnion() ? t.types : [t];
+
+    // String literal union -> choice
+    if (parts.length > 1 && parts.every((p) => p.isStringLiteral())) {
+      const values = parts.map((p) => (p as ts.StringLiteralType).value);
+      const ordered =
+        preferred && values.includes(preferred)
+          ? [preferred, ...values.filter((v) => v !== preferred)]
+          : values;
+      return `"\${${this.next()}|${ordered.map(escapeChoice).join(",")}|}"`;
+    }
+    if (parts.length === 1 && parts[0].isStringLiteral()) {
+      return JSON.stringify((parts[0] as ts.StringLiteralType).value);
+    }
+    if (parts.length === 1 && parts[0].isNumberLiteral()) {
+      return String((parts[0] as ts.NumberLiteralType).value);
+    }
+
+    const has = (flag: ts.TypeFlags): boolean => parts.some((p) => (p.flags & flag) !== 0);
+    if (has(ts.TypeFlags.StringLike)) {
+      return `"\${${this.next()}:${escapePlaceholder(preferred ?? placeholderFor(name, where))}}"`;
+    }
+    if (has(ts.TypeFlags.NumberLike)) {
+      const n = preferred && /^-?\d+(\.\d+)?$/.test(preferred) ? preferred : numberFor(name, where);
+      return `\${${this.next()}:${n}}`;
+    }
+    if (has(ts.TypeFlags.BooleanLike)) {
+      return preferred === "false"
+        ? `\${${this.next()}|false,true|}`
+        : `\${${this.next()}|true,false|}`;
+    }
+
+    const obj = parts.find((p) => (p.flags & ts.TypeFlags.Object) !== 0);
+    if (obj) {
+      if (checker.isArrayType(obj) || checker.isTupleType(obj)) {
+        const [elem] = checker.getTypeArguments(obj as ts.TypeReference);
+        if (!elem) return "[]";
+        const singular = name.replace(/ies$/, "y").replace(/s$/, "");
+        return `[${this.write(elem, singular, preferred, depth + 1, `${context} ${name}`)}]`;
+      }
+      if (obj.getCallSignatures().length > 0) return "() => {}";
+      const required = checker
+        .getPropertiesOfType(obj)
+        .filter((p) => (p.flags & ts.SymbolFlags.Optional) === 0);
+      if (required.length === 0 || depth >= 3) return "{}";
+      const fields = required.map((p) => {
+        const pt = checker.getTypeOfSymbolAtLocation(p, this.location);
+        const nested = this.write(pt, p.getName(), undefined, depth + 1, `${context} ${name}`);
+        return `${propertyKey(p.getName())}: ${nested}`;
+      });
+      return `{ ${fields.join(", ")} }`;
+    }
+    return "{}";
+  }
+}
+
+function propertyKey(name: string): string {
+  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
+}
+
+function escapePlaceholder(text: string): string {
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/\$/g, "\\$")
+    .replace(/\}/g, "\\}")
+    .replace(/"/g, '\\"');
+}
+
+function escapeChoice(text: string): string {
+  return text.replace(/[,|\\$}]/g, (c) => `\\${c}`);
+}
+
 function generateSnippet(
   funcName: string,
-  params: ParamMetadata[]
+  params: ParamMetadata[],
+  optionsParam: ts.ParameterDeclaration | undefined,
+  checker: ts.TypeChecker
 ): { prefix: string; body: string[]; description: string } {
   // Convert camelCase to kebab-case for prefix
   // Preserve common acronyms before splitting on capitals
@@ -238,26 +375,61 @@ function generateSnippet(
     .toLowerCase()
     .replace(/--/g, "-");
 
-  // Generate body with tabstops
   const body: string[] = [];
-  body.push(`${funcName}({`);
+  const declaration = optionsParam?.parent;
+  const allParams =
+    declaration && ts.isFunctionDeclaration(declaration) ? [...declaration.parameters] : [];
+  const firstType = optionsParam
+    ? checker.getNonNullableType(checker.getTypeAtLocation(optionsParam))
+    : undefined;
+  const primitiveFlags =
+    ts.TypeFlags.StringLike | ts.TypeFlags.NumberLike | ts.TypeFlags.BooleanLike;
+  const isPositional =
+    firstType !== undefined &&
+    (firstType.isUnion() ? firstType.types : [firstType]).every(
+      (t) => (t.flags & primitiveFlags) !== 0
+    );
 
-  let tabstop = 1;
-  for (const param of params) {
-    const defaultVal = param.default || getPlaceholder(param.name, param.type);
-    const comma = tabstop < params.length ? "," : "";
+  if (!optionsParam) {
+    body.push(`${funcName}()$0`);
+  } else if (isPositional) {
+    // e.g. buildReverseProxyHandler(dial, options?): positional primitives.
+    const writer = new SnippetValueWriter(checker, optionsParam, funcName);
+    const required = allParams.filter((p) => !p.questionToken && !p.initializer);
+    const shown = required.length > 0 ? required : allParams.slice(0, 1);
+    const args = shown.map((p) => {
+      const literalDefault =
+        p.initializer && ts.isStringLiteral(p.initializer) ? p.initializer.text : undefined;
+      return writer.write(checker.getTypeAtLocation(p), p.name.getText(), literalDefault);
+    });
+    body.push(`${funcName}(${args.join(", ")})$0`);
+  } else {
+    const writer = new SnippetValueWriter(checker, optionsParam, funcName);
+    const optionsType = checker.getNonNullableType(checker.getTypeAtLocation(optionsParam));
+    const byName = new Map(checker.getPropertiesOfType(optionsType).map((p) => [p.getName(), p]));
 
-    if (param.required) {
-      body.push(`  ${param.name}: \${${tabstop}:${defaultVal}}${comma}`);
-      tabstop++;
-    } else if (param.default) {
-      // Include optional params with defaults as commented suggestions
-      body.push(`  // ${param.name}: \${${tabstop}:${defaultVal}}${comma}`);
-      tabstop++;
+    // Required options always; when there are none, the documented-default
+    // options (max 3) so the snippet still shows how the builder is used.
+    let chosen = params.filter((p) => p.required);
+    if (chosen.length === 0) {
+      const withDefault = params.filter((p) => p.default !== undefined);
+      chosen = (withDefault.length > 0 ? withDefault : params).slice(0, 3);
     }
-  }
 
-  body.push("})");
+    body.push(`${funcName}({`);
+    for (const param of chosen) {
+      const symbol = byName.get(param.name);
+      if (!symbol) continue;
+      const type = checker.getTypeOfSymbolAtLocation(symbol, optionsParam);
+      body.push(`  ${propertyKey(param.name)}: ${writer.write(type, param.name, param.default)},`);
+    }
+    const omitted = params.filter((p) => !chosen.includes(p)).map((p) => p.name);
+    if (omitted.length > 0) {
+      const list = omitted.slice(0, 6).join(", ") + (omitted.length > 6 ? ", ..." : "");
+      body.push(`  // optional: ${list}`);
+    }
+    body.push("})$0");
+  }
 
   // Get description from function name
   // Use lowercase placeholders to preserve acronyms during camelCase splitting
@@ -280,23 +452,50 @@ function generateSnippet(
   return { prefix, body, description };
 }
 
-function getPlaceholder(name: string, type: string): string {
-  // Smart placeholders based on field name and type
-  if (name === "path") return "/etc/caddy/config.json";
-  if (name === "realm") return "local";
-  if (name === "dial") return "localhost:3000";
-  if (name === "address") return "ldap.example.com";
-  if (name === "port") return "389";
-  if (name === "clientId") return "your-client-id";
-  if (name === "clientSecret") return "your-client-secret";
-  if (name === "discoveryUrl") return "https://idp.example.com/.well-known/openid-configuration";
-  if (name.includes("host")) return "example.com";
-  if (name.includes("name")) return "my-name";
-  if (type.includes("string[]")) return '["value"]';
-  if (type.includes("string")) return '""';
-  if (type.includes("number")) return "0";
-  if (type.includes("boolean")) return "true";
-  return '""';
+function placeholderFor(name: string, funcName: string): string {
+  const n = name.toLowerCase();
+  if (n === "path") {
+    return /IdentityStore|identityStore/.test(funcName) ? "/etc/caddy/users.json" : "/api/*";
+  }
+  if (n === "dial") return "localhost:3000";
+  if (n === "realm") return "local";
+  if (n === "address") return "ldap.example.com";
+  if (n === "clientid") return "your-client-id";
+  if (n === "clientsecret") return "your-client-secret";
+  if (n === "metadataurl" || n === "discoveryurl") return "https://idp.example.com";
+  if (n === "provider") return "github";
+  if (n === "portalname") return "myportal";
+  if (n === "gatekeepername") return "mypolicy";
+  if (n === "bindusername") return "cn=admin,dc=example,dc=com";
+  if (n === "bindpassword") return "change-me";
+  if (n === "searchbasedn") return "ou=users,dc=example,dc=com";
+  if (n === "root" || n === "fileroot") return "/var/www/html";
+  if (n === "pathprefix") return "/app";
+  if (n === "to" || n.endsWith("url")) return "https://example.com";
+  if (n === "upstream") return "localhost:3000";
+  if (n.includes("upstreamhost")) return "localhost";
+  if (n.includes("host") || n.includes("domain")) return "example.com";
+  if (n === "source") return "{http.request.host}";
+  if (n === "name" && /Portal|portal/.test(funcName)) return "myportal";
+  if (n === "name" && /Polic|polic/.test(funcName)) return "mypolicy";
+  if (n === "name" && /IdentityStore|identityStore/.test(funcName)) return "local";
+  if (n === "prefix") return "/api";
+  if (n === "tag") return "production";
+  if (n === "projectid") return "my-project";
+  if (n === "allowedorigin") return "*";
+  if (n.includes("name")) return "my-name";
+  if (n.includes("id")) return "my-id";
+  if (n === "maxsize") return "10MB";
+  return name;
+}
+
+function numberFor(name: string, funcName: string): string {
+  const n = name.toLowerCase();
+  if (n === "statuscode" || n === "status") return /Redirect/.test(funcName) ? "301" : "404";
+  if (n.includes("port")) return /Ldap/.test(funcName) ? "389" : "3000";
+  if (n === "maxsize") return "10485760";
+  if (n === "priority") return "0";
+  return "1";
 }
 
 // ============================================================================
