@@ -13,6 +13,10 @@
  *
  * Voice: CADDY_DEMO_VOICE=<path to .onnx>, default local/piper/en_US-lessac-high.onnx
  * (install with `just vscode-demo-voice-install`).
+ *
+ * Cloned voice instead of piper: CADDY_DEMO_CLONE=<voice name> plus
+ * VOICE_CLONE_SAY=<path to project-prod/packages/voice-clone/bin/say.ts>.
+ * say.ts writes the same voice.json, so nothing after this step changes.
  */
 
 import { spawn, spawnSync } from "child_process";
@@ -67,6 +71,23 @@ async function main(): Promise<void> {
     console.log("CADDY_DEMO_SILENT=1: captions only");
     return;
   }
+  const clone = process.env["CADDY_DEMO_CLONE"];
+  if (clone) {
+    const say = process.env["VOICE_CLONE_SAY"];
+    if (!say || !existsSync(say))
+      throw new Error("CADDY_DEMO_CLONE needs VOICE_CLONE_SAY=<path to say.ts>");
+    mkdirSync(dir, { recursive: true });
+    const list = join(dir, "lines.txt");
+    writeFileSync(list, `${linesFor(storyboard, variant).join("\n")}\n`);
+    const r = spawnSync(
+      "bun",
+      [say, "en", "--lines", list, "--out", dir, "--voice", clone, "--skip", "typescript,vscode"],
+      { stdio: "inherit" }
+    );
+    if (r.status !== 0) throw new Error(`voice clone failed (exit ${r.status})`);
+    return;
+  }
+
   const model = process.env["CADDY_DEMO_VOICE"] ?? DEFAULT_VOICE;
   const piper = findPiper();
   if (!piper || !existsSync(model)) {

@@ -14,6 +14,7 @@
 #   CADDY_DEMO_SILENT=1      captions only, no voice
 #   CADDY_DEMO_REUSE_VSIX=1  do not rebuild the extension first
 #   CADDY_DEMO_VOICE=…onnx   another piper voice
+#   CADDY_DEMO_CLONE=kelvin  cloned voice (needs VOICE_CLONE_SAY=…/packages/voice-clone/bin/say.ts)
 #
 # Output: vscode-extension/local/video/caddy-tools/<variant>/caddy-tools-<variant>.mp4
 set -euo pipefail
