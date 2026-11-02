@@ -31,8 +31,16 @@ const TITLE_SECONDS = 3.4;
 /** Viaalink wordmark (red mark, navy letters, transparent), from the website's static assets. */
 const LOGO = resolve(__dirname, "..", "assets", "viaalink-wordmark.png");
 
-/** The same wordmark flattened on a white tab, for the corner of the film (assets/README). */
-const LOGO_TAB = resolve(__dirname, "..", "assets", "viaalink-wordmark-tab.png");
+/** The dark-background wordmark (red mark, light letters, transparent), for the corner of the film. */
+const LOGO_DARK = resolve(__dirname, "..", "assets", "viaalink-wordmark-dark.png");
+
+/**
+ * The film is delivered at 2160p even though it is recorded at 1080p. YouTube
+ * gives 4K uploads its better codec and a far higher bitrate at EVERY quality,
+ * 1080p included; a 1080p screencast comes back soft enough that code is hard
+ * to read. Override with DEMO_OUTPUT_HEIGHT=1080 for a small local file.
+ */
+const OUTPUT_HEIGHT = Number(process.env["DEMO_OUTPUT_HEIGHT"] ?? 2160);
 
 /** The logo as an endless still, for overlaying; `movie=` keeps the input list (and voice indexes) untouched. */
 function logoSource(width: number, label: string, file = LOGO): string {
@@ -352,14 +360,14 @@ function main(): void {
   const inputs: string[] = ["-i", tl.video];
   graph.push(
     `[0:v]trim=start=${tl.leaderMs / 1000}:duration=${tl.totalMs / 1000},setpts=PTS-STARTPTS,` +
-      `fps=30,subtitles=filename=${assPath}${existsSync(LOGO_TAB) ? "[film]" : ",format=yuv420p[main]"}`
+      `fps=30,subtitles=filename=${assPath}${existsSync(LOGO_DARK) ? "[film]" : ",format=yuv420p[main]"}`
   );
-  if (existsSync(LOGO_TAB)) {
-    // A small wordmark on a white tab, top right: clear of the editor tabs'
+  if (existsSync(LOGO_DARK)) {
+    // A small transparent wordmark, top right: clear of the editor tabs'
     // actions, and of the bottom right where the status bar item and the
     // "Caddy updated" toast are part of the story.
     graph.push(
-      logoSource(228, "bug", LOGO_TAB),
+      `${logoSource(210, "buglogo", LOGO_DARK)};[buglogo]colorchannelmixer=aa=0.9[bug]`,
       "[film][bug]overlay=x=W-w-24:y=56:shortest=1,format=yuv420p[main]"
     );
   }
@@ -474,6 +482,11 @@ function main(): void {
     }
   }
 
+  // Lanczos up to the delivery height last, so every overlay and caption is
+  // drawn once at the recording's own size.
+  const upscale = OUTPUT_HEIGHT > tl.height;
+  if (upscale) graph.push(`[v]scale=-2:${OUTPUT_HEIGHT}:flags=lanczos,format=yuv420p[vout]`);
+
   run([
     "ffmpeg",
     "-y",
@@ -483,7 +496,7 @@ function main(): void {
     "-filter_complex",
     graph.join(";"),
     "-map",
-    "[v]",
+    upscale ? "[vout]" : "[v]",
     ...(audio ? ["-map", "[a]"] : []),
     "-c:v",
     "libx264",
