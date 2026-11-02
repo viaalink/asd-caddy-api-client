@@ -23,10 +23,21 @@
 import { spawnSync } from "child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
-import { assColour, BRAND, ffColour } from "../lib/brand";
+import { assColour, BRAND, CARD, ffColour } from "../lib/brand";
 import type { Timeline, VoiceDurations } from "../lib/types";
 
 const TITLE_SECONDS = 3.4;
+
+/** Viaalink wordmark (red mark, navy letters, transparent), from the website's static assets. */
+const LOGO = resolve(__dirname, "..", "assets", "viaalink-wordmark.png");
+
+/** The same wordmark flattened on a white tab, for the corner of the film (assets/README). */
+const LOGO_TAB = resolve(__dirname, "..", "assets", "viaalink-wordmark-tab.png");
+
+/** The logo as an endless still, for overlaying; `movie=` keeps the input list (and voice indexes) untouched. */
+function logoSource(width: number, label: string, file = LOGO): string {
+  return `movie=${file},loop=loop=-1:size=1,setpts=N/30/TB,format=rgba,scale=${width}:-1[${label}]`;
+}
 const END_SECONDS = 4.2;
 const FADE = 0.35;
 
@@ -167,12 +178,15 @@ function cardGraph(
   tl: Timeline,
   seconds: number,
   lines: CardLine[],
-  work: string
+  work: string,
+  logo?: { width: number; y: number }
 ): string {
-  const parts = [`color=c=${ffColour(BRAND.slate)}:s=${tl.width}x${tl.height}:d=${seconds}:r=30`];
-  // A short accent rule above the first line.
+  const parts = [
+    `color=c=${ffColour(CARD.background)}:s=${tl.width}x${tl.height}:d=${seconds}:r=30`,
+  ];
+  // A short red rule above the first line.
   parts.push(
-    `drawbox=x=(iw-120)/2:y=${lines[0]?.y ?? "h/2"}-48:w=120:h=6:color=${ffColour(BRAND.accent)}:t=fill`
+    `drawbox=x=(iw-120)/2:y=${lines[0]?.y ?? "h/2"}-48:w=120:h=6:color=${ffColour(CARD.red)}:t=fill`
   );
   lines.forEach((line, i) => {
     const file = join(work, `${label}-${i}.txt`);
@@ -190,12 +204,18 @@ function cardGraph(
       ].join(":")
     );
   });
-  parts.push(
+  const fades = [
     `fade=t=in:st=0:d=${FADE}`,
     `fade=t=out:st=${seconds - FADE}:d=${FADE}`,
-    "format=yuv420p"
-  );
-  return `${parts.join(",")}[${label}]`;
+    "format=yuv420p",
+  ];
+  if (!logo || !existsSync(LOGO)) return `${[...parts, ...fades].join(",")}[${label}]`;
+  // Logo on the card first, then fade the two together.
+  return [
+    `${parts.join(",")}[${label}bg]`,
+    logoSource(logo.width, `${label}logo`),
+    `[${label}bg][${label}logo]overlay=x=(W-w)/2:y=${logo.y}:shortest=1,${fades.join(",")}[${label}]`,
+  ].join(";");
 }
 
 /** One still per step, numbered, in a 4-wide grid. */
@@ -332,44 +352,49 @@ function main(): void {
   const inputs: string[] = ["-i", tl.video];
   graph.push(
     `[0:v]trim=start=${tl.leaderMs / 1000}:duration=${tl.totalMs / 1000},setpts=PTS-STARTPTS,` +
-      `fps=30,subtitles=filename=${assPath},format=yuv420p[main]`
+      `fps=30,subtitles=filename=${assPath}${existsSync(LOGO_TAB) ? "[film]" : ",format=yuv420p[main]"}`
   );
+  if (existsSync(LOGO_TAB)) {
+    // A small wordmark on a white tab, top right: clear of the editor tabs'
+    // actions, and of the bottom right where the status bar item and the
+    // "Caddy updated" toast are part of the story.
+    graph.push(
+      logoSource(228, "bug", LOGO_TAB),
+      "[film][bug]overlay=x=W-w-24:y=56:shortest=1,format=yuv420p[main]"
+    );
+  }
   if (cards) {
     const mid = tl.height / 2;
+    // Title: the wordmark, a red rule, the name in navy, what it does in grey.
+    // The wordmark is the byline, so the "by Viaalink" line is not drawn.
     graph.push(
       cardGraph(
         "title",
         tl,
         TITLE_SECONDS,
         [
-          { text: tl.title, size: 76, y: `${mid - 110}`, colour: BRAND.text, font: "bold" },
+          { text: tl.title, size: 76, y: `${mid - 40}`, colour: CARD.navy, font: "bold" },
           ...(tl.subtitle
             ? [
                 {
                   text: wrap(tl.subtitle, 60).join("\n"),
                   size: 34,
-                  y: `${mid + 10}`,
-                  colour: BRAND.muted,
+                  y: `${mid + 80}`,
+                  colour: CARD.muted,
                   font: "regular" as const,
                 },
               ]
             : []),
-          ...(tl.byline
-            ? [
-                {
-                  text: tl.byline,
-                  size: 32,
-                  y: `${mid + 150}`,
-                  colour: BRAND.accent,
-                  font: "bold" as const,
-                },
-              ]
-            : []),
         ],
-        work
+        work,
+        { width: 560, y: mid - 300 }
       )
     );
-    const [install, market, site] = tl.closing;
+    // End: the wordmark, how to install, where everything lives, the site.
+    // closing = [install command, ...links, site].
+    const install = tl.closing[0];
+    const site = tl.closing.length > 1 ? tl.closing[tl.closing.length - 1] : undefined;
+    const links = tl.closing.slice(1, -1);
     graph.push(
       cardGraph(
         "end",
@@ -378,46 +403,43 @@ function main(): void {
         [
           {
             text: "Install from the VS Code Marketplace",
-            size: 40,
-            y: `${mid - 150}`,
-            colour: BRAND.muted,
+            size: 38,
+            y: `${mid - 200}`,
+            colour: CARD.muted,
             font: "regular",
           },
           ...(install
             ? [
                 {
                   text: install,
-                  size: 54,
-                  y: `${mid - 70}`,
-                  colour: BRAND.text,
+                  size: 52,
+                  y: `${mid - 130}`,
+                  colour: CARD.navy,
                   font: "mono" as const,
                 },
               ]
             : []),
-          ...(market
-            ? [
-                {
-                  text: market,
-                  size: 28,
-                  y: `${mid + 30}`,
-                  colour: BRAND.muted,
-                  font: "regular" as const,
-                },
-              ]
-            : []),
+          ...links.map((text, i) => ({
+            text,
+            size: 28,
+            y: `${mid - 10 + i * 52}`,
+            colour: CARD.navy,
+            font: "regular" as const,
+          })),
           ...(site
             ? [
                 {
                   text: site,
-                  size: 40,
-                  y: `${mid + 130}`,
-                  colour: BRAND.accent,
+                  size: 44,
+                  y: `${mid + 40 + links.length * 52}`,
+                  colour: CARD.red,
                   font: "bold" as const,
                 },
               ]
             : []),
         ],
-        work
+        work,
+        { width: 440, y: mid - 400 }
       )
     );
     graph.push("[title][main][end]concat=n=3:v=1:a=0[v]");

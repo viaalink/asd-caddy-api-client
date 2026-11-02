@@ -17,6 +17,18 @@ export const BRAND = {
   muted: "#94A3B8",
 } as const;
 
+/**
+ * The title and end cards are Viaalink's: the red-on-white wordmark, navy text
+ * (the wordmark's own two colours, sampled from logo-wordmark@2x.png) on white.
+ * The film itself stays dark; the cards bracket it like a letterhead.
+ */
+export const CARD = {
+  background: "#FFFFFF",
+  red: "#F73F3F",
+  navy: "#0C2B45",
+  muted: "#5B6B7A",
+} as const;
+
 /** `#RRGGBB` → ffmpeg's `0xRRGGBB`. */
 export function ffColour(hex: string): string {
   return `0x${hex.replace("#", "")}`;

@@ -563,7 +563,9 @@ export const storyboard: Storyboard = {
   byline: "by Viaalink",
   closing: [
     "ext install Viaalink.vscode-caddy-tools",
-    "marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools",
+    "VS Code Marketplace   marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools",
+    "npm   npmjs.com/package/@viaalink/caddy-api-client",
+    "GitHub   github.com/viaalink/asd-caddy-api-client",
     "viaalink.com",
   ],
   prepare: async (page) => {
