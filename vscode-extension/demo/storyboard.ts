@@ -196,7 +196,7 @@ const lint: Scene = {
     },
     {
       caption: "Typos too: upstream instead of upstreams…",
-      say: "Typos too.",
+      say: "Typos get caught as well: here it says upstream instead of upstreams.",
       act: async (page) => {
         await click(page, token(page, '"upstreams"'), { double: true });
         await beat(page, 200);
@@ -278,7 +278,7 @@ const newFile: Scene = {
     },
     {
       caption: "Pick Route, name it, and Tab through the placeholders.",
-      say: "Pick a route, name it, and tab through the placeholders.",
+      say: "Pick a route, give it a name, and tab through the placeholders to fill it in.",
       act: async (page) => {
         await click(page, quickPickItem(page, "Route"));
         await expect(quickInput(page)).toContainText("File name", { timeout: 5000 });
@@ -336,7 +336,7 @@ const live: Scene = {
     },
     {
       caption: "It is live. curl it.",
-      say: "It is live.",
+      say: "And it is live: one curl, and the new route answers right away.",
       act: async (page) => {
         const caddy = liveCaddy();
         // Clear of the "Caddy updated" toast at the bottom right.

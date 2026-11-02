@@ -3,7 +3,7 @@
  *
  * TIMING (plus a SETTLE_MS floor after the act, so a result is never off screen at once)
  * Every step gets a window that starts when its act starts and lasts at least
- * `max(hold * pace, spokenMs + TAIL_MS)`. The act's own duration counts towards
+ * `max(hold * pace, spokenMs + tailMs(line))`. The act's own duration counts towards
  * that window — a step that takes two seconds to type does not then sit still
  * for another two. What is left is waited out, so subtitles and voice line up
  * with the picture without measuring anything afterwards.
@@ -20,8 +20,18 @@ import { stepsFor } from "./types";
 /** How long a step stays on screen when it does not ask for longer. */
 const DEFAULT_HOLD_MS = 1600;
 
-/** Breath after a spoken line, so the next one does not tread on it. */
-const TAIL_MS = 450;
+/**
+ * Breath after a spoken line, so the next one does not tread on it — by how the
+ * line ends, the way a speaker pauses: barely after a comma (the thought goes
+ * on), a beat after a question, a little more after a full stop. The voice
+ * clips are trimmed to the words (voice-clone's cleanup), so this IS the pause.
+ */
+function tailMs(line: string): number {
+  const end = line.trim().slice(-1);
+  if (end === "," || end === "…" || end === ":") return 120;
+  if (end === "?") return 300;
+  return 350;
+}
 
 /**
  * Least time the RESULT of an act stays on screen. Without it a step whose act
@@ -80,7 +90,10 @@ export async function play(
     }
 
     const spokenMs = voice?.[line]?.ms ?? 0;
-    const window = Math.max((step.hold ?? DEFAULT_HOLD_MS) * pace, spokenMs + TAIL_MS);
+    const window = Math.max(
+      (step.hold ?? DEFAULT_HOLD_MS) * pace,
+      spokenMs + (spokenMs ? tailMs(line) : 0)
+    );
     const left = Math.max(window - (since() - startMs), SETTLE_MS * pace);
     if (left > 0) await page.waitForTimeout(left);
 
