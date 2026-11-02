@@ -12,6 +12,18 @@ Package pages:
 - npm: https://www.npmjs.com/package/@viaalink/caddy-api-client
 - Yarn Classic: https://classic.yarnpkg.com/en/package/@viaalink/caddy-api-client
 
+## VS Code extension
+
+Writing Caddy JSON by hand? **[Caddy Configuration Tools for VS Code](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)** is built on this library: IntelliSense that knows every Caddy handler and matcher, checks with quick fixes for the mistakes Caddy only rejects at load time, caddy-security snippets and wizards, and _Apply File to Running Caddy_ straight from the editor.
+
+[![Watch the 1:43 demo on YouTube](https://img.youtube.com/vi/HzIQfr2lnN8/maxresdefault.jpg)](https://youtu.be/HzIQfr2lnN8)
+
+▶ **[Watch the demo on YouTube](https://youtu.be/HzIQfr2lnN8)** (1:43). Everything in it is the real extension against a real Caddy.
+
+```
+ext install Viaalink.vscode-caddy-tools
+```
+
 ## Features
 
 - ✅ **Type-safe Caddy API client** - Full TypeScript support with Zod validation
