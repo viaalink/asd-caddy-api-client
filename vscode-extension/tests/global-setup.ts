@@ -199,9 +199,12 @@ export default async function globalSetup() {
   // Write port to file for tests to read
   fs.writeFileSync(path.join(__dirname, ".codeserver-port"), port.toString());
 
-  // Start code-server
-  const testWorkspace = path.join(__dirname, "test-files");
-  fs.mkdirSync(testWorkspace, { recursive: true });
+  // Serve a throwaway copy of the fixtures: tests create (and delete) scratch
+  // files in the workspace, and must never be able to modify the committed
+  // fixtures in tests/test-files/.
+  const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "caddy-ext-ws-"));
+  fs.cpSync(path.join(__dirname, "test-files"), testWorkspace, { recursive: true });
+  fs.writeFileSync(path.join(__dirname, ".codeserver-workspace"), testWorkspace);
 
   // Pre-configure workspace trust to avoid the trust dialog
   const userDataDir = path.join(asdWorkspace, "code/data");
@@ -235,6 +238,7 @@ export default async function globalSetup() {
       `127.0.0.1:${port}`,
       "--auth",
       "none",
+      "--ignore-last-opened",
       "--extensions-dir",
       extensionsDir,
       "--user-data-dir",

@@ -12,6 +12,7 @@
  */
 
 import * as vscode from "vscode";
+import { caddyFileKind } from "./file-kinds";
 import {
   HANDLER_METADATA,
   BUILDER_METADATA,
@@ -44,15 +45,15 @@ type CompletionContext =
   | { type: "unknown" };
 
 export class CaddyCompletionProvider implements vscode.CompletionItemProvider {
-  private outputChannel: vscode.OutputChannel | undefined;
+  private outputChannel: vscode.LogOutputChannel | undefined;
 
-  constructor(outputChannel?: vscode.OutputChannel) {
+  constructor(outputChannel?: vscode.LogOutputChannel) {
     this.outputChannel = outputChannel;
   }
 
   private log(message: string): void {
     if (this.outputChannel) {
-      this.outputChannel.appendLine(`[Completion] ${message}`);
+      this.outputChannel.debug(message);
     }
   }
 
@@ -65,6 +66,21 @@ export class CaddyCompletionProvider implements vscode.CompletionItemProvider {
     // Detect the completion context
     const context = this.detectContext(document, position);
     this.log(`Detected context: ${context.type}`);
+
+    // In files covered by a contributed jsonValidation schema, VS Code's JSON
+    // service already lists property names -- precisely per handler, and more
+    // of them. Offering ours too showed every field twice. Values (handler
+    // names with docs, methods, enums) stay ours.
+    const schemaBacked = caddyFileKind(document.fileName) !== undefined && !document.isUntitled;
+    const propertyContexts = new Set([
+      "route-property",
+      "match-property",
+      "handle-property",
+      "handler-property",
+    ]);
+    if (schemaBacked && propertyContexts.has(context.type)) {
+      return undefined;
+    }
 
     switch (context.type) {
       case "handler-value":
@@ -82,7 +98,7 @@ export class CaddyCompletionProvider implements vscode.CompletionItemProvider {
       case "enum-value":
         return this.getEnumCompletions(context.field);
       case "builder":
-        return this.getBuilderCompletions();
+        return this.getBuilderCompletions(document);
       default:
         return undefined;
     }
@@ -402,21 +418,62 @@ export class CaddyCompletionProvider implements vscode.CompletionItemProvider {
     return md;
   }
 
-  private getBuilderCompletions(): vscode.CompletionItem[] {
+  private getBuilderCompletions(document: vscode.TextDocument): vscode.CompletionItem[] {
     const items: vscode.CompletionItem[] = [];
+    const text = document.getText();
 
     for (const [name, builder] of Object.entries(BUILDER_METADATA)) {
       const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Function);
 
-      item.detail = builder.returnType;
-      item.documentation = new vscode.MarkdownString(builder.description);
-
-      // Use the snippet from the library
+      item.detail = `${builder.returnType} — @viaalink/caddy-api-client`;
+      const docs = new vscode.MarkdownString(builder.description);
+      if (builder.example) docs.appendCodeblock(builder.example, "typescript");
+      item.documentation = docs;
       item.insertText = new vscode.SnippetString(builder.snippet.body.join("\n"));
+
+      const importEdit = builderImportEdit(document, text, name);
+      if (importEdit) item.additionalTextEdits = [importEdit];
 
       items.push(item);
     }
 
     return items;
   }
+}
+
+const LIBRARY = "@viaalink/caddy-api-client";
+const IMPORT_RE = new RegExp(
+  `import\\s*\\{([^}]*)\\}\\s*from\\s*["']${LIBRARY.replace(/[/@-]/g, "\\$&")}["'];?`
+);
+
+/**
+ * Adds `name` to an existing `import { ... } from "@viaalink/caddy-api-client"`
+ * or inserts a new import at the top -- so accepting a builder completion
+ * leaves code that compiles. Undefined when it is already imported.
+ */
+export function builderImportEdit(
+  document: vscode.TextDocument,
+  text: string,
+  name: string
+): vscode.TextEdit | undefined {
+  const existing = IMPORT_RE.exec(text);
+  if (existing) {
+    const names = existing[1]
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean);
+    if (names.includes(name)) return undefined;
+    const start = document.positionAt(existing.index);
+    const end = document.positionAt(existing.index + existing[0].length);
+    return vscode.TextEdit.replace(
+      new vscode.Range(start, end),
+      `import { ${[...names, name].sort().join(", ")} } from "${LIBRARY}";`
+    );
+  }
+  // Already imported from somewhere else (e.g. the "/caddy" subpath): leave it alone.
+  if (new RegExp(`import[^;]*\\b${name}\\b[^;]*from`).test(text)) return undefined;
+  return vscode.TextEdit.insert(
+    new vscode.Position(0, 0),
+    `import { ${name} } from "${LIBRARY}";\n`
+  );
 }

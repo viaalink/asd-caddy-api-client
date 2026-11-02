@@ -1164,6 +1164,21 @@
                                             },
                                             "additionalProperties": false
                                           },
+                                          "authorizer": {
+                                            "type": "object",
+                                            "properties": {
+                                              "gatekeeper_name": {
+                                                "type": "string"
+                                              },
+                                              "route_matcher": {
+                                                "type": "string"
+                                              },
+                                              "@id": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "additionalProperties": false
+                                          },
                                           "@id": {
                                             "type": "string"
                                           }

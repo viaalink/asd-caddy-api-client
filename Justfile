@@ -306,9 +306,17 @@ glog:
 claude:
     claude --allow-dangerously-skip-permissions
 
-# VSCode Extension: run Playwright tests (headless)
-vscode-test:
-    cd vscode-extension && npm test
+# VSCode Extension: run Playwright tests against code-server (headless); extra args go to playwright, e.g. `just vscode-test -g Snippets`
+[positional-arguments]
+vscode-test *args:
+    cd vscode-extension && npm test -- "$@"
+
+# VSCode Extension: run the API-level integration tests in real desktop VS Code (headless via xvfb)
+vscode-test-desktop:
+    cd vscode-extension && xvfb-run -a npm run test:desktop
+
+# VSCode Extension: run both test tiers (desktop VS Code, then code-server)
+vscode-test-all: vscode-test-desktop vscode-test
 
 # VSCode Extension: run Playwright tests with visible browser
 vscode-test-headed:
@@ -325,6 +333,29 @@ vscode-build:
 # VSCode Extension: install in local VSCode
 vscode-install:
     cd vscode-extension && code --install-extension vscode-caddy-tools-*.vsix --force
+
+# variant: promo (title/end cards, captions, voice) · qa (numbered captions, slower, no cards).
+# Storyboard: vscode-extension/demo/storyboard.ts. Output: vscode-extension/local/video/ (gitignored).
+# VSCode Extension: record the demo film (voice → record → render → contact sheet)
+vscode-demo-video variant="promo":
+    bash vscode-extension/demo/scripts/video.sh {{variant}}
+
+# VSCode Extension: both demo films, one after the other
+vscode-demo-video-all:
+    bash vscode-extension/demo/scripts/video.sh promo
+    CADDY_DEMO_REUSE_VSIX=1 bash vscode-extension/demo/scripts/video.sh qa
+
+# VSCode Extension: typecheck the demo pipeline (demo/tsconfig.json)
+vscode-demo-typecheck:
+    cd vscode-extension && npx tsc -p demo/tsconfig.json
+
+# VSCode Extension: install the English piper voice for the demo narration (once, ~110 MB, gitignored)
+vscode-demo-voice-install voice="en_US-lessac-high":
+    bash vscode-extension/demo/scripts/voice-install.sh {{voice}}
+
+# VSCode Extension: 3×3 contact sheet of any film, to review it without watching
+vscode-demo-contact-sheet film:
+    bash vscode-extension/demo/scripts/contact-sheet.sh {{film}}
 
 # MITMproxy demo: just demo start|stop|url
 [no-cd]

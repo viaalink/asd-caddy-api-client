@@ -46,18 +46,25 @@ export async function runSecurityWizard(): Promise<void> {
 
   if (!startChoice) return;
 
-  if (startChoice.value === "quick") {
-    await quickSetup(config);
-  } else {
-    await customSetup(config);
-  }
+  const completed =
+    startChoice.value === "quick" ? await quickSetup(config) : await customSetup(config);
+  // A cancelled step (Escape on any input) must not insert a half-built config.
+  if (!completed) return;
 
-  // Generate and insert the code
-  const code = generateSecurityCode(config);
+  // Generate and insert the code. The library builders validate what they
+  // build, so a bad value (e.g. an empty bind DN) surfaces here, not in Caddy.
+  let code: string;
+  try {
+    code = generateSecurityCode(config);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    vscode.window.showErrorMessage(`Security configuration is not valid: ${message}`);
+    return;
+  }
   await insertCode(code);
 }
 
-async function quickSetup(config: SecurityConfig): Promise<void> {
+async function quickSetup(config: SecurityConfig): Promise<boolean> {
   // Quick setup creates a local store, portal, and basic policy
 
   // Get portal name
@@ -71,7 +78,7 @@ async function quickSetup(config: SecurityConfig): Promise<void> {
       return undefined;
     },
   });
-  if (!portalName) return;
+  if (!portalName) return false;
 
   // Get cookie domain
   const cookieDomain = await vscode.window.showInputBox({
@@ -79,7 +86,7 @@ async function quickSetup(config: SecurityConfig): Promise<void> {
     prompt: "Enter the cookie domain (e.g., .example.com for all subdomains)",
     placeHolder: ".example.com",
   });
-  if (cookieDomain === undefined) return;
+  if (cookieDomain === undefined) return false;
 
   // Get users file path
   const usersPath = await vscode.window.showInputBox({
@@ -92,7 +99,7 @@ async function quickSetup(config: SecurityConfig): Promise<void> {
       return undefined;
     },
   });
-  if (!usersPath) return;
+  if (!usersPath) return false;
 
   // Create local identity store
   config.identityStores.push({
@@ -120,9 +127,10 @@ async function quickSetup(config: SecurityConfig): Promise<void> {
       },
     ],
   });
+  return true;
 }
 
-async function customSetup(config: SecurityConfig): Promise<void> {
+async function customSetup(config: SecurityConfig): Promise<boolean> {
   let addMore = true;
 
   // Step 1: Identity Stores
@@ -147,7 +155,7 @@ async function customSetup(config: SecurityConfig): Promise<void> {
 
   if (config.identityStores.length === 0) {
     vscode.window.showWarningMessage("No identity stores configured");
-    return;
+    return false;
   }
 
   // Step 2: Authentication Portal
@@ -178,6 +186,7 @@ async function customSetup(config: SecurityConfig): Promise<void> {
 
     addMore = addAnother?.value ?? false;
   }
+  return true;
 }
 
 async function configureIdentityStore(): Promise<IdentityStoreConfig | undefined> {
@@ -327,8 +336,21 @@ async function configureOAuthStore(
   });
   if (!clientSecret) return undefined;
 
+  let metadataUrl: string | undefined;
+  if (config.type === "oidc") {
+    metadataUrl = await vscode.window.showInputBox({
+      title: "OIDC Issuer / Metadata URL",
+      prompt: "Issuer URL; /.well-known/openid-configuration is appended if missing",
+      placeHolder: "https://idp.example.com/realms/main",
+      validateInput: (value) =>
+        /^https?:\/\//.test(value.trim()) ? undefined : "Enter an http(s) URL",
+    });
+    if (!metadataUrl) return undefined;
+  }
+
   return {
     ...config,
+    ...(metadataUrl && { metadataUrl }),
     provider: provider.value,
     clientId,
     clientSecret,

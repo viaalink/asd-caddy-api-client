@@ -6,20 +6,21 @@
  */
 
 import * as vscode from "vscode";
+import { isCaddyJsonFile } from "./file-kinds";
 import { HANDLER_METADATA, BUILDER_METADATA } from "@viaalink/caddy-api-client/extension-assets";
 
 const CADDY_DOCS_BASE = "https://caddyserver.com";
 
 export class CaddyHoverProvider implements vscode.HoverProvider {
-  private outputChannel: vscode.OutputChannel | undefined;
+  private outputChannel: vscode.LogOutputChannel | undefined;
 
-  constructor(outputChannel?: vscode.OutputChannel) {
+  constructor(outputChannel?: vscode.LogOutputChannel) {
     this.outputChannel = outputChannel;
   }
 
   private log(message: string): void {
     if (this.outputChannel) {
-      this.outputChannel.appendLine(`[Hover] ${message}`);
+      this.outputChannel.debug(message);
     }
   }
 
@@ -34,12 +35,8 @@ export class CaddyHoverProvider implements vscode.HoverProvider {
     }
 
     // Only process Caddy-related files
-    const fileName = document.fileName.toLowerCase();
-    const isCaddyFile =
-      fileName.includes("caddy") ||
-      fileName.includes("security") ||
-      fileName.endsWith(".caddy.json");
-    if (!isCaddyFile && document.languageId === "json") {
+    const isCaddyFile = isCaddyJsonFile(document.fileName);
+    if (!isCaddyFile && (document.languageId === "json" || document.languageId === "jsonc")) {
       return undefined;
     }
 

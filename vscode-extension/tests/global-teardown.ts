@@ -31,5 +31,15 @@ export default async function globalTeardown() {
     }
   }
 
+  // Remove the throwaway workspace copy
+  const workspaceFile = path.join(__dirname, ".codeserver-workspace");
+  if (fs.existsSync(workspaceFile)) {
+    const workspace = fs.readFileSync(workspaceFile, "utf-8").trim();
+    if (workspace.includes("caddy-ext-ws-")) {
+      fs.rmSync(workspace, { recursive: true, force: true });
+    }
+    fs.unlinkSync(workspaceFile);
+  }
+
   console.log("✅ code-server stopped");
 }

@@ -23,6 +23,8 @@ Justfile recipes so behavior stays reproducible across agents and CI.
 | All quality checks        | `just check` (format-check, lint, typecheck, test) |
 | Everything CI runs        | `just ci` (`check` + `build`)                      |
 | VSCode extension tests    | `just vscode-test`                                 |
+| VSCode desktop API tests  | `just vscode-test-desktop` (xvfb, real VS Code)    |
+| VSCode all test tiers     | `just vscode-test-all`                             |
 | VSCode extension package  | `just vscode-build`                                |
 
 `npm run generate:*`, `sync:*`, and `docs:*` (type/plugin/schema generation, TypeDoc) have no

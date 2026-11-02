@@ -6,8 +6,8 @@
  * Run: npm run generate:extension
  *
  * @generated
- * @version 0.5.2
- * @generatedAt 2026-04-01T16:38:14.519Z
+ * @version 0.10.1
+ * @generatedAt 2026-10-31T23:06:36.575Z
  */
 
 // ============================================================================
@@ -54,12 +54,12 @@ export interface HandlerMetadata {
 /**
  * Library version this metadata was generated from
  */
-export const METADATA_VERSION = "0.5.2";
+export const METADATA_VERSION = "0.10.1";
 
 /**
  * Timestamp when this metadata was generated
  */
-export const GENERATED_AT = "2026-04-01T16:38:14.519Z";
+export const GENERATED_AT = "2026-10-31T23:06:36.575Z";
 
 /**
  * Builder function metadata extracted from JSDoc and type definitions
@@ -103,10 +103,9 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-local-identity-store",
       body: [
         "buildLocalIdentityStore({",
-        "  // name: ${1:local},",
-        "  path: ${2:/etc/caddy/config.json},",
-        "  // realm: ${3:local}",
-        "})",
+        '  path: "${1:/etc/caddy/users.json}",',
+        "  // optional: name, realm",
+        "})$0",
       ],
       description: "Build Local Identity Store",
     },
@@ -178,15 +177,12 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-ldap-identity-store",
       body: [
         "buildLdapIdentityStore({",
-        "  // name: ${1:ldapdb},",
-        "  // realm: ${2:ldap},",
-        '  servers: ${3:""},',
-        "  bindUsername: ${4:my-name},",
-        '  bindPassword: ${5:""},',
-        '  searchBaseDn: ${6:""},',
-        "  // searchUserFilter: ${7:(uid={username})},",
-        "  // groups: ${8:[]}",
-        "})",
+        '  servers: [{ address: "${1:ldap.example.com}" }],',
+        '  bindUsername: "${2:cn=admin,dc=example,dc=com}",',
+        '  bindPassword: "${3:change-me}",',
+        '  searchBaseDn: "${4:ou=users,dc=example,dc=com}",',
+        "  // optional: name, realm, searchUserFilter, groups",
+        "})$0",
       ],
       description: "Build LDAP Identity Store",
     },
@@ -253,11 +249,11 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-oauth2-provider",
       body: [
         "buildOAuth2Provider({",
-        '  provider: ${1:""},',
-        "  clientId: ${2:your-client-id},",
-        "  clientSecret: ${3:your-client-secret},",
-        '  // scopes: ${4:["openid", "email", "profile"]},',
-        "})",
+        '  provider: "${1:github}",',
+        '  clientId: "${2:your-client-id}",',
+        '  clientSecret: "${3:your-client-secret}",',
+        "  // optional: name, realm, scopes, authorizationUrl, tokenUrl",
+        "})$0",
       ],
       description: "Build OAuth2 Provider",
     },
@@ -319,12 +315,12 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-oidc-provider",
       body: [
         "buildOidcProvider({",
-        '  provider: ${1:""},',
-        "  clientId: ${2:your-client-id},",
-        "  clientSecret: ${3:your-client-secret},",
-        '  metadataUrl: ${4:""},',
-        '  // scopes: ${5:["openid", "email", "profile"]},',
-        "})",
+        '  provider: "${1:github}",',
+        '  clientId: "${2:your-client-id}",',
+        '  clientSecret: "${3:your-client-secret}",',
+        '  metadataUrl: "${4:https://idp.example.com}",',
+        "  // optional: name, realm, scopes",
+        "})$0",
       ],
       description: "Build OIDC Provider",
     },
@@ -375,7 +371,12 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       'import { buildAuthenticationPortal } from "@.../caddy-api-client/plugins/caddy-security";\n\nconst portal = buildAuthenticationPortal({\n  name: "myportal",\n  identityStores: ["localdb"],\n  identityProviders: ["keycloak"],\n  cookie: { domain: ".example.com", lifetime: "24h" },\n});',
     snippet: {
       prefix: "caddy-authentication-portal",
-      body: ["buildAuthenticationPortal({", "  name: ${1:my-name},", "})"],
+      body: [
+        "buildAuthenticationPortal({",
+        '  name: "${1:myportal}",',
+        "  // optional: ui, cookie, identityStores, identityProviders, transformUser",
+        "})$0",
+      ],
       description: "Build Authentication Portal",
     },
   },
@@ -413,7 +414,12 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       'import { buildAuthorizationPolicy } from "@.../caddy-api-client/plugins/caddy-security";\n\nconst policy = buildAuthorizationPolicy({\n  name: "admin-policy",\n  accessLists: [\n    { claim: "roles", values: ["admin", "editor"], action: "allow" },\n  ],\n  bypass: ["/health", "/metrics"],\n});',
     snippet: {
       prefix: "caddy-authorization-policy",
-      body: ["buildAuthorizationPolicy({", "  name: ${1:my-name},", "})"],
+      body: [
+        "buildAuthorizationPolicy({",
+        '  name: "${1:mypolicy}",',
+        "  // optional: accessLists, cryptoKey, bypass",
+        "})$0",
+      ],
       description: "Build Authorization Policy",
     },
   },
@@ -451,7 +457,14 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       'import {\n  buildSecurityConfig,\n  buildLocalIdentityStore,\n  buildAuthenticationPortal,\n  buildAuthorizationPolicy,\n} from "@.../caddy-api-client/plugins/caddy-security";\n\nconst config = buildSecurityConfig({\n  identityStores: [\n    buildLocalIdentityStore({ path: "/etc/caddy/users.json" }),\n  ],\n  portals: [\n    buildAuthenticationPortal({\n      name: "myportal",\n      identityStores: ["local"],\n    }),\n  ],\n  policies: [\n    buildAuthorizationPolicy({\n      name: "mypolicy",\n      accessLists: [{ claim: "roles", values: ["user"] }],\n    }),\n  ],\n});',
     snippet: {
       prefix: "caddy-security-config",
-      body: ["buildSecurityConfig({", "})"],
+      body: [
+        "buildSecurityConfig({",
+        '  portals: [{ name: "${1:myportal}" }],',
+        '  policies: [{ name: "${2:mypolicy}" }],',
+        '  identityStores: [{ name: "${3:local}", params: { path: "${4:/etc/caddy/users.json}" }, kind: "local" }],',
+        "  // optional: identityProviders",
+        "})$0",
+      ],
       description: "Build Security Config",
     },
   },
@@ -472,7 +485,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       'import { buildSecurityApp, buildSecurityConfig } from "@.../caddy-api-client/plugins/caddy-security";\n\nconst app = buildSecurityApp({\n  config: buildSecurityConfig({\n    // ... config options\n  }),\n});\n\n// Apply to Caddy\nawait client.request("/config/apps/security", {\n  method: "PUT",\n  body: JSON.stringify(app),\n});',
     snippet: {
       prefix: "caddy-security-app",
-      body: ["buildSecurityApp({", '  config: ${1:""}', "})"],
+      body: ["buildSecurityApp({", "  config: {},", "})$0"],
       description: "Build Security App",
     },
   },
@@ -499,7 +512,12 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       'import { buildAuthenticatorHandler } from "@.../caddy-api-client/plugins/caddy-security";\n\nconst handler = buildAuthenticatorHandler({\n  portalName: "myportal",\n});\n\n// Use in a route\nconst route: CaddyRoute = {\n  match: [{ host: ["auth.example.com"] }],\n  handle: [handler],\n  terminal: true,\n};',
     snippet: {
       prefix: "caddy-authenticator-handler",
-      body: ["buildAuthenticatorHandler({", '  portalName: ${1:""},', "})"],
+      body: [
+        "buildAuthenticatorHandler({",
+        '  portalName: "${1:myportal}",',
+        "  // optional: routeMatcher",
+        "})$0",
+      ],
       description: "Build Authenticator Handler",
     },
   },
@@ -526,7 +544,12 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       'import { buildAuthorizationHandler } from "@.../caddy-api-client/plugins/caddy-security";\n\nconst handler = buildAuthorizationHandler({\n  gatekeeperName: "mygatekeeper",\n});\n\n// Protect a route\nconst route: CaddyRoute = {\n  match: [{ host: ["api.example.com"] }],\n  handle: [\n    handler,  // Check auth first\n    { handler: "reverse_proxy", upstreams: [{ dial: "localhost:3000" }] },\n  ],\n  terminal: true,\n};',
     snippet: {
       prefix: "caddy-authorization-handler",
-      body: ["buildAuthorizationHandler({", '  gatekeeperName: ${1:""},', "})"],
+      body: [
+        "buildAuthorizationHandler({",
+        '  gatekeeperName: "${1:mypolicy}",',
+        "  // optional: routeMatcher",
+        "})$0",
+      ],
       description: "Build Authorization Handler",
     },
   },
@@ -561,9 +584,10 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-authenticator-route",
       body: [
         "buildAuthenticatorRoute({",
-        "  hosts: ${1:example.com},",
-        '  portalName: ${2:""},',
-        "})",
+        '  hosts: ["${1:example.com}"],',
+        '  portalName: "${2:myportal}",',
+        "  // optional: routeId",
+        "})$0",
       ],
       description: "Build Authenticator Route",
     },
@@ -611,10 +635,11 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-protected-route",
       body: [
         "buildProtectedRoute({",
-        "  hosts: ${1:example.com},",
-        '  gatekeeperName: ${2:""},',
-        "  dial: ${3:localhost:3000},",
-        "})",
+        '  hosts: ["${1:example.com}"],',
+        '  gatekeeperName: "${2:mypolicy}",',
+        '  dial: "${3:localhost:3000}",',
+        "  // optional: paths, routeId",
+        "})$0",
       ],
       description: "Build Protected Route",
     },
@@ -622,78 +647,822 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
   buildServiceRoutes: {
     name: "buildServiceRoutes",
     description: "Build routes for a service (host-based and/or path-based)",
-    params: [],
+    params: [
+      {
+        name: "host",
+        type: "string",
+        required: false,
+        description: "Host for host-based route",
+      },
+      {
+        name: "path",
+        type: "string",
+        required: false,
+        description: "Path for path-based route",
+      },
+      {
+        name: "pathRouteHost",
+        type: "string",
+        required: false,
+        description: "Host for path-based route",
+        default: "asd.localhost",
+      },
+      {
+        name: "dial",
+        type: "string",
+        required: true,
+        description: "Dial address (host:port)",
+      },
+      {
+        name: "serviceId",
+        type: "string",
+        required: false,
+        description: "Service identifier for health checks",
+      },
+      {
+        name: "enableHostRoute",
+        type: "boolean",
+        required: false,
+        description: "Enable host-based route",
+        default: "true",
+      },
+      {
+        name: "enablePathRoute",
+        type: "boolean",
+        required: false,
+        description: "Enable path-based route",
+        default: "true",
+      },
+      {
+        name: "stripPrefix",
+        type: "boolean",
+        required: false,
+        description: "Strip path prefix",
+        default: "true",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "Route priority (higher = matches first)",
+        default: "50",
+      },
+      {
+        name: "securityHeaders",
+        type: "SecurityHeaders",
+        required: false,
+        description: "Security headers configuration",
+      },
+      {
+        name: "basicAuth",
+        type: "BasicAuthOptions",
+        required: false,
+        description: "Basic authentication configuration",
+      },
+      {
+        name: "ingressTag",
+        type: "string",
+        required: false,
+        description:
+          "Ingress tag value for X-ASD-Ingress header\nSet to null to explicitly disable",
+      },
+      {
+        name: "iframeOrigin",
+        type: "string",
+        required: false,
+        description:
+          "Origin for iframe embedding headers (CORS + CSP)\nSet to null to explicitly disable",
+      },
+      {
+        name: "deleteResponseHeaders",
+        type: "string[]",
+        required: false,
+        description:
+          'Response headers to delete from reverse proxy response\n(e.g., ["Content-Security-Policy"] for iframe support)',
+      },
+      {
+        name: "serviceType",
+        type: "string",
+        required: false,
+        description: "Service type for X-ASD-Service-Type header",
+      },
+      {
+        name: "isTunnelDomain",
+        type: "boolean",
+        required: false,
+        description:
+          "Whether this is a tunnel domain route\nUsed for selective auth (tunnel vs host route type)",
+      },
+      {
+        name: "flushInterval",
+        type: "number",
+        required: false,
+        description:
+          "Flush interval for reverse proxy streaming support.\nSet to -1 to disable buffering (required for WebSocket/SSE).",
+      },
+      {
+        name: "projectId",
+        type: "string",
+        required: false,
+        description:
+          "Project identifier for X-ASD-Project header.\nUsed to identify which project's Caddy handled the request.",
+      },
+    ],
     returnType: "CaddyRoute[]",
     snippet: {
       prefix: "caddy-service-routes",
-      body: ["buildServiceRoutes({", "})"],
+      body: [
+        "buildServiceRoutes({",
+        '  dial: "${1:localhost:3000}",',
+        "  // optional: host, path, pathRouteHost, serviceId, enableHostRoute, enablePathRoute, ...",
+        "})$0",
+      ],
       description: "Build Service Routes",
     },
   },
   buildHealthCheckRoute: {
     name: "buildHealthCheckRoute",
     description: "Build a health check route",
-    params: [],
+    params: [
+      {
+        name: "host",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "serviceId",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "",
+      },
+      {
+        name: "ingressTag",
+        type: "string",
+        required: false,
+        description: "Ingress tag value for X-ASD-Ingress header",
+      },
+      {
+        name: "dial",
+        type: "string",
+        required: false,
+        description:
+          "Upstream dial address. When set, health check uses reverse_proxy instead of static_response",
+      },
+      {
+        name: "projectId",
+        type: "string",
+        required: false,
+        description: "Project identifier for X-ASD-Project header",
+      },
+    ],
     returnType: "CaddyRoute",
     snippet: {
       prefix: "caddy-health-check-route",
-      body: ["buildHealthCheckRoute({", "})"],
+      body: [
+        "buildHealthCheckRoute({",
+        '  host: "${1:example.com}",',
+        '  serviceId: "${2:my-id}",',
+        "  // optional: priority, ingressTag, dial, projectId",
+        "})$0",
+      ],
       description: "Build Health Check Route",
     },
   },
   buildHostRoute: {
     name: "buildHostRoute",
     description: "Build a host-based route",
-    params: [],
+    params: [
+      {
+        name: "host",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "dial",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "securityHeaders",
+        type: "SecurityHeaders",
+        required: false,
+        description: "",
+      },
+      {
+        name: "basicAuth",
+        type: "BasicAuthOptions",
+        required: false,
+        description: "",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "",
+      },
+      {
+        name: "ingressTag",
+        type: "string",
+        required: false,
+        description: "Ingress tag value for X-ASD-Ingress header",
+      },
+      {
+        name: "iframeOrigin",
+        type: "string",
+        required: false,
+        description: "Origin for iframe embedding headers",
+      },
+      {
+        name: "deleteResponseHeaders",
+        type: "string[]",
+        required: false,
+        description: "Response headers to delete from reverse proxy",
+      },
+      {
+        name: "serviceId",
+        type: "string",
+        required: false,
+        description: "Service ID for X-ASD-Service-ID header",
+      },
+      {
+        name: "serviceType",
+        type: "string",
+        required: false,
+        description: "Service type for X-ASD-Service-Type header",
+      },
+      {
+        name: "flushInterval",
+        type: "number",
+        required: false,
+        description: "Flush interval for reverse proxy streaming (-1 disables buffering)",
+      },
+      {
+        name: "projectId",
+        type: "string",
+        required: false,
+        description: "Project identifier for X-ASD-Project header",
+      },
+    ],
     returnType: "CaddyRoute",
     snippet: {
       prefix: "caddy-host-route",
-      body: ["buildHostRoute({", "})"],
+      body: [
+        "buildHostRoute({",
+        '  host: "${1:example.com}",',
+        '  dial: "${2:localhost:3000}",',
+        "  // optional: securityHeaders, basicAuth, priority, ingressTag, iframeOrigin, deleteResponseHeaders, ...",
+        "})$0",
+      ],
       description: "Build Host Route",
     },
   },
   buildPathRoute: {
     name: "buildPathRoute",
     description: "Build a path-based route",
-    params: [],
+    params: [
+      {
+        name: "path",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "host",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "dial",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "stripPrefix",
+        type: "boolean",
+        required: false,
+        description: "",
+      },
+      {
+        name: "securityHeaders",
+        type: "SecurityHeaders",
+        required: false,
+        description: "",
+      },
+      {
+        name: "basicAuth",
+        type: "BasicAuthOptions",
+        required: false,
+        description: "",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "",
+      },
+      {
+        name: "ingressTag",
+        type: "string",
+        required: false,
+        description: "Ingress tag value for X-ASD-Ingress header",
+      },
+      {
+        name: "iframeOrigin",
+        type: "string",
+        required: false,
+        description: "Origin for iframe embedding headers",
+      },
+      {
+        name: "deleteResponseHeaders",
+        type: "string[]",
+        required: false,
+        description: "Response headers to delete from reverse proxy",
+      },
+      {
+        name: "serviceId",
+        type: "string",
+        required: false,
+        description: "Service ID for X-ASD-Service-ID header",
+      },
+      {
+        name: "serviceType",
+        type: "string",
+        required: false,
+        description: "Service type for X-ASD-Service-Type header",
+      },
+      {
+        name: "flushInterval",
+        type: "number",
+        required: false,
+        description: "Flush interval for reverse proxy streaming (-1 disables buffering)",
+      },
+      {
+        name: "projectId",
+        type: "string",
+        required: false,
+        description: "Project identifier for X-ASD-Project header",
+      },
+    ],
     returnType: "CaddyRoute",
     snippet: {
       prefix: "caddy-path-route",
-      body: ["buildPathRoute({", "})"],
+      body: [
+        "buildPathRoute({",
+        '  path: "${1:/api/*}",',
+        '  host: "${2:example.com}",',
+        '  dial: "${3:localhost:3000}",',
+        "  // optional: stripPrefix, securityHeaders, basicAuth, priority, ingressTag, iframeOrigin, ...",
+        "})$0",
+      ],
       description: "Build Path Route",
     },
   },
   buildLoadBalancerRoute: {
     name: "buildLoadBalancerRoute",
     description: "Build a load balancer route",
-    params: [],
+    params: [
+      {
+        name: "host",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "upstreams",
+        type: "string[]",
+        required: true,
+        description: "",
+      },
+      {
+        name: "healthCheckPath",
+        type: "string",
+        required: false,
+        description: "",
+      },
+      {
+        name: "healthCheckInterval",
+        type: "string",
+        required: false,
+        description: "",
+      },
+      {
+        name: "policy",
+        type: '"first" | "random" | "least_conn" | "round_robin"',
+        required: false,
+        description: "",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "",
+      },
+    ],
     returnType: "CaddyRoute",
     snippet: {
       prefix: "caddy-load-balancer-route",
-      body: ["buildLoadBalancerRoute({", "})"],
+      body: [
+        "buildLoadBalancerRoute({",
+        '  host: "${1:example.com}",',
+        '  upstreams: ["${2:localhost:3000}"],',
+        "  // optional: healthCheckPath, healthCheckInterval, policy, priority",
+        "})$0",
+      ],
       description: "Build Load Balancer Route",
     },
   },
   buildReverseProxyHandler: {
     name: "buildReverseProxyHandler",
     description: "Build a reverse proxy handler",
-    params: [],
+    params: [
+      {
+        name: "toString",
+        type: "() => string",
+        required: true,
+        description: "Returns a string representation of a string.",
+      },
+      {
+        name: "charAt",
+        type: "(pos: number) => string",
+        required: true,
+        description: "Returns the character at the specified index.",
+      },
+      {
+        name: "charCodeAt",
+        type: "(index: number) => number",
+        required: true,
+        description: "Returns the Unicode value of the character at the specified location.",
+      },
+      {
+        name: "concat",
+        type: "(...strings: string[]) => string",
+        required: true,
+        description: "Returns a string that contains the concatenation of two or more strings.",
+      },
+      {
+        name: "indexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the position of the first occurrence of a substring.",
+      },
+      {
+        name: "lastIndexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the last occurrence of a substring in the string.",
+      },
+      {
+        name: "localeCompare",
+        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
+        required: true,
+        description:
+          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
+      },
+      {
+        name: "match",
+        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
+      },
+      {
+        name: "replace",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
+      },
+      {
+        name: "search",
+        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
+        required: true,
+        description: "Finds the first substring match in a regular expression search.",
+      },
+      {
+        name: "slice",
+        type: "(start?: number | undefined, end?: number | undefined) => string",
+        required: true,
+        description: "Returns a section of a string.",
+      },
+      {
+        name: "split",
+        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
+        required: true,
+        description:
+          "Split a string into substrings using the specified separator and return them as an array.",
+      },
+      {
+        name: "substring",
+        type: "(start: number, end?: number | undefined) => string",
+        required: true,
+        description: "Returns the substring at the specified location within a String object.",
+      },
+      {
+        name: "toLowerCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to lowercase.",
+      },
+      {
+        name: "toLocaleLowerCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "toUpperCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to uppercase.",
+      },
+      {
+        name: "toLocaleUpperCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "trim",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading and trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "length",
+        type: "number",
+        required: true,
+        description: "Returns the length of a String object.",
+      },
+      {
+        name: "substr",
+        type: "(from: number, length?: number | undefined) => string",
+        required: true,
+        description:
+          "Gets a substring beginning at the specified location and having the specified length.",
+      },
+      {
+        name: "valueOf",
+        type: "() => string",
+        required: true,
+        description: "Returns the primitive value of the specified object.",
+      },
+      {
+        name: "codePointAt",
+        type: "(pos: number) => number | undefined",
+        required: true,
+        description:
+          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
+      },
+      {
+        name: "includes",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
+      },
+      {
+        name: "endsWith",
+        type: "(searchString: string, endPosition?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
+      },
+      {
+        name: "normalize",
+        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
+        required: true,
+        description:
+          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
+      },
+      {
+        name: "repeat",
+        type: "(count: number) => string",
+        required: true,
+        description:
+          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
+      },
+      {
+        name: "startsWith",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
+      },
+      {
+        name: "anchor",
+        type: "(name: string) => string",
+        required: true,
+        description:
+          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
+      },
+      {
+        name: "big",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<big>` HTML element",
+      },
+      {
+        name: "blink",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<blink>` HTML element",
+      },
+      {
+        name: "bold",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<b>` HTML element",
+      },
+      {
+        name: "fixed",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<tt>` HTML element",
+      },
+      {
+        name: "fontcolor",
+        type: "(color: string) => string",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the color attribute value",
+      },
+      {
+        name: "fontsize",
+        type: "{ (size: number): string; (size: string): string; }",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the size attribute value",
+      },
+      {
+        name: "italics",
+        type: "() => string",
+        required: true,
+        description: "Returns an `<i>` HTML element",
+      },
+      {
+        name: "link",
+        type: "(url: string) => string",
+        required: true,
+        description: "Returns an `<a>` HTML element and sets the href attribute value",
+      },
+      {
+        name: "small",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<small>` HTML element",
+      },
+      {
+        name: "strike",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<strike>` HTML element",
+      },
+      {
+        name: "sub",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sub>` HTML element",
+      },
+      {
+        name: "sup",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sup>` HTML element",
+      },
+      {
+        name: "padStart",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
+      },
+      {
+        name: "padEnd",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
+      },
+      {
+        name: "trimEnd",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimStart",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimLeft",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimRight",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "matchAll",
+        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
+      },
+      {
+        name: "replaceAll",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replace all instances of a substring in a string, using a regular expression or search string.",
+      },
+      {
+        name: "at",
+        type: "(index: number) => string | undefined",
+        required: true,
+        description:
+          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
+      },
+      {
+        name: "__@iterator@16",
+        type: "() => StringIterator<string>",
+        required: true,
+        description: "Iterator",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     example: '// HTTP backend (default)\nbuildReverseProxyHandler("nginx:80")',
     snippet: {
       prefix: "caddy-reverse-proxy-handler",
-      body: ["buildReverseProxyHandler({", "})"],
+      body: ['buildReverseProxyHandler("${1:localhost:3000}")$0'],
       description: "Build Reverse Proxy Handler",
     },
   },
   buildSecurityHeadersHandler: {
     name: "buildSecurityHeadersHandler",
     description: "Build a security headers handler",
-    params: [],
+    params: [
+      {
+        name: "enableHsts",
+        type: "boolean",
+        required: false,
+        description: "Enable HSTS (HTTP Strict Transport Security)",
+        default: "false",
+      },
+      {
+        name: "hstsMaxAge",
+        type: "number",
+        required: false,
+        description: "HSTS max-age in seconds",
+        default: "31536000 (1 year)",
+      },
+      {
+        name: "frameOptions",
+        type: "FrameOptions",
+        required: false,
+        description: "X-Frame-Options header value",
+        default: "DENY",
+      },
+      {
+        name: "enableCompression",
+        type: "boolean",
+        required: false,
+        description: "Enable gzip/brotli compression",
+        default: "true",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     snippet: {
       prefix: "caddy-security-headers-handler",
-      body: ["buildSecurityHeadersHandler({", "})"],
+      body: [
+        "buildSecurityHeadersHandler({",
+        "  enableHsts: ${1|false,true|},",
+        "  hstsMaxAge: ${2:1},",
+        '  frameOptions: "${3|DENY,SAMEORIGIN|}",',
+        "  // optional: enableCompression",
+        "})$0",
+      ],
       description: "Build Security Headers Handler",
     },
   },
@@ -701,80 +1470,1454 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     name: "buildBasicAuthHandler",
     description:
       "Build a basic auth handler\nSupports both single account (legacy) and multiple accounts",
-    params: [],
+    params: [
+      {
+        name: "enabled",
+        type: "boolean",
+        required: true,
+        description: "",
+      },
+      {
+        name: "username",
+        type: "string",
+        required: false,
+        description: "Single username (legacy - use accounts instead)",
+      },
+      {
+        name: "passwordHash",
+        type: "string",
+        required: false,
+        description: "Single password hash (legacy - use accounts instead)",
+      },
+      {
+        name: "accounts",
+        type: "BasicAuthAccount[]",
+        required: false,
+        description: "Multiple accounts (recommended)",
+      },
+      {
+        name: "realm",
+        type: "string",
+        required: false,
+        description: "Authentication realm",
+      },
+      {
+        name: "hash",
+        type: '{ algorithm?: "bcrypt" | undefined; cost?: number | undefined; }',
+        required: false,
+        description: "Hash algorithm (default: bcrypt)",
+      },
+      {
+        name: "routes",
+        type: '("path" | "host" | "tunnel")[]',
+        required: false,
+        description: "Which route types should have auth applied (default: all)",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     example:
       '// Single account (legacy)\nbuildBasicAuthHandler({\n  enabled: true,\n  username: "admin",\n  passwordHash: "$2a$10$...",\n  realm: "Admin Area"\n})',
     snippet: {
       prefix: "caddy-basic-auth-handler",
-      body: ["buildBasicAuthHandler({", "})"],
+      body: [
+        "buildBasicAuthHandler({",
+        "  enabled: ${1|true,false|},",
+        "  // optional: username, passwordHash, accounts, realm, hash, routes",
+        "})$0",
+      ],
       description: "Build Basic Auth Handler",
     },
   },
   buildRewriteHandler: {
     name: "buildRewriteHandler",
     description: "Build a rewrite handler (strip path prefix)",
-    params: [],
+    params: [
+      {
+        name: "toString",
+        type: "() => string",
+        required: true,
+        description: "Returns a string representation of a string.",
+      },
+      {
+        name: "charAt",
+        type: "(pos: number) => string",
+        required: true,
+        description: "Returns the character at the specified index.",
+      },
+      {
+        name: "charCodeAt",
+        type: "(index: number) => number",
+        required: true,
+        description: "Returns the Unicode value of the character at the specified location.",
+      },
+      {
+        name: "concat",
+        type: "(...strings: string[]) => string",
+        required: true,
+        description: "Returns a string that contains the concatenation of two or more strings.",
+      },
+      {
+        name: "indexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the position of the first occurrence of a substring.",
+      },
+      {
+        name: "lastIndexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the last occurrence of a substring in the string.",
+      },
+      {
+        name: "localeCompare",
+        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
+        required: true,
+        description:
+          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
+      },
+      {
+        name: "match",
+        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
+      },
+      {
+        name: "replace",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
+      },
+      {
+        name: "search",
+        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
+        required: true,
+        description: "Finds the first substring match in a regular expression search.",
+      },
+      {
+        name: "slice",
+        type: "(start?: number | undefined, end?: number | undefined) => string",
+        required: true,
+        description: "Returns a section of a string.",
+      },
+      {
+        name: "split",
+        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
+        required: true,
+        description:
+          "Split a string into substrings using the specified separator and return them as an array.",
+      },
+      {
+        name: "substring",
+        type: "(start: number, end?: number | undefined) => string",
+        required: true,
+        description: "Returns the substring at the specified location within a String object.",
+      },
+      {
+        name: "toLowerCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to lowercase.",
+      },
+      {
+        name: "toLocaleLowerCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "toUpperCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to uppercase.",
+      },
+      {
+        name: "toLocaleUpperCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "trim",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading and trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "length",
+        type: "number",
+        required: true,
+        description: "Returns the length of a String object.",
+      },
+      {
+        name: "substr",
+        type: "(from: number, length?: number | undefined) => string",
+        required: true,
+        description:
+          "Gets a substring beginning at the specified location and having the specified length.",
+      },
+      {
+        name: "valueOf",
+        type: "() => string",
+        required: true,
+        description: "Returns the primitive value of the specified object.",
+      },
+      {
+        name: "codePointAt",
+        type: "(pos: number) => number | undefined",
+        required: true,
+        description:
+          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
+      },
+      {
+        name: "includes",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
+      },
+      {
+        name: "endsWith",
+        type: "(searchString: string, endPosition?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
+      },
+      {
+        name: "normalize",
+        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
+        required: true,
+        description:
+          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
+      },
+      {
+        name: "repeat",
+        type: "(count: number) => string",
+        required: true,
+        description:
+          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
+      },
+      {
+        name: "startsWith",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
+      },
+      {
+        name: "anchor",
+        type: "(name: string) => string",
+        required: true,
+        description:
+          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
+      },
+      {
+        name: "big",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<big>` HTML element",
+      },
+      {
+        name: "blink",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<blink>` HTML element",
+      },
+      {
+        name: "bold",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<b>` HTML element",
+      },
+      {
+        name: "fixed",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<tt>` HTML element",
+      },
+      {
+        name: "fontcolor",
+        type: "(color: string) => string",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the color attribute value",
+      },
+      {
+        name: "fontsize",
+        type: "{ (size: number): string; (size: string): string; }",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the size attribute value",
+      },
+      {
+        name: "italics",
+        type: "() => string",
+        required: true,
+        description: "Returns an `<i>` HTML element",
+      },
+      {
+        name: "link",
+        type: "(url: string) => string",
+        required: true,
+        description: "Returns an `<a>` HTML element and sets the href attribute value",
+      },
+      {
+        name: "small",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<small>` HTML element",
+      },
+      {
+        name: "strike",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<strike>` HTML element",
+      },
+      {
+        name: "sub",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sub>` HTML element",
+      },
+      {
+        name: "sup",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sup>` HTML element",
+      },
+      {
+        name: "padStart",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
+      },
+      {
+        name: "padEnd",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
+      },
+      {
+        name: "trimEnd",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimStart",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimLeft",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimRight",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "matchAll",
+        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
+      },
+      {
+        name: "replaceAll",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replace all instances of a substring in a string, using a regular expression or search string.",
+      },
+      {
+        name: "at",
+        type: "(index: number) => string | undefined",
+        required: true,
+        description:
+          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
+      },
+      {
+        name: "__@iterator@16",
+        type: "() => StringIterator<string>",
+        required: true,
+        description: "Iterator",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     snippet: {
       prefix: "caddy-rewrite-handler",
-      body: ["buildRewriteHandler({", "})"],
+      body: ['buildRewriteHandler("${1:/api}")$0'],
       description: "Build Rewrite Handler",
-    },
-  },
-  buildServiceMetadataHeadersHandler: {
-    name: "buildServiceMetadataHeadersHandler",
-    description:
-      "Build a service metadata headers handler\nSets X-ASD-Service-ID and X-ASD-Service-Type headers",
-    params: [],
-    returnType: "CaddyRouteHandler | null",
-    snippet: {
-      prefix: "caddy-service-metadata-headers-handler",
-      body: ["buildServiceMetadataHeadersHandler({", "})"],
-      description: "Build Service Metadata Headers Handler",
     },
   },
   buildIngressTagHeadersHandler: {
     name: "buildIngressTagHeadersHandler",
     description: "Build an ingress tag header handler",
-    params: [],
+    params: [
+      {
+        name: "toString",
+        type: "() => string",
+        required: true,
+        description: "Returns a string representation of a string.",
+      },
+      {
+        name: "charAt",
+        type: "(pos: number) => string",
+        required: true,
+        description: "Returns the character at the specified index.",
+      },
+      {
+        name: "charCodeAt",
+        type: "(index: number) => number",
+        required: true,
+        description: "Returns the Unicode value of the character at the specified location.",
+      },
+      {
+        name: "concat",
+        type: "(...strings: string[]) => string",
+        required: true,
+        description: "Returns a string that contains the concatenation of two or more strings.",
+      },
+      {
+        name: "indexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the position of the first occurrence of a substring.",
+      },
+      {
+        name: "lastIndexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the last occurrence of a substring in the string.",
+      },
+      {
+        name: "localeCompare",
+        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
+        required: true,
+        description:
+          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
+      },
+      {
+        name: "match",
+        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
+      },
+      {
+        name: "replace",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
+      },
+      {
+        name: "search",
+        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
+        required: true,
+        description: "Finds the first substring match in a regular expression search.",
+      },
+      {
+        name: "slice",
+        type: "(start?: number | undefined, end?: number | undefined) => string",
+        required: true,
+        description: "Returns a section of a string.",
+      },
+      {
+        name: "split",
+        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
+        required: true,
+        description:
+          "Split a string into substrings using the specified separator and return them as an array.",
+      },
+      {
+        name: "substring",
+        type: "(start: number, end?: number | undefined) => string",
+        required: true,
+        description: "Returns the substring at the specified location within a String object.",
+      },
+      {
+        name: "toLowerCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to lowercase.",
+      },
+      {
+        name: "toLocaleLowerCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "toUpperCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to uppercase.",
+      },
+      {
+        name: "toLocaleUpperCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "trim",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading and trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "length",
+        type: "number",
+        required: true,
+        description: "Returns the length of a String object.",
+      },
+      {
+        name: "substr",
+        type: "(from: number, length?: number | undefined) => string",
+        required: true,
+        description:
+          "Gets a substring beginning at the specified location and having the specified length.",
+      },
+      {
+        name: "valueOf",
+        type: "() => string",
+        required: true,
+        description: "Returns the primitive value of the specified object.",
+      },
+      {
+        name: "codePointAt",
+        type: "(pos: number) => number | undefined",
+        required: true,
+        description:
+          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
+      },
+      {
+        name: "includes",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
+      },
+      {
+        name: "endsWith",
+        type: "(searchString: string, endPosition?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
+      },
+      {
+        name: "normalize",
+        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
+        required: true,
+        description:
+          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
+      },
+      {
+        name: "repeat",
+        type: "(count: number) => string",
+        required: true,
+        description:
+          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
+      },
+      {
+        name: "startsWith",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
+      },
+      {
+        name: "anchor",
+        type: "(name: string) => string",
+        required: true,
+        description:
+          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
+      },
+      {
+        name: "big",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<big>` HTML element",
+      },
+      {
+        name: "blink",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<blink>` HTML element",
+      },
+      {
+        name: "bold",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<b>` HTML element",
+      },
+      {
+        name: "fixed",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<tt>` HTML element",
+      },
+      {
+        name: "fontcolor",
+        type: "(color: string) => string",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the color attribute value",
+      },
+      {
+        name: "fontsize",
+        type: "{ (size: number): string; (size: string): string; }",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the size attribute value",
+      },
+      {
+        name: "italics",
+        type: "() => string",
+        required: true,
+        description: "Returns an `<i>` HTML element",
+      },
+      {
+        name: "link",
+        type: "(url: string) => string",
+        required: true,
+        description: "Returns an `<a>` HTML element and sets the href attribute value",
+      },
+      {
+        name: "small",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<small>` HTML element",
+      },
+      {
+        name: "strike",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<strike>` HTML element",
+      },
+      {
+        name: "sub",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sub>` HTML element",
+      },
+      {
+        name: "sup",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sup>` HTML element",
+      },
+      {
+        name: "padStart",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
+      },
+      {
+        name: "padEnd",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
+      },
+      {
+        name: "trimEnd",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimStart",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimLeft",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimRight",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "matchAll",
+        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
+      },
+      {
+        name: "replaceAll",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replace all instances of a substring in a string, using a regular expression or search string.",
+      },
+      {
+        name: "at",
+        type: "(index: number) => string | undefined",
+        required: true,
+        description:
+          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
+      },
+      {
+        name: "__@iterator@16",
+        type: "() => StringIterator<string>",
+        required: true,
+        description: "Iterator",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     snippet: {
       prefix: "caddy-ingress-tag-headers-handler",
-      body: ["buildIngressTagHeadersHandler({", "})"],
+      body: ['buildIngressTagHeadersHandler("${1:production}")$0'],
       description: "Build Ingress Tag Headers Handler",
     },
   },
   buildProjectIdHeadersHandler: {
     name: "buildProjectIdHeadersHandler",
     description: "Build a project identity header handler",
-    params: [],
+    params: [
+      {
+        name: "toString",
+        type: "() => string",
+        required: true,
+        description: "Returns a string representation of a string.",
+      },
+      {
+        name: "charAt",
+        type: "(pos: number) => string",
+        required: true,
+        description: "Returns the character at the specified index.",
+      },
+      {
+        name: "charCodeAt",
+        type: "(index: number) => number",
+        required: true,
+        description: "Returns the Unicode value of the character at the specified location.",
+      },
+      {
+        name: "concat",
+        type: "(...strings: string[]) => string",
+        required: true,
+        description: "Returns a string that contains the concatenation of two or more strings.",
+      },
+      {
+        name: "indexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the position of the first occurrence of a substring.",
+      },
+      {
+        name: "lastIndexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the last occurrence of a substring in the string.",
+      },
+      {
+        name: "localeCompare",
+        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
+        required: true,
+        description:
+          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
+      },
+      {
+        name: "match",
+        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
+      },
+      {
+        name: "replace",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
+      },
+      {
+        name: "search",
+        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
+        required: true,
+        description: "Finds the first substring match in a regular expression search.",
+      },
+      {
+        name: "slice",
+        type: "(start?: number | undefined, end?: number | undefined) => string",
+        required: true,
+        description: "Returns a section of a string.",
+      },
+      {
+        name: "split",
+        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
+        required: true,
+        description:
+          "Split a string into substrings using the specified separator and return them as an array.",
+      },
+      {
+        name: "substring",
+        type: "(start: number, end?: number | undefined) => string",
+        required: true,
+        description: "Returns the substring at the specified location within a String object.",
+      },
+      {
+        name: "toLowerCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to lowercase.",
+      },
+      {
+        name: "toLocaleLowerCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "toUpperCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to uppercase.",
+      },
+      {
+        name: "toLocaleUpperCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "trim",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading and trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "length",
+        type: "number",
+        required: true,
+        description: "Returns the length of a String object.",
+      },
+      {
+        name: "substr",
+        type: "(from: number, length?: number | undefined) => string",
+        required: true,
+        description:
+          "Gets a substring beginning at the specified location and having the specified length.",
+      },
+      {
+        name: "valueOf",
+        type: "() => string",
+        required: true,
+        description: "Returns the primitive value of the specified object.",
+      },
+      {
+        name: "codePointAt",
+        type: "(pos: number) => number | undefined",
+        required: true,
+        description:
+          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
+      },
+      {
+        name: "includes",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
+      },
+      {
+        name: "endsWith",
+        type: "(searchString: string, endPosition?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
+      },
+      {
+        name: "normalize",
+        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
+        required: true,
+        description:
+          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
+      },
+      {
+        name: "repeat",
+        type: "(count: number) => string",
+        required: true,
+        description:
+          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
+      },
+      {
+        name: "startsWith",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
+      },
+      {
+        name: "anchor",
+        type: "(name: string) => string",
+        required: true,
+        description:
+          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
+      },
+      {
+        name: "big",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<big>` HTML element",
+      },
+      {
+        name: "blink",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<blink>` HTML element",
+      },
+      {
+        name: "bold",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<b>` HTML element",
+      },
+      {
+        name: "fixed",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<tt>` HTML element",
+      },
+      {
+        name: "fontcolor",
+        type: "(color: string) => string",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the color attribute value",
+      },
+      {
+        name: "fontsize",
+        type: "{ (size: number): string; (size: string): string; }",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the size attribute value",
+      },
+      {
+        name: "italics",
+        type: "() => string",
+        required: true,
+        description: "Returns an `<i>` HTML element",
+      },
+      {
+        name: "link",
+        type: "(url: string) => string",
+        required: true,
+        description: "Returns an `<a>` HTML element and sets the href attribute value",
+      },
+      {
+        name: "small",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<small>` HTML element",
+      },
+      {
+        name: "strike",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<strike>` HTML element",
+      },
+      {
+        name: "sub",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sub>` HTML element",
+      },
+      {
+        name: "sup",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sup>` HTML element",
+      },
+      {
+        name: "padStart",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
+      },
+      {
+        name: "padEnd",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
+      },
+      {
+        name: "trimEnd",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimStart",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimLeft",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimRight",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "matchAll",
+        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
+      },
+      {
+        name: "replaceAll",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replace all instances of a substring in a string, using a regular expression or search string.",
+      },
+      {
+        name: "at",
+        type: "(index: number) => string | undefined",
+        required: true,
+        description:
+          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
+      },
+      {
+        name: "__@iterator@16",
+        type: "() => StringIterator<string>",
+        required: true,
+        description: "Iterator",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     snippet: {
       prefix: "caddy-project-id-headers-handler",
-      body: ["buildProjectIdHeadersHandler({", "})"],
+      body: ['buildProjectIdHeadersHandler("${1:my-project}")$0'],
       description: "Build Project Id Headers Handler",
     },
   },
   buildIframeHeadersHandler: {
     name: "buildIframeHeadersHandler",
-    description: "Build CORS/CSP headers for iframe embedding",
-    params: [],
+    description:
+      "Build CORS/CSP headers for iframe embedding\n\n`allowedOrigin` is a CSP `frame-ancestors` source list: one source or\nseveral, space-separated, wildcards allowed. CORS headers are added only\nwhen it is `*` or one exact origin, because `Access-Control-Allow-Origin`\ntakes nothing else; a list there is invalid, and a browser rejects it.",
+    params: [
+      {
+        name: "toString",
+        type: "() => string",
+        required: true,
+        description: "Returns a string representation of a string.",
+      },
+      {
+        name: "charAt",
+        type: "(pos: number) => string",
+        required: true,
+        description: "Returns the character at the specified index.",
+      },
+      {
+        name: "charCodeAt",
+        type: "(index: number) => number",
+        required: true,
+        description: "Returns the Unicode value of the character at the specified location.",
+      },
+      {
+        name: "concat",
+        type: "(...strings: string[]) => string",
+        required: true,
+        description: "Returns a string that contains the concatenation of two or more strings.",
+      },
+      {
+        name: "indexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the position of the first occurrence of a substring.",
+      },
+      {
+        name: "lastIndexOf",
+        type: "(searchString: string, position?: number | undefined) => number",
+        required: true,
+        description: "Returns the last occurrence of a substring in the string.",
+      },
+      {
+        name: "localeCompare",
+        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
+        required: true,
+        description:
+          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
+      },
+      {
+        name: "match",
+        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
+      },
+      {
+        name: "replace",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
+      },
+      {
+        name: "search",
+        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
+        required: true,
+        description: "Finds the first substring match in a regular expression search.",
+      },
+      {
+        name: "slice",
+        type: "(start?: number | undefined, end?: number | undefined) => string",
+        required: true,
+        description: "Returns a section of a string.",
+      },
+      {
+        name: "split",
+        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
+        required: true,
+        description:
+          "Split a string into substrings using the specified separator and return them as an array.",
+      },
+      {
+        name: "substring",
+        type: "(start: number, end?: number | undefined) => string",
+        required: true,
+        description: "Returns the substring at the specified location within a String object.",
+      },
+      {
+        name: "toLowerCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to lowercase.",
+      },
+      {
+        name: "toLocaleLowerCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "toUpperCase",
+        type: "() => string",
+        required: true,
+        description: "Converts all the alphabetic characters in a string to uppercase.",
+      },
+      {
+        name: "toLocaleUpperCase",
+        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
+        required: true,
+        description:
+          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
+      },
+      {
+        name: "trim",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading and trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "length",
+        type: "number",
+        required: true,
+        description: "Returns the length of a String object.",
+      },
+      {
+        name: "substr",
+        type: "(from: number, length?: number | undefined) => string",
+        required: true,
+        description:
+          "Gets a substring beginning at the specified location and having the specified length.",
+      },
+      {
+        name: "valueOf",
+        type: "() => string",
+        required: true,
+        description: "Returns the primitive value of the specified object.",
+      },
+      {
+        name: "codePointAt",
+        type: "(pos: number) => number | undefined",
+        required: true,
+        description:
+          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
+      },
+      {
+        name: "includes",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
+      },
+      {
+        name: "endsWith",
+        type: "(searchString: string, endPosition?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
+      },
+      {
+        name: "normalize",
+        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
+        required: true,
+        description:
+          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
+      },
+      {
+        name: "repeat",
+        type: "(count: number) => string",
+        required: true,
+        description:
+          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
+      },
+      {
+        name: "startsWith",
+        type: "(searchString: string, position?: number | undefined) => boolean",
+        required: true,
+        description:
+          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
+      },
+      {
+        name: "anchor",
+        type: "(name: string) => string",
+        required: true,
+        description:
+          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
+      },
+      {
+        name: "big",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<big>` HTML element",
+      },
+      {
+        name: "blink",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<blink>` HTML element",
+      },
+      {
+        name: "bold",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<b>` HTML element",
+      },
+      {
+        name: "fixed",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<tt>` HTML element",
+      },
+      {
+        name: "fontcolor",
+        type: "(color: string) => string",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the color attribute value",
+      },
+      {
+        name: "fontsize",
+        type: "{ (size: number): string; (size: string): string; }",
+        required: true,
+        description: "Returns a `<font>` HTML element and sets the size attribute value",
+      },
+      {
+        name: "italics",
+        type: "() => string",
+        required: true,
+        description: "Returns an `<i>` HTML element",
+      },
+      {
+        name: "link",
+        type: "(url: string) => string",
+        required: true,
+        description: "Returns an `<a>` HTML element and sets the href attribute value",
+      },
+      {
+        name: "small",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<small>` HTML element",
+      },
+      {
+        name: "strike",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<strike>` HTML element",
+      },
+      {
+        name: "sub",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sub>` HTML element",
+      },
+      {
+        name: "sup",
+        type: "() => string",
+        required: true,
+        description: "Returns a `<sup>` HTML element",
+      },
+      {
+        name: "padStart",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
+      },
+      {
+        name: "padEnd",
+        type: "(maxLength: number, fillString?: string | undefined) => string",
+        required: true,
+        description:
+          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
+      },
+      {
+        name: "trimEnd",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimStart",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimLeft",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the leading white space and line terminator characters from a string.",
+      },
+      {
+        name: "trimRight",
+        type: "() => string",
+        required: true,
+        description:
+          "Removes the trailing white space and line terminator characters from a string.",
+      },
+      {
+        name: "matchAll",
+        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
+        required: true,
+        description:
+          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
+      },
+      {
+        name: "replaceAll",
+        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
+        required: true,
+        description:
+          "Replace all instances of a substring in a string, using a regular expression or search string.",
+      },
+      {
+        name: "at",
+        type: "(index: number) => string | undefined",
+        required: true,
+        description:
+          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
+      },
+      {
+        name: "__@iterator@16",
+        type: "() => StringIterator<string>",
+        required: true,
+        description: "Iterator",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     snippet: {
       prefix: "caddy-iframe-headers-handler",
-      body: ["buildIframeHeadersHandler({", "})"],
+      body: ['buildIframeHeadersHandler("${1:*}")$0'],
       description: "Build Iframe Headers Handler",
     },
   },
   buildRedirectRoute: {
     name: "buildRedirectRoute",
     description: "Build a redirect route for domain redirects (www <-> non-www)",
-    params: [],
+    params: [
+      {
+        name: "fromHost",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "toHost",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "permanent",
+        type: "boolean",
+        required: false,
+        description: "",
+      },
+      {
+        name: "statusCode",
+        type: "301 | 302 | 307 | 308",
+        required: false,
+        description: "",
+      },
+      {
+        name: "id",
+        type: "string",
+        required: false,
+        description: "",
+      },
+    ],
     returnType: "CaddyRoute",
     snippet: {
       prefix: "caddy-redirect-route",
-      body: ["buildRedirectRoute({", "})"],
+      body: [
+        "buildRedirectRoute({",
+        '  fromHost: "${1:example.com}",',
+        '  toHost: "${2:example.com}",',
+        "  // optional: permanent, statusCode, id",
+        "})$0",
+      ],
       description: "Build Redirect Route",
     },
   },
@@ -782,11 +2925,36 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     name: "buildCompressionHandler",
     description:
       "Build a compression (encode) handler\nSupports gzip, zstd, and brotli compression",
-    params: [],
+    params: [
+      {
+        name: "gzip",
+        type: "boolean",
+        required: false,
+        description: "",
+      },
+      {
+        name: "zstd",
+        type: "boolean",
+        required: false,
+        description: "",
+      },
+      {
+        name: "brotli",
+        type: "boolean",
+        required: false,
+        description: "",
+      },
+    ],
     returnType: "CaddyRouteHandler",
     snippet: {
       prefix: "caddy-compression-handler",
-      body: ["buildCompressionHandler({", "})"],
+      body: [
+        "buildCompressionHandler({",
+        "  gzip: ${1|true,false|},",
+        "  zstd: ${2|true,false|},",
+        "  brotli: ${3|true,false|},",
+        "})$0",
+      ],
       description: "Build Compression Handler",
     },
   },
@@ -794,13 +2962,44 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     name: "buildWwwRedirect",
     description:
       'Build a WWW redirect route (www.example.com ↔ example.com)\n\nCommon patterns:\n- "www-to-domain": www.example.com → example.com\n- "domain-to-www": example.com → www.example.com',
-    params: [],
+    params: [
+      {
+        name: "domain",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "mode",
+        type: '"www-to-domain" | "domain-to-www"',
+        required: true,
+        description: "",
+      },
+      {
+        name: "permanent",
+        type: "boolean",
+        required: false,
+        description: "",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "",
+      },
+    ],
     returnType: "CaddyRoute",
     example:
       '// Redirect www.example.com → example.com\nconst route = buildWwwRedirect({\n  domain: "example.com",\n  mode: "www-to-domain",\n  permanent: true\n});',
     snippet: {
       prefix: "caddy-www-redirect",
-      body: ["buildWwwRedirect({", "})"],
+      body: [
+        "buildWwwRedirect({",
+        '  domain: "${1:example.com}",',
+        '  mode: "${2|www-to-domain,domain-to-www|}",',
+        "  // optional: permanent, priority",
+        "})$0",
+      ],
       description: "Build Www Redirect",
     },
   },
@@ -808,13 +3007,62 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     name: "buildMitmproxyRoute",
     description:
       "Build a route that forwards traffic through MITMproxy for inspection\n\nThis is a convenience function that creates a route pointing to a MITMproxy\ninstance running in reverse proxy mode. Use this to transparently intercept\nand inspect HTTP traffic for debugging without modifying client or backend code.",
-    params: [],
+    params: [
+      {
+        name: "host",
+        type: "string",
+        required: true,
+        description: 'Host pattern to match (e.g., "api.example.com")',
+      },
+      {
+        name: "mitmproxyHost",
+        type: "string",
+        required: true,
+        description: 'MITMproxy host (e.g., "localhost" or "mitmproxy-container")',
+      },
+      {
+        name: "mitmproxyPort",
+        type: "number",
+        required: false,
+        description: "MITMproxy proxy port (default: 8080)",
+      },
+      {
+        name: "backendHost",
+        type: "string",
+        required: false,
+        description: "Backend host that MITMproxy should forward to (optional, for documentation)",
+      },
+      {
+        name: "backendPort",
+        type: "number",
+        required: false,
+        description: "Backend port that MITMproxy should forward to (optional, for documentation)",
+      },
+      {
+        name: "id",
+        type: "string",
+        required: false,
+        description: "Route ID for Caddy (optional)",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "Route priority (optional)",
+      },
+    ],
     returnType: "CaddyRoute",
     example:
       '// Route traffic for api.example.com through MITMproxy\nconst route = buildMitmproxyRoute({\n  host: "api.example.com",\n  mitmproxyHost: "localhost",\n  mitmproxyPort: 8080,\n});\nawait client.addRoute("https_server", route, "api_debug");',
     snippet: {
       prefix: "caddy-mitmproxy-route",
-      body: ["buildMitmproxyRoute({", "})"],
+      body: [
+        "buildMitmproxyRoute({",
+        '  host: "${1:example.com}",',
+        '  mitmproxyHost: "${2:example.com}",',
+        "  // optional: mitmproxyPort, backendHost, backendPort, id, priority",
+        "})$0",
+      ],
       description: "Build Mitmproxy Route",
     },
   },
@@ -822,14 +3070,66 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     name: "buildMitmproxyRoutePair",
     description:
       "Create a hot-swappable route pair for enabling/disabling MITMproxy interception\n\nReturns both a direct route and a MITMproxy-intercepted route with the same ID.\nUse this to easily toggle between direct and intercepted traffic at runtime.",
-    params: [],
+    params: [
+      {
+        name: "host",
+        type: "string",
+        required: true,
+        description: "Host pattern to match",
+      },
+      {
+        name: "backendHost",
+        type: "string",
+        required: true,
+        description: "Backend service host",
+      },
+      {
+        name: "backendPort",
+        type: "number",
+        required: true,
+        description: "Backend service port",
+      },
+      {
+        name: "mitmproxyHost",
+        type: "string",
+        required: true,
+        description: "MITMproxy host",
+      },
+      {
+        name: "mitmproxyPort",
+        type: "number",
+        required: false,
+        description: "MITMproxy proxy port (default: 8080)",
+      },
+      {
+        name: "routeId",
+        type: "string",
+        required: true,
+        description: "Route ID (used for both routes)",
+      },
+      {
+        name: "priority",
+        type: "number",
+        required: false,
+        description: "Route priority (optional)",
+      },
+    ],
     returnType:
       "{\n  /** Direct route (Client → Caddy → Backend) */\n  direct: CaddyRoute;\n  /** Proxied route (Client → Caddy → MITMproxy → Backend) */\n  proxied: CaddyRoute;\n}",
     example:
       'const routes = buildMitmproxyRoutePair({\n  host: "api.example.com",\n  backendHost: "backend-service",\n  backendPort: 3000,\n  mitmproxyHost: "mitmproxy",\n  routeId: "api_route",\n});\n\n// Start with direct routing\nawait client.addRoute("https_server", routes.direct, routes.direct["@id"]);\n\n// Hot-swap to enable interception (no downtime)\nawait client.removeRouteById("https_server", routes.direct["@id"]);\nawait client.addRoute("https_server", routes.proxied, routes.proxied["@id"]);\n\n// Hot-swap back to direct (disable interception)\nawait client.removeRouteById("https_server", routes.proxied["@id"]);\nawait client.addRoute("https_server", routes.direct, routes.direct["@id"]);',
     snippet: {
       prefix: "caddy-mitmproxy-route-pair",
-      body: ["buildMitmproxyRoutePair({", "})"],
+      body: [
+        "buildMitmproxyRoutePair({",
+        '  host: "${1:example.com}",',
+        '  backendHost: "${2:example.com}",',
+        "  backendPort: ${3:3000},",
+        '  mitmproxyHost: "${4:example.com}",',
+        '  routeId: "${5:my-id}",',
+        "  // optional: mitmproxyPort, priority",
+        "})$0",
+      ],
       description: "Build Mitmproxy Route Pair",
     },
   },
@@ -882,10 +3182,11 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-iframe-proxy-route",
       body: [
         "buildIframeProxyRoute({",
-        '  pathPrefix: ${1:""},',
-        '  upstreamHost: ${2:""},',
-        "  upstreamPort: ${3:0},",
-        "})",
+        '  pathPrefix: "${1:/app}",',
+        '  upstreamHost: "${2:localhost}",',
+        "  upstreamPort: ${3:3000},",
+        "  // optional: routeId, iframeEmbed, overrideHost",
+        "})$0",
       ],
       description: "Build Iframe Proxy Route",
     },
@@ -893,11 +3194,48 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
   buildMitmproxyWebUiRoute: {
     name: "buildMitmproxyWebUiRoute",
     description: "",
-    params: [],
+    params: [
+      {
+        name: "pathPrefix",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "mitmproxyHost",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "mitmproxyWebPort",
+        type: "number",
+        required: false,
+        description: "",
+      },
+      {
+        name: "routeId",
+        type: "string",
+        required: false,
+        description: "",
+      },
+      {
+        name: "iframeEmbed",
+        type: "boolean",
+        required: false,
+        description: "",
+      },
+    ],
     returnType: "CaddyRoute",
     snippet: {
       prefix: "caddy-mitmproxy-web-ui-route",
-      body: ["buildMitmproxyWebUiRoute({", "})"],
+      body: [
+        "buildMitmproxyWebUiRoute({",
+        '  pathPrefix: "${1:/app}",',
+        '  mitmproxyHost: "${2:example.com}",',
+        "  // optional: mitmproxyWebPort, routeId, iframeEmbed",
+        "})$0",
+      ],
       description: "Build Mitmproxy Web Ui Route",
     },
   },
@@ -944,10 +3282,11 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-web-socket-proxy-route",
       body: [
         "buildWebSocketProxyRoute({",
-        "  path: ${1:/etc/caddy/config.json},",
-        '  upstreamHost: ${2:""},',
-        "  upstreamPort: ${3:0},",
-        "})",
+        '  path: "${1:/api/*}",',
+        '  upstreamHost: "${2:localhost}",',
+        "  upstreamPort: ${3:3000},",
+        "  // optional: routeId, overrideHost",
+        "})$0",
       ],
       description: "Build Web Socket Proxy Route",
     },
@@ -955,11 +3294,41 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
   buildMitmproxyWebSocketRoute: {
     name: "buildMitmproxyWebSocketRoute",
     description: "",
-    params: [],
+    params: [
+      {
+        name: "path",
+        type: "string",
+        required: false,
+        description: "",
+      },
+      {
+        name: "mitmproxyHost",
+        type: "string",
+        required: true,
+        description: "",
+      },
+      {
+        name: "mitmproxyWebPort",
+        type: "number",
+        required: false,
+        description: "",
+      },
+      {
+        name: "routeId",
+        type: "string",
+        required: false,
+        description: "",
+      },
+    ],
     returnType: "CaddyRoute",
     snippet: {
       prefix: "caddy-mitmproxy-web-socket-route",
-      body: ["buildMitmproxyWebSocketRoute({", "})"],
+      body: [
+        "buildMitmproxyWebSocketRoute({",
+        '  mitmproxyHost: "${1:example.com}",',
+        "  // optional: path, mitmproxyWebPort, routeId",
+        "})$0",
+      ],
       description: "Build Mitmproxy Web Socket Route",
     },
   },
@@ -967,12 +3336,31 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     name: "buildIframePermissiveHandler",
     description:
       "Build a header handler that removes restrictive headers for iframe embedding\n\nRemoves X-Frame-Options, Content-Security-Policy, and X-Xss-Protection\nheaders while adding permissive CORS and frame-ancestors headers.",
-    params: [],
+    params: [
+      {
+        name: "deleteHeaders",
+        type: "string[]",
+        required: false,
+        description:
+          'Headers to delete (default: ["X-Frame-Options", "Content-Security-Policy", "X-Xss-Protection"])',
+      },
+      {
+        name: "corsOrigin",
+        type: "string",
+        required: false,
+        description: 'CORS origin (default: "*")',
+      },
+    ],
     returnType: "CaddyRouteHandler",
     example: "const handler = buildIframePermissiveHandler();\n// Use in a route's handle array",
     snippet: {
       prefix: "caddy-iframe-permissive-handler",
-      body: ["buildIframePermissiveHandler({", "})"],
+      body: [
+        "buildIframePermissiveHandler({",
+        '  deleteHeaders: ["${1:deleteHeader}"],',
+        '  corsOrigin: "${2:corsOrigin}",',
+        "})$0",
+      ],
       description: "Build Iframe Permissive Handler",
     },
   },
@@ -980,13 +3368,20 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     name: "buildDnsRebindingBypassHandler",
     description:
       "Build a header handler for DNS rebinding bypass\n\nSets Host and Origin headers to bypass MITMproxy's DNS rebinding protection.\nUse this when proxying to MITMproxy from a different hostname.",
-    params: [],
+    params: [
+      {
+        name: "targetHost",
+        type: "string",
+        required: true,
+        description: 'Target host:port (e.g., "127.0.0.1:8081")',
+      },
+    ],
     returnType: "CaddyRouteHandler",
     example:
       'const handler = buildDnsRebindingBypassHandler({\n  targetHost: "127.0.0.1:8081",\n});',
     snippet: {
       prefix: "caddy-dns-rebinding-bypass-handler",
-      body: ["buildDnsRebindingBypassHandler({", "})"],
+      body: ["buildDnsRebindingBypassHandler({", '  targetHost: "${1:example.com}",', "})$0"],
       description: "Build Dns Rebinding Bypass Handler",
     },
   },
@@ -1056,9 +3451,10 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-file-server-route",
       body: [
         "buildFileServerRoute({",
-        "  path: ${1:/etc/caddy/config.json},",
-        '  root: ${2:""},',
-        "})",
+        '  path: "${1:/api/*}",',
+        '  root: "${2:/var/www/html}",',
+        "  // optional: browse, browseTemplate, hidePatterns, indexNames, precompressed, id, ...",
+        "})$0",
       ],
       description: "Build File Server Route",
     },
@@ -1111,9 +3507,10 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-templates-route",
       body: [
         "buildTemplatesRoute({",
-        "  path: ${1:/etc/caddy/config.json},",
-        '  fileRoot: ${2:""},',
-        "})",
+        '  path: "${1:/api/*}",',
+        '  fileRoot: "${2:/var/www/html}",',
+        "  // optional: mimeTypes, delimiters, id, priority",
+        "})$0",
       ],
       description: "Build Templates Route",
     },
@@ -1164,7 +3561,12 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       '// Simple 404 handler\nconst route = buildErrorRoute({\n  statusCode: 404,\n  message: "Page not found",\n});\n\n// JSON error response for API\nconst route = buildErrorRoute({\n  match: { path: ["/api/*"] },\n  statusCode: 500,\n  message: \'{"error":"Internal server error"}\',\n  headers: { "Content-Type": ["application/json"] },\n});',
     snippet: {
       prefix: "caddy-error-route",
-      body: ["buildErrorRoute({", "  statusCode: ${1:0},", "})"],
+      body: [
+        "buildErrorRoute({",
+        "  statusCode: ${1:404},",
+        "  // optional: match, message, headers, id, priority",
+        "})$0",
+      ],
       description: "Build Error Route",
     },
   },
@@ -1184,7 +3586,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       "// Limit request body to 10MB\nconst handler = buildRequestBodyHandler({ maxSize: 10 * 1024 * 1024 });",
     snippet: {
       prefix: "caddy-request-body-handler",
-      body: ["buildRequestBodyHandler({", "  maxSize: ${1:0}", "})"],
+      body: ["buildRequestBodyHandler({", "  maxSize: ${1:10485760},", "})$0"],
       description: "Build Request Body Handler",
     },
   },
@@ -1204,7 +3606,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       '// Set custom variables for downstream handlers\nconst handler = buildVarsHandler({\n  vars: {\n    root: "/var/www",\n    backend: "api-server",\n    environment: "production",\n  }\n});',
     snippet: {
       prefix: "caddy-vars-handler",
-      body: ["buildVarsHandler({", '  vars: ${1:""}', "})"],
+      body: ["buildVarsHandler({", "  vars: {},", "})$0"],
       description: "Build Vars Handler",
     },
   },
@@ -1223,7 +3625,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     example: 'const handler = buildTracingHandler({ span: "http.request" });',
     snippet: {
       prefix: "caddy-tracing-handler",
-      body: ["buildTracingHandler({", "})"],
+      body: ["buildTracingHandler({", '  span: "${1:span}",', "})$0"],
       description: "Build Tracing Handler",
     },
   },
@@ -1263,10 +3665,11 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-map-handler",
       body: [
         "buildMapHandler({",
-        '  source: ${1:""},',
-        '  destinations: ${2:["value"]},',
-        '  mappings: ${3:["value"]},',
-        "})",
+        '  source: "${1:{http.request.host\\}}",',
+        '  destinations: ["${2:destination}"],',
+        '  mappings: [{ input: "${3:input}", outputs: ["${4:output}"] }],',
+        "  // optional: defaults",
+        "})$0",
       ],
       description: "Build Map Handler",
     },

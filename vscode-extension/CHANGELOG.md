@@ -5,6 +5,35 @@ All notable changes to the Caddy Configuration Tools extension will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-02
+
+### Added
+
+- **Caddy-specific checks with quick fixes.** Things a JSON schema can't see, which Caddy only rejects when it loads the config: `dial` written as a URL or without a port, `host` matchers with a scheme, port or path, duplicate `@id`s, a 3xx `static_response` without `Location`, the LDAP `{username}` placeholder that the JSON admin API never replaces (`%s`), and `gatekeeper_name` / `portal_name` / identity-store names that the config doesn't define.
+- **"Did you mean …?" quick fix** for unknown properties (`upstream` → `upstreams`), also on VS Code's own _Property … is not allowed_ errors.
+- **Apply File to Running Caddy**: a full `caddy-server.json` goes through `POST /load`; routes are added to a chosen server, or replaced in place by `@id`. Every write asks for confirmation. **Show Running Config** opens the live config read-only. Both use the `caddy.adminUrl` setting and send the `Origin` header that Caddy 2.11+ requires.
+- **Status bar item** that shows which kind of Caddy config the open file is validated as, plus its finding count. Click it for every Caddy command.
+- **Caddy: New Config File…** creates a correctly named file with a starter config.
+- **Get Started walkthrough** with six steps.
+- **10 new JSON snippets**: `caddy-route-files`, `caddy-route-redirect`, `caddy-route-path`, `caddy-route-lb`, `caddy-sec-route-protected`, `caddy-sec-route-portal`, `caddy-handler-encode`, `caddy-handler-rewrite`, `caddy-sec-config` and `caddy-server`.
+- TypeScript builder completions add the `import { … } from "@viaalink/caddy-api-client"`.
+
+### Fixed
+
+- **caddy-security snippets, Insert Security Configuration and the Security Wizard produced invalid config.** They emitted `driver` / `search_filter` / `cookie` / `access_lists`, which neither caddy-security nor this extension's own schema accepts. They now produce `kind`/`params` stores, `cookie_config`, `access_list_rules` and the `%s` LDAP filter. The wizard builds its output with the library's builders. Cancelling a wizard step no longer inserts a half-built config, and OIDC asks for the issuer URL.
+- **TypeScript builder snippets weren't valid TypeScript.** They had unquoted strings, `servers: ""` for an array, and empty `({})` for builders with required options or positional arguments. Every builder and template snippet is now type-checked against the library in CI.
+- **The extension's own schema validator checked nothing.** It didn't follow `$ref`, and every generated schema is rooted in one. It now does, and also supports `allOf`, `additionalProperties` schemas, exclusive bounds and integers.
+- Protected routes (`authentication` + caddy-security `authorizer`) no longer show schema errors in `*.caddy.json` / `caddy-server.json`.
+- `caddy-server.json` / `caddy-full.json` are recognised everywhere, not only by VS Code's schema contribution. Hover and CodeLens no longer trigger on any file whose name merely contains "security".
+- The `caddy-route` snippet no longer offers a handler choice that left `upstreams` on a `file_server`.
+- **Property names are no longer offered twice in schema-backed files.** VS Code's schema-driven list (precise per handler) is now the only one there. The bundled schemas give its items the same useful skeletons as before (`"upstreams": [{ "dial": "localhost:3000" }]`, `"host": ["example.com"]`, …) and list the most-used fields first, so `upstreams` no longer sits below `circuit_breaker`. The extension still supplies handler names (with docs), methods and enum values.
+
+### Changed
+
+- Activation is lighter: live-apply and the security wizard are loaded on first use, so `extension.js` is about 170 KB instead of 437 KB (most of it is builder documentation for hovers and completions).
+- Logging goes to a _Caddy Tools_ log channel at debug level, instead of a "Caddy Tools Debug" channel that logged every keystroke.
+- Commands are grouped under the **Caddy** category.
+
 ## [0.2.0] - 2026-08-11
 
 ### Added
