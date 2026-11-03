@@ -2,7 +2,7 @@
   "name": "vscode-caddy-tools",
   "displayName": "Caddy Configuration Tools",
   "description": "IntelliSense, validated snippets, quick fixes and live apply for Caddy JSON configs and the caddy-security (AuthCrunch) plugin",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "viaalink",
   "icon": "icon.png",
   "author": {
