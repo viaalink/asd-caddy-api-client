@@ -36,6 +36,25 @@ describe("DialAddressSchema", () => {
     expect(() => DialAddressSchema.parse("example.com:443")).not.toThrow();
   });
 
+  test("accepts Caddy network addresses", () => {
+    expect(() => DialAddressSchema.parse("unix//run/viaalink/ttyd.sock")).not.toThrow();
+    expect(() => DialAddressSchema.parse("unix+h2c//run/app/grpc.sock")).not.toThrow();
+    expect(() => DialAddressSchema.parse("unixgram//tmp/a.sock")).not.toThrow();
+    expect(() => DialAddressSchema.parse("unixpacket//tmp/a.sock")).not.toThrow();
+    expect(() => DialAddressSchema.parse("tcp/localhost:3000")).not.toThrow();
+    expect(() => DialAddressSchema.parse("tcp6/[::1]:8080")).not.toThrow();
+    expect(() => DialAddressSchema.parse("udp4/10.0.0.1:53")).not.toThrow();
+    expect(() => DialAddressSchema.parse("[::1]:8080")).not.toThrow();
+    expect(() => DialAddressSchema.parse("{http.request.host}:8080")).not.toThrow();
+  });
+
+  test("rejects network addresses that cannot dial", () => {
+    expect(() => DialAddressSchema.parse("unix/")).toThrow();
+    expect(() => DialAddressSchema.parse("tcp/localhost")).toThrow();
+    expect(() => DialAddressSchema.parse("http://localhost:3000")).toThrow();
+    expect(() => DialAddressSchema.parse("sctp/localhost:3000")).toThrow();
+  });
+
   test("rejects invalid dial addresses", () => {
     expect(() => DialAddressSchema.parse("127.0.0.1")).toThrow();
     expect(() => DialAddressSchema.parse(":3000")).toThrow();

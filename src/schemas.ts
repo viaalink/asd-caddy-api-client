@@ -85,16 +85,24 @@ export const DomainSchema = z
   );
 
 /**
- * Dial address schema - validates host:port format for upstream targets
+ * Dial address schema: a Caddy network address for an upstream.
+ *
+ * Accepts the forms Caddy's `reverse_proxy` dials:
+ * - `host:port`, `[ipv6]:port`
+ * - `tcp/host:port` (also `tcp4`, `tcp6`, `udp`, `udp4`, `udp6`)
+ * - `unix//abs/path.sock` (also `unix+h2c/`, `unixgram/`, `unixpacket/`); a unix
+ *   address is a socket path and has no port
+ * - anything with a `{placeholder}`, which Caddy resolves per request
  *
  * @example
  * ```typescript
  * import { DialAddressSchema } from "@viaalink/caddy-api-client";
  *
  * // Valid addresses
- * DialAddressSchema.parse("localhost:3000");     // OK
- * DialAddressSchema.parse("192.168.1.1:8080");  // OK
- * DialAddressSchema.parse("api-server:443");     // OK
+ * DialAddressSchema.parse("localhost:3000");          // OK
+ * DialAddressSchema.parse("192.168.1.1:8080");        // OK
+ * DialAddressSchema.parse("unix//run/app/web.sock");  // OK
+ * DialAddressSchema.parse("tcp6/[::1]:8080");         // OK
  *
  * // Invalid - missing port
  * DialAddressSchema.parse("localhost");  // throws
@@ -102,7 +110,13 @@ export const DomainSchema = z
  */
 export const DialAddressSchema = z
   .string()
-  .regex(/^.+:\d+$/, "Dial address must be in host:port format");
+  .refine(
+    (dial) =>
+      dial.includes("{") ||
+      /^(unix|unix\+h2c|unixgram|unixpacket)\/.+$/.test(dial) ||
+      /^((tcp|udp)[46]?\/)?[^/]+:\d+$/.test(dial),
+    "Dial address must be host:port, network/host:port (tcp, udp) or a unix socket (unix//path/to.sock)"
+  );
 
 /**
  * HTTP method schema, for Caddy's method matcher (`match.method`).
