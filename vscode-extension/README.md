@@ -6,9 +6,9 @@
 
 Write [Caddy](https://caddyserver.com/) JSON configs with IntelliSense that knows Caddy. The extension catches the mistakes Caddy would only reject at load time, and applies the result to a running server, all without leaving the editor. It includes first-class support for the [caddy-security](https://github.com/greenpau/caddy-security) (AuthCrunch) plugin.
 
-[![Watch the 2:18 demo on YouTube](https://img.youtube.com/vi/nse-mk_Lt2s/maxresdefault.jpg)](https://youtu.be/nse-mk_Lt2s)
+[![Watch the 2:16 demo on YouTube](https://img.youtube.com/vi/IIfOw6wbDMQ/maxresdefault.jpg)](https://youtu.be/IIfOw6wbDMQ)
 
-▶ **[Watch the demo on YouTube](https://youtu.be/nse-mk_Lt2s)** (2:18): every feature in it is the real extension against a real Caddy.
+▶ **[Watch the demo on YouTube](https://youtu.be/IIfOw6wbDMQ)** (2:16): every feature in it is the real extension against a real Caddy.
 
 ```
 ext install Viaalink.vscode-caddy-tools

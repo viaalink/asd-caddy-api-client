@@ -19,9 +19,9 @@ Package pages:
 
 Writing Caddy JSON by hand? **[Caddy Configuration Tools for VS Code](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)** is built on this library: IntelliSense that knows every Caddy handler and matcher, checks with quick fixes for the mistakes Caddy only rejects at load time, caddy-security snippets and wizards, and _Apply File to Running Caddy_ straight from the editor.
 
-[![Watch the 2:18 demo on YouTube](https://img.youtube.com/vi/nse-mk_Lt2s/maxresdefault.jpg)](https://youtu.be/nse-mk_Lt2s)
+[![Watch the 2:16 demo on YouTube](https://img.youtube.com/vi/IIfOw6wbDMQ/maxresdefault.jpg)](https://youtu.be/IIfOw6wbDMQ)
 
-▶ **[Watch the demo on YouTube](https://youtu.be/nse-mk_Lt2s)** (2:18). Everything in it is the real extension against a real Caddy.
+▶ **[Watch the demo on YouTube](https://youtu.be/IIfOw6wbDMQ)** (2:16). Everything in it is the real extension against a real Caddy.
 
 ```
 ext install Viaalink.vscode-caddy-tools
