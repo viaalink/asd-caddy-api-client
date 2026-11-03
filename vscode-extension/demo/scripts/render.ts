@@ -352,7 +352,42 @@ function main(): void {
   writeFileSync(assPath, buildAss(tl));
 
   const cards = variant === "promo";
-  const offsetMs = cards ? Math.round(TITLE_SECONDS * 1000) : 0;
+  const voicePath = join(dir, "voice", "voice.json");
+  const voice: VoiceDurations = existsSync(voicePath)
+    ? (JSON.parse(readFileSync(voicePath, "utf8")) as VoiceDurations)
+    : {};
+  const clip = (line: string): { file: string; ms: number } | undefined => {
+    const c = voice[line];
+    return c && existsSync(c.file) ? c : undefined;
+  };
+
+  // The cards last as long as what is said over them: the intro over the title,
+  // the agenda line over the agenda card, the outro over the end card. Each
+  // spoken block starts after a short lead and ends with a breath.
+  const LEAD_MS = 500;
+  const GAP_MS = 350;
+  const TAIL_MS = 900;
+  const spoken = (
+    lines: readonly string[] | undefined
+  ): { line: string; atMs: number; ms: number }[] => {
+    let at = LEAD_MS;
+    return (lines ?? []).flatMap((line) => {
+      const c = clip(line);
+      if (!c) return [];
+      const placed = { line, atMs: at, ms: c.ms };
+      at += c.ms + GAP_MS;
+      return [placed];
+    });
+  };
+  const blockMs = (b: { atMs: number; ms: number }[]): number =>
+    b.length ? b[b.length - 1]!.atMs + b[b.length - 1]!.ms + TAIL_MS : 0;
+  const introLines = cards ? spoken(tl.intro) : [];
+  const agendaLines = cards && tl.agenda ? spoken([tl.agenda.say]) : [];
+  const outroLines = cards ? spoken(tl.outro) : [];
+  const titleSeconds = Math.max(TITLE_SECONDS, blockMs(introLines) / 1000);
+  const agendaSeconds = cards && tl.agenda ? Math.max(3, blockMs(agendaLines) / 1000) : 0;
+  const endSeconds = Math.max(END_SECONDS, blockMs(outroLines) / 1000 + 1.5);
+  const offsetMs = cards ? Math.round((titleSeconds + agendaSeconds) * 1000) : 0;
   const film = join(dir, `${name}-${variant}.mp4`);
   writeFileSync(join(dir, `${name}-${variant}.srt`), buildSrt(tl, offsetMs));
 
@@ -379,7 +414,7 @@ function main(): void {
       cardGraph(
         "title",
         tl,
-        TITLE_SECONDS,
+        titleSeconds,
         [
           { text: tl.title, size: 76, y: `${mid - 40}`, colour: CARD.navy, font: "bold" },
           ...(tl.subtitle
@@ -407,7 +442,7 @@ function main(): void {
       cardGraph(
         "end",
         tl,
-        END_SECONDS,
+        endSeconds,
         [
           {
             text: "Install from the VS Code Marketplace",
@@ -450,36 +485,68 @@ function main(): void {
         { width: 440, y: mid - 400 }
       )
     );
-    graph.push("[title][main][end]concat=n=3:v=1:a=0[v]");
+    if (tl.agenda) {
+      const items = tl.agenda.items;
+      const rowH = 62;
+      const top = mid - 150;
+      graph.push(
+        cardGraph(
+          "agenda",
+          tl,
+          agendaSeconds,
+          [
+            {
+              text: tl.agenda.heading,
+              size: 52,
+              y: `${top - 90}`,
+              colour: CARD.navy,
+              font: "bold",
+            },
+            ...items.map((item, i) => ({
+              text: item,
+              size: 38,
+              y: `${top + 10 + i * rowH}`,
+              colour: i % 2 ? CARD.muted : CARD.navy,
+              font: "regular" as const,
+            })),
+          ],
+          work,
+          { width: 300, y: 70 }
+        )
+      );
+      graph.push("[title][agenda][main][end]concat=n=4:v=1:a=0[v]");
+    } else {
+      graph.push("[title][main][end]concat=n=3:v=1:a=0[v]");
+    }
   } else {
     graph.push("[main]null[v]");
   }
 
-  // The voice, every line placed where its step starts in the finished film.
-  const voicePath = join(dir, "voice", "voice.json");
+  // The voice: intro over the title, the agenda line over its card, every step
+  // line where its step starts, the outro over the end card.
+  const placed: { file: string; atMs: number }[] = [
+    ...introLines.map((l) => ({ file: clip(l.line)!.file, atMs: l.atMs })),
+    ...agendaLines.map((l) => ({ file: clip(l.line)!.file, atMs: titleSeconds * 1000 + l.atMs })),
+    ...tl.entries.flatMap((entry) => {
+      const c = clip(entry.say);
+      return c ? [{ file: c.file, atMs: offsetMs + entry.startMs }] : [];
+    }),
+    ...outroLines.map((l) => ({ file: clip(l.line)!.file, atMs: offsetMs + tl.totalMs + l.atMs })),
+  ];
   let audio = false;
-  if (existsSync(voicePath)) {
-    const voice = JSON.parse(readFileSync(voicePath, "utf8")) as VoiceDurations;
-    const used = tl.entries
-      .map((entry) => ({ entry, clip: voice[entry.say] }))
-      .filter(
-        (x): x is { entry: (typeof tl.entries)[number]; clip: { file: string; ms: number } } =>
-          Boolean(x.clip && existsSync(x.clip.file))
-      );
-    used.forEach((x, i) => {
-      inputs.push("-i", x.clip.file);
-      const at = offsetMs + x.entry.startMs;
+  if (placed.length) {
+    placed.forEach((p, i) => {
+      inputs.push("-i", p.file);
+      const at = Math.round(p.atMs);
       graph.push(`[${i + 1}:a]aresample=48000,adelay=${at}|${at}[a${i}]`);
     });
-    if (used.length) {
-      // Padded to the film's length so the audio track does not end before the end card.
-      const filmSeconds = (offsetMs + tl.totalMs) / 1000 + (cards ? END_SECONDS : 0);
-      graph.push(
-        `${used.map((_, i) => `[a${i}]`).join("")}amix=inputs=${used.length}:normalize=0,` +
-          `apad=whole_dur=${filmSeconds}[a]`
-      );
-      audio = true;
-    }
+    // Padded to the film's length so the audio track does not end before the end card.
+    const filmSeconds = (offsetMs + tl.totalMs) / 1000 + (cards ? endSeconds : 0);
+    graph.push(
+      `${placed.map((_, i) => `[a${i}]`).join("")}amix=inputs=${placed.length}:normalize=0,` +
+        `apad=whole_dur=${filmSeconds}[a]`
+    );
+    audio = true;
   }
 
   // Lanczos up to the delivery height last, so every overlay and caption is
