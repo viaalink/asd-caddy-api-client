@@ -2,10 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## Unreleased
+## [0.10.2](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.1...v0.10.2) (2026-11-03)
 
 ### Fixed
 
+- `DialAddressSchema` accepts every network address Caddy's `reverse_proxy` dials, not only
+  `host:port`: unix sockets (`unix//run/app.sock`, also `unix+h2c/`, `unixgram/`, `unixpacket/`),
+  `tcp/` and `udp/` prefixes (`tcp6/[::1]:8080`), and `{placeholder}` addresses. Upstreams on a unix
+  socket used to be rejected.
 - `AuthenticationHandlerSchema` accepts caddy-security's `authorizer` provider
   (`providers.authorizer.gatekeeper_name` / `route_matcher`) next to `http_basic`. A route built by
   `buildProtectedRoute()` used to fail the generated `caddy-route.json` / `caddy-full-config.json`

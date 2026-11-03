@@ -29,7 +29,7 @@ export type {
 export type Domain = string;
 
 /**
- * Dial address in host:port format (e.g., "127.0.0.1:3000")
+ * Dial address: host:port (e.g. "127.0.0.1:3000"), tcp/host:port, or a unix socket ("unix//run/app.sock")
  */
 export type DialAddress = string;
 
