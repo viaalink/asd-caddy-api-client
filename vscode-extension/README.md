@@ -1,7 +1,7 @@
 # Caddy Configuration Tools
 
-[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/viaalink.vscode-caddy-tools?label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/viaalink.vscode-caddy-tools)](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)
+[![Marketplace](https://vsmarketplacebadges.dev/version-short/Viaalink.vscode-caddy-tools.svg)](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/Viaalink.vscode-caddy-tools.svg)](https://marketplace.visualstudio.com/items?itemName=Viaalink.vscode-caddy-tools)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Write [Caddy](https://caddyserver.com/) JSON configs with IntelliSense that knows Caddy. The extension catches the mistakes Caddy would only reject at load time, and applies the result to a running server, all without leaving the editor. It includes first-class support for the [caddy-security](https://github.com/greenpau/caddy-security) (AuthCrunch) plugin.
