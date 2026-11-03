@@ -375,7 +375,7 @@ const builders: Scene = {
   steps: [
     {
       caption: "Writing TypeScript? Completions cover the @viaalink/caddy-api-client builders.",
-      say: "Writing TypeScript? Completions cover the typed builders of the Caddy API client.",
+      say: "Writing TypeScript? Completions cover the typed builders of our Caddy client library.",
       act: async (page) => {
         await park(page);
         if (await page.locator(".terminal-wrapper").first().isVisible()) {
@@ -568,6 +568,27 @@ export const storyboard: Storyboard = {
     "GitHub   github.com/viaalink/asd-caddy-api-client",
     "viaalink.com",
   ],
+  // Approved by Kelvin word for word (2026-11-03); the narration is his cloned voice.
+  // Spoken: "Visual Studio Code" at the start, "client library" rather than "API client".
+  intro: [
+    "Caddy is a web server you configure with JSON, and a wrong field only shows up when Caddy refuses to load it.",
+    "Caddy Configuration Tools for Visual Studio Code, by Viaalink, catches those mistakes while you type.",
+    "It is free, open source, and built on our typed Caddy client library.",
+  ],
+  agenda: {
+    heading: "In the next two minutes",
+    items: [
+      "Completions",
+      "Quick fixes",
+      "Docs on hover",
+      "Templates",
+      "Live apply to a running Caddy",
+      "TypeScript builders",
+      "caddy-security",
+    ],
+    say: "In the next two minutes: completions, quick fixes, docs on hover, templates, live apply to a running Caddy, TypeScript builders, and caddy security.",
+  },
+  outro: ["Install it from the VS Code Marketplace, and find the code on GitHub and npm."],
   prepare: async (page) => {
     await expect(explorerItem(page, "routes.ts")).toBeVisible();
     await park(page);
