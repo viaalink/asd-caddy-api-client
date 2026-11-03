@@ -60,6 +60,10 @@ describe("lintCaddyConfig", () => {
       "[::1]:8080",
       "tcp/10.0.0.1:80",
       "unix//run/app.sock",
+      "unix+h2c//run/app.sock",
+      "unixgram//tmp/a.sock",
+      "unixpacket//tmp/a.sock",
+      "tcp6/[::1]:8080",
       "{http.reverse_proxy.upstream.hostport}",
       "localhost:8000-8010",
     ])("%s is accepted", (dial) => {
@@ -67,6 +71,12 @@ describe("lintCaddyConfig", () => {
         codes(route(`{ "handler": "reverse_proxy", "upstreams": [{ "dial": "${dial}" }] }`))
       ).toEqual([]);
     });
+  });
+
+  test("a unix dial with no socket path is flagged, with no port fix", () => {
+    const text = route('{ "handler": "reverse_proxy", "upstreams": [{ "dial": "unix/" }] }');
+    expect(codes(text)).toEqual(["dial-unix-path"]);
+    expect(lintCaddyConfig(text)[0].fixes).toEqual([]);
   });
 
   test("host matcher with a scheme, port or path is flagged and fixed to the bare host", () => {
