@@ -112,7 +112,22 @@ const URL_RE = /^(https?):\/\/([^/?#]+)/i;
 function checkDial(value: Node, findings: LintFinding[]): void {
   const dial = stringValue(value);
   if (dial === undefined || dial.includes("{")) return; // placeholders resolve at runtime
-  if (/^(unix|unixgram|unixpacket)\//.test(dial)) return;
+  // A unix socket has a path, not a port. Same networks as the library's DialAddressSchema.
+  const unix = /^(unix|unix\+h2c|unixgram|unixpacket)\/(.*)$/.exec(dial);
+  if (unix) {
+    if (!unix[2]) {
+      findings.push(
+        finding(
+          value,
+          "error",
+          "dial-unix-path",
+          `"dial" address "${dial}" names no socket path. Write it as "${unix[1]}//path/to/app.sock".`,
+          []
+        )
+      );
+    }
+    return;
+  }
 
   const url = URL_RE.exec(dial);
   if (url) {
@@ -134,7 +149,7 @@ function checkDial(value: Node, findings: LintFinding[]): void {
   }
 
   // network/host:port or [ipv6]:port -- anything with a trailing :port is fine.
-  const withoutNetwork = dial.replace(/^(tcp|tcp4|tcp6|udp|udp4|udp6|ip|ip4|ip6)\//, "");
+  const withoutNetwork = dial.replace(/^(tcp|tcp4|tcp6|udp|udp4|udp6)\//, "");
   if (!/:\d+(-\d+)?$/.test(withoutNetwork)) {
     findings.push(
       finding(
