@@ -88,6 +88,12 @@ export interface Storyboard {
   byline?: string;
   /** End card lines, top to bottom. */
   closing: readonly string[];
+  /** Spoken over the title card, before anything is shown (promo only). */
+  intro?: readonly string[];
+  /** A card after the title: what the film will show, read out by `say` (promo only). */
+  agenda?: Agenda;
+  /** Spoken over the end card (promo only). */
+  outro?: readonly string[];
   /**
    * Runs once before the first step and is trimmed out of the film with the
    * leader: open the workbench, settle the layout.
@@ -107,8 +113,17 @@ export interface TimelineEntry {
   endMs: number;
 }
 
+export interface Agenda {
+  heading: string;
+  items: readonly string[];
+  say: string;
+}
+
 export interface Timeline {
   storyboard: string;
+  intro?: readonly string[];
+  agenda?: Agenda;
+  outro?: readonly string[];
   title: string;
   subtitle?: string;
   byline?: string;
@@ -144,11 +159,16 @@ export function stepsFor(board: Storyboard, variant: Variant): { scene: string; 
 export function linesFor(board: Storyboard, variant: Variant): string[] {
   const seen = new Set<string>();
   const lines: string[] = [];
-  for (const { step } of stepsFor(board, variant)) {
-    const line = step.say ?? step.caption;
-    if (!line.trim() || seen.has(line)) continue;
+  const add = (line: string): void => {
+    if (!line.trim() || seen.has(line)) return;
     seen.add(line);
     lines.push(line);
-  }
+  };
+  // The cards (and so the intro, agenda and outro) are promo only.
+  const cards = variant === "promo";
+  if (cards) for (const line of board.intro ?? []) add(line);
+  if (cards && board.agenda) add(board.agenda.say);
+  for (const { step } of stepsFor(board, variant)) add(step.say ?? step.caption);
+  if (cards) for (const line of board.outro ?? []) add(line);
   return lines;
 }
