@@ -375,7 +375,7 @@ const builders: Scene = {
   steps: [
     {
       caption: "Writing TypeScript? Completions cover the @viaalink/caddy-api-client builders.",
-      say: "Writing TypeScript? Completions cover the typed builders of the Caddy API client.",
+      say: "Writing TypeScript? Completions cover the typed builders of our Caddy client library.",
       act: async (page) => {
         await park(page);
         if (await page.locator(".terminal-wrapper").first().isVisible()) {
@@ -569,10 +569,11 @@ export const storyboard: Storyboard = {
     "viaalink.com",
   ],
   // Approved by Kelvin word for word (2026-11-03); the narration is his cloned voice.
+  // Spoken: "Visual Studio Code" at the start, "client library" rather than "API client".
   intro: [
     "Caddy is a web server you configure with JSON, and a wrong field only shows up when Caddy refuses to load it.",
-    "Caddy Configuration Tools for VS Code, by Viaalink, catches those mistakes while you type.",
-    "It is free, open source, and built on our typed Caddy API client.",
+    "Caddy Configuration Tools for Visual Studio Code, by Viaalink, catches those mistakes while you type.",
+    "It is free, open source, and built on our typed Caddy client library.",
   ],
   agenda: {
     heading: "In the next two minutes",
