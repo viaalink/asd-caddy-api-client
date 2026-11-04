@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## Unreleased
+
+### Added
+
+- Layer 4 (TCP) routing for Caddy built with the caddy-l4 plugin: `buildLayer4ProxyHandler`,
+  `buildLayer4ProxyRoute` (with protocol matchers such as `"postgres"`), `buildLayer4Server`, their
+  Zod schemas, and `CaddyClient.getLayer4Servers()`, `setLayer4Server()` and `putLayer4Route()`,
+  which replaces a route in place by its `@id` (`PATCH /id/…`) or appends it.
+- `MitmproxyManager` intercepts TCP services: register `{ protocol: "tcp", serverId, backend,
+match, proxy }` and `enable()` / `disable()` swap the layer4 route between the backend and a
+  mitmproxy reverse TCP listener (`mitmproxyReverseTcpMode()`). Connections already open keep their
+  path; new ones take the new route.
+- A mitmproxy addon for the PostgreSQL wire protocol, shipped in the package
+  (`mitmproxy-addons/pgwire.py`, path from `mitmproxyAddonPath("pgwire")`): every intercepted
+  connection reads as a transcript of the SQL sent, its parameters, the columns, the rows returned
+  and errors, in mitmweb's Comment tab.
+
 ## [0.10.2](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.1...v0.10.2) (2026-11-03)
 
 ### Fixed

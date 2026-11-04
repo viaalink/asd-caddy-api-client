@@ -8,23 +8,36 @@
 import type { CaddyClient } from "../caddy/client.js";
 import type { CaddyRoute } from "../types.js";
 import { buildRewriteHandler, buildReverseProxyHandler } from "../caddy/routes.js";
+import {
+  buildLayer4ProxyRoute,
+  type Layer4MatcherSet,
+  type Layer4Protocol,
+} from "../caddy/layer4.js";
 
 /**
  * Configuration for a MITMproxy instance
+ *
+ * For HTTP services this is mitmproxy's proxy port. For a TCP service it is a
+ * mitmproxy listener in reverse TCP mode for that service's backend, started
+ * with `--mode reverse:tcp://<backend host>:<port>@<listen port>` (see
+ * mitmproxyReverseTcpMode()): mitmproxy forwards whatever arrives there to the
+ * backend, and records it.
  */
 export interface MitmproxyInstance {
   /** MITMproxy host (e.g., "mitmproxy" or "localhost") */
   host: string;
-  /** Proxy port for intercepting traffic (default: 8080) */
+  /** Port Caddy sends intercepted traffic to (HTTP: proxy port, e.g. 8080; TCP: the reverse:tcp listener) */
   port: number;
   /** Web UI port for viewing traffic (optional, e.g., 8081) */
   webPort?: number;
 }
 
 /**
- * Service registration for interception
+ * HTTP service registration for interception (the default protocol)
  */
-export interface ServiceRegistration {
+export interface HttpServiceRegistration {
+  /** Leave out, or "http" */
+  protocol?: "http";
   /** Unique identifier for this service */
   id: string;
   /** Caddy server name (e.g., "srv0", "https_server") */
@@ -38,6 +51,49 @@ export interface ServiceRegistration {
   };
   /** Optional: host pattern for host-based routing (e.g., "api.example.com") */
   host?: string;
+}
+
+/**
+ * TCP service registration: a database, a broker, anything behind a caddy-l4
+ * layer4 server (needs a Caddy built with github.com/mholt/caddy-l4).
+ *
+ * Interception swaps the service's layer4 route between the backend and a
+ * mitmproxy reverse:tcp listener. A TCP connection is routed when it opens:
+ * connections that are already open keep their path, so an application with a
+ * connection pool shows up in mitmproxy once it opens new connections.
+ */
+export interface TcpServiceRegistration {
+  protocol: "tcp";
+  /** Unique identifier for this service */
+  id: string;
+  /** Layer4 server name (`apps.layer4.servers.<name>`) */
+  serverId: string;
+  /** Backend the connections go to when not intercepted */
+  backend: {
+    host: string;
+    port: number;
+  };
+  /** Optional: only connections of this protocol (e.g. "postgres"), or full layer4 matcher sets */
+  match?: Layer4Protocol | Layer4MatcherSet[];
+  /** Proxy instance used for this service unless enable() names another (default: "default") */
+  proxy?: string;
+}
+
+/**
+ * Service registration for interception: HTTP (path or host based) or TCP (layer4)
+ */
+export type ServiceRegistration = HttpServiceRegistration | TcpServiceRegistration;
+
+/**
+ * mitmproxy's `--mode` for a TCP backend: listen on `listenPort`, forward to the backend.
+ *
+ * @example mitmproxyReverseTcpMode({ host: "postgres", port: 5432 }, 5432) // "reverse:tcp://postgres:5432@5432"
+ */
+export function mitmproxyReverseTcpMode(
+  backend: { host: string; port: number },
+  listenPort: number
+): string {
+  return `reverse:tcp://${backend.host}:${backend.port}@${listenPort}`;
 }
 
 /**
@@ -170,10 +226,18 @@ export class MitmproxyManager {
     return proxy;
   }
 
+  /** Point a TCP service's layer4 route at `dial`, in place. */
+  private async routeTcp(service: TcpServiceRegistration, routeId: string, dial: string) {
+    await this.caddy.putLayer4Route(
+      service.serverId,
+      buildLayer4ProxyRoute({ id: routeId, upstream: dial, match: service.match })
+    );
+  }
+
   /**
    * Build a direct route for a service (no interception)
    */
-  private buildDirectRoute(service: ServiceRegistration, routeId: string): CaddyRoute {
+  private buildDirectRoute(service: HttpServiceRegistration, routeId: string): CaddyRoute {
     const dial = `${service.backend.host}:${service.backend.port}`;
 
     if (service.host) {
@@ -199,7 +263,7 @@ export class MitmproxyManager {
    * Build an intercepted route for a service (through MITMproxy)
    */
   private buildProxiedRoute(
-    service: ServiceRegistration,
+    service: HttpServiceRegistration,
     proxy: MitmproxyInstance,
     routeId: string
   ): CaddyRoute {
@@ -235,9 +299,19 @@ export class MitmproxyManager {
       throw new Error(`Service not registered: ${serviceId}`);
     }
 
-    const proxyName = options.proxy ?? "default";
-    const proxy = this.getProxy(proxyName);
     const { registration, routeId } = service;
+    const proxyName =
+      options.proxy ??
+      (registration.protocol === "tcp" ? registration.proxy : undefined) ??
+      "default";
+    const proxy = this.getProxy(proxyName);
+
+    if (registration.protocol === "tcp") {
+      await this.routeTcp(registration, routeId, `${proxy.host}:${proxy.port}`);
+      service.enabled = true;
+      service.activeProxy = proxyName;
+      return;
+    }
 
     // Build the proxied route
     const proxiedRoute = this.buildProxiedRoute(registration, proxy, routeId);
@@ -264,6 +338,17 @@ export class MitmproxyManager {
     }
 
     const { registration, routeId } = service;
+
+    if (registration.protocol === "tcp") {
+      await this.routeTcp(
+        registration,
+        routeId,
+        `${registration.backend.host}:${registration.backend.port}`
+      );
+      service.enabled = false;
+      service.activeProxy = null;
+      return;
+    }
 
     // Build the direct route
     const directRoute = this.buildDirectRoute(registration, routeId);

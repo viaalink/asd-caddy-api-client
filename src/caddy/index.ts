@@ -4,6 +4,7 @@
 
 export { CaddyClient } from "./client.js";
 export * from "./routes.js";
+export * from "./layer4.js";
 
 // Config loading utilities
 export { loadConfig, loadCaddyfile, detectAdapter } from "./config-loader.js";

@@ -1,0 +1,42 @@
+# SQL over TCP: Caddy (caddy-l4) in front of Postgres, mitmproxy in reverse TCP
+# mode with the package's own pgwire addon. The tests build the layer4 server
+# through the library and swap its route between Postgres and mitmproxy.
+#
+#   Caddy admin   127.0.0.1:2021
+#   Postgres via Caddy (layer4 listener, created by the tests)   127.0.0.1:15432
+#   mitmweb UI / API                                             127.0.0.1:18081
+name: caddy-layer4-test
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy-l4
+    command: caddy run --config /etc/caddy/caddy.json
+    volumes:
+      - ./layer4/caddy.json:/etc/caddy/caddy.json:ro
+    ports:
+      - "127.0.0.1:2021:2019"
+      - "127.0.0.1:15432:5432"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: shop
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "demo", "-d", "shop"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mitmproxy:
+    image: mitmproxy/mitmproxy:10.4.2
+    command: >
+      mitmweb --mode reverse:tcp://postgres:5432@5432
+      --web-host 0.0.0.0 --web-port 8081 --set web_password=
+      -s /addons/pgwire.py
+    volumes:
+      - ../../mitmproxy-addons:/addons:ro
+    ports:
+      - "127.0.0.1:18081:8081"

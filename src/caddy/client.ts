@@ -18,6 +18,12 @@ import {
   type Server,
 } from "../caddy-types.js";
 import { validateOrThrow } from "../utils/validation.js";
+import {
+  type Layer4Route,
+  type Layer4Server,
+  Layer4RouteSchema,
+  Layer4ServerSchema,
+} from "./layer4.js";
 
 // Create passthrough versions of schemas to preserve unknown fields from API responses
 // This ensures we don't accidentally strip fields that Caddy returns but aren't in our schema
@@ -448,6 +454,77 @@ export class CaddyClient {
     const response = await this.request("/config/apps/http/servers");
     const data = await response.json();
     return serversResponseSchema.parse(data);
+  }
+
+  /**
+   * Layer 4 (TCP/UDP) servers of the caddy-l4 plugin, by name.
+   * @returns `apps.layer4.servers`, or an empty object when there are none
+   * @throws {CaddyApiError} If Caddy API returns an error response
+   */
+  async getLayer4Servers(): Promise<Record<string, Layer4Server>> {
+    const response = await this.request("/config/apps/layer4/servers");
+    const data: unknown = await response.json();
+    return z.record(Layer4ServerSchema).parse(data ?? {});
+  }
+
+  /**
+   * Create or replace a layer4 server (creates `apps.layer4` when it is not there yet).
+   * Needs a Caddy built with github.com/mholt/caddy-l4.
+   * @param name - Server name under `apps.layer4.servers`
+   * @param server - From buildLayer4Server()
+   * @throws {ValidationError} If the server config is invalid
+   */
+  async setLayer4Server(name: string, server: Layer4Server): Promise<void> {
+    const validated = validateOrThrow(Layer4ServerSchema, server, "layer4 server");
+    const config = await this.getConfig();
+    const apps = (config.apps ?? {}) as Record<string, unknown>;
+    if (!apps.layer4) {
+      await this.request("/config/apps/layer4", {
+        method: "POST",
+        body: JSON.stringify({ servers: { [name]: validated } }),
+      });
+      return;
+    }
+    await this.request(`/config/apps/layer4/servers/${this.escapeServerName(name)}`, {
+      method: "POST",
+      body: JSON.stringify(validated),
+    });
+  }
+
+  /**
+   * Put a layer4 route in place by its `@id`: replaced where it stands when it
+   * exists (one atomic `PATCH /id/…`, so the server keeps listening and running
+   * connections are not cut), appended to the server's routes when it does not.
+   *
+   * Note for TCP: a connection is routed once, when it opens. Connections that
+   * are already open keep going where they went; only new ones take the new route.
+   *
+   * @param server - Layer4 server name
+   * @param route - A route with an `@id` (buildLayer4ProxyRoute({ id, … }))
+   * @returns "replaced" or "added"
+   * @throws {ValidationError} If the route is invalid or has no `@id`
+   */
+  async putLayer4Route(server: string, route: Layer4Route): Promise<"replaced" | "added"> {
+    const validated = validateOrThrow(Layer4RouteSchema, route, "layer4 route");
+    const id = validated["@id"];
+    if (!id) {
+      throw new CaddyApiClientError("putLayer4Route needs a route with an @id");
+    }
+    try {
+      await this.request(`/id/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(validated),
+      });
+      return "replaced";
+    } catch (error) {
+      // Caddy answers an unknown @id with 404; anything else is a real error.
+      if (!(error instanceof CaddyApiError) || error.statusCode !== 404) throw error;
+    }
+    await this.request(`/config/apps/layer4/servers/${this.escapeServerName(server)}/routes`, {
+      method: "POST",
+      body: JSON.stringify(validated),
+    });
+    return "added";
   }
 
   /**
