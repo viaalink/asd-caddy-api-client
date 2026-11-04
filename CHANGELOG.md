@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## Unreleased
+## [0.11.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.2...v0.11.0) (2026-11-04)
 
 ### Added
 
@@ -51,6 +51,11 @@ match, proxy }` and `enable()` / `disable()` swap the layer4 route between the b
   signatures; `Layer4Protocol` now lists every options-free protocol matcher. Matchers and
   handlers of modules the library doesn't know still pass through, so configs read back from
   Caddy parse. The layer4 builders show up in the VS Code extension's snippets and hover docs.
+
+- Repository: a weekly upstream check (`upstreams.json`, `just upstreams-check` /
+  `just upstreams-update`, `.github/workflows/upstreams.yml`) that regenerates the types from new
+  Caddy, caddy-security, go-authcrunch, caddy-l4 and DNS-provider releases and opens one pull
+  request for review; never merges or publishes. "Supported Caddy versions" tables in both READMEs.
 
 ### Changed
 
