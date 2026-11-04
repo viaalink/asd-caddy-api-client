@@ -37,6 +37,7 @@ import { dirname, join } from "path";
 import {
   CONFIG_PATH,
   ROOT_DIR,
+  type Pin,
   type Target,
   type Upstream,
   type UpstreamsConfig,
@@ -286,6 +287,18 @@ function takeBaseline(): { dir: string; files: Map<string, boolean> } {
   return { dir, files };
 }
 
+/**
+ * SOURCE_DATE_EPOCH for every generator run: the committed metadata's own
+ * timestamp, so extension-assets.ts only changes when its content does.
+ */
+function committedGeneratedAt(): string {
+  const text = committedVersion(`${GENERATED}/extension-assets.ts`) ?? "";
+  const iso = /GENERATED_AT = "([^"]+)"/.exec(text)?.[1];
+  const ms = iso ? Date.parse(iso) : NaN;
+  // Fractional seconds keep the milliseconds (extract-metadata reads Number()).
+  return String((Number.isNaN(ms) ? Date.now() : ms) / 1000);
+}
+
 function committedVersion(path: string): string | undefined {
   try {
     return gitRaw(["show", `HEAD:${path}`]);
@@ -391,6 +404,8 @@ function writeDocs(config: UpstreamsConfig, changed: Target[]): string[] {
 
 interface Summary {
   changed: Target[];
+  /** Pins before this run, by upstream name. */
+  from: Map<string, Pin>;
   all: Target[];
   gate: StepResult[];
   generation: StepResult[];
@@ -426,8 +441,9 @@ function writeSummary(s: Summary, gateOk: boolean): string {
   );
   for (const t of s.changed) {
     const d = s.tagDelta.get(t.upstream.name);
+    const old = s.from.get(t.upstream.name) ?? t.upstream.pin;
     lines.push(
-      `| ${t.upstream.name} | ${shortRef(t.upstream.pin)} | ${shortRef(t)} | ${t.kind ?? "commit"} | ${d ? `+${d.added} / -${d.removed}` : "?"} | [compare](${compareUrl(t.upstream.repo, t.upstream.pin, t)}) |`
+      `| ${t.upstream.name} | ${shortRef(old)} | ${shortRef(t)} | ${t.kind ?? "commit"} | ${d ? `+${d.added} / -${d.removed}` : "?"} | [compare](${compareUrl(t.upstream.repo, old, t)}) |`
     );
   }
   const warnings = s.all.flatMap((t) => t.warnings.map((w) => `- ${t.upstream.name}: ${w}`));
@@ -436,8 +452,15 @@ function writeSummary(s: Summary, gateOk: boolean): string {
   }
 
   lines.push("", "### Regenerated files", "");
-  const stat = git(["diff", "--stat", "--", GENERATED]);
+  const stat = gitRaw(["diff", "--stat", "--", GENERATED]).trimEnd();
   lines.push("```", stat || "(no change in src/generated)", "```");
+  if (s.carry.handFixed.length > 0) {
+    lines.push(
+      "",
+      `Generated files that carry fixes by hand (${s.carry.handFixed.length}): ` +
+        s.carry.handFixed.map((f) => `\`${f.replace(/^src\/generated\//, "")}\``).join(", ")
+    );
+  }
 
   lines.push("", "### Hand-fixes carried over", "");
   lines.push(
@@ -524,7 +547,7 @@ async function main(): Promise<number> {
   // Baseline: every clone on its pin, regenerate, remember the output.
   console.log("\nBaseline: regenerating at the current pins");
   for (const u of config.upstreams) checkoutUpstream(u, u.pin.commit, args.allowDirty);
-  const epoch = git(["log", "-1", "--format=%ct"]);
+  const epoch = committedGeneratedAt();
   const baseGen = regenerate("baseline", epoch);
   if (!baseGen.every((r) => r.ok)) {
     throw new Error(`regenerating at the current pins failed; see ${LOG_DIR}`);
@@ -535,9 +558,11 @@ async function main(): Promise<number> {
   // Move the pins.
   console.log("\nUpdating");
   const tagDelta = new Map<string, { added: number; removed: number }>();
+  const from = new Map<string, Pin>();
   for (const t of changed) {
     const full = checkoutUpstream(t.upstream, t.commit, args.allowDirty);
     tagDelta.set(t.upstream.name, jsonTagDelta(t.upstream, t.upstream.pin.commit, full));
+    from.set(t.upstream.name, t.upstream.pin);
     t.commit = full;
     t.upstream.pin = { ref: t.ref, commit: full, updated: today() };
     console.log(`  ${t.upstream.name} -> ${shortRef(t)}`);
@@ -545,6 +570,19 @@ async function main(): Promise<number> {
   const generation = regenerate("new", epoch);
   const carry = carryHandFixes(baseline);
   console.log(`  hand-fixes: ${carry.merged.length} merged, ${carry.conflicts.length} conflict(s)`);
+  // Merged files parse again where the hand-fix repaired a tygo artifact.
+  const merged = carry.merged.filter((p) => existsSync(join(ROOT_DIR, p)));
+  if (merged.length > 0) step("format-merged", "just", ["format-paths", ...merged]);
+  // The editor metadata and JSON schemas are derived from the generated
+  // types; derive them again from the merged (hand-fixed) sources.
+  for (const script of ["generate:extension", "generate:json-schemas"]) {
+    const r = step(`derive-${script.split(":")[1]}`, "bun", ["run", script], {
+      SOURCE_DATE_EPOCH: epoch,
+    });
+    if (!r.ok) generation.push(r);
+  }
+  const derived = changedPaths([GENERATED]).filter((p) => existsSync(join(ROOT_DIR, p)));
+  if (derived.length > 0) step("format-derived", "just", ["format-paths", ...derived]);
 
   const notes = writeDocs(config, changed);
   step("format-docs", "just", ["format-paths", "upstreams.json", ...Object.values(DOC_FILES)]);
@@ -553,7 +591,11 @@ async function main(): Promise<number> {
   const gate: StepResult[] = [];
   if (!args.noGate) {
     console.log("\nGate");
-    gate.push(step("check", "just", ["check"]));
+    // `just check`, one recipe at a time, so a format slip does not hide the
+    // typecheck and test results from the reviewer.
+    for (const recipe of ["format-check", "lint", "typecheck", "test"]) {
+      gate.push(step(recipe, "just", [recipe]));
+    }
     const build = step("build", "just", ["build"]);
     gate.push(build);
     const caddyChanged = changed.some((t) => t.upstream.caddyBinary);
@@ -571,7 +613,7 @@ async function main(): Promise<number> {
     generation.every((r) => r.ok) && carry.conflicts.length === 0 && gate.every((r) => r.ok);
 
   writeSummary(
-    { changed, all, gate, generation, carry, tagDelta, notes, caddyOnPath: caddyVersion() },
+    { changed, from, all, gate, generation, carry, tagDelta, notes, caddyOnPath: caddyVersion() },
     gateOk
   );
   writeResult({
