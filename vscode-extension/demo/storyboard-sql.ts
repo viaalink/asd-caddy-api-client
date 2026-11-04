@@ -303,7 +303,7 @@ const theCode: Scene = {
     },
     {
       caption:
-        "mitmproxy runs in reverse TCP mode and loads our Postgres decoder, which ships with the client library.",
+        "In reverse TCP mode, mitmproxy loads our Postgres decoder, which ships with the client library.",
       act: async (page) => {
         await showCode(
           page,

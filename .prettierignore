@@ -7,6 +7,8 @@ coverage/
 
 # Local development
 local/
+# Agent worktrees (git worktrees of this repo, checked by their own runs)
+.claude/worktrees/
 
 # ASD submodule
 
