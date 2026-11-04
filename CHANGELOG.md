@@ -22,7 +22,12 @@ match, proxy }` and `enable()` / `disable()` swap the layer4 route between the b
 - A mitmproxy addon for the PostgreSQL wire protocol, shipped in the package
   (`mitmproxy-addons/pgwire.py`, path from `mitmproxyAddonPath("pgwire")`): every intercepted
   connection reads as a transcript of the SQL sent, its parameters, the columns, the rows returned
-  and errors, in mitmweb's Comment tab. The source is embedded too (`mitmproxyAddonSource()`,
+  and errors, in mitmweb's Comment tab, and each TCP message reads decoded in Stream Data (a
+  "Postgres" content view, picked automatically; mitmproxy 12's `Contentview` API, with the older
+  `View` API on 10 and 11; tested on 10.4.2, 11.1.3 and 12.2.1). Login messages are blanked in the
+  stored flow once forwarded, so a cleartext password shows neither in the Raw view nor in a saved
+  flow file. The demo and the layer4 test stack run mitmproxy 12.2.1, with a mitmweb password
+  (required since 11.1); `just test-layer4` runs the SQL-over-TCP integration test. The source is embedded too (`mitmproxyAddonSource()`,
   `writeMitmproxyAddon(addon, dir)`), for bundled or compiled programs that have no package
   directory on disk.
 

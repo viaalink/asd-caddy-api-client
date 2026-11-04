@@ -50,7 +50,7 @@ services:
 
   # MITMproxy for Elasticsearch (reverse mode)
   mitmproxy:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy
     command: >
       mitmweb
@@ -60,6 +60,7 @@ services:
       --listen-host 0.0.0.0
       --listen-port 8080
       --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
       --set keep_host_header=true
       --set block_global=false
     ports:
@@ -74,7 +75,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/'')"',
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
         ]
       interval: 5s
       timeout: 5s
@@ -83,7 +84,7 @@ services:
 
   # MITMproxy for Node API (reverse mode)
   mitmproxy-node:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-node
     command: >
       mitmweb
@@ -93,6 +94,7 @@ services:
       --listen-host 0.0.0.0
       --listen-port 8080
       --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
       --set keep_host_header=true
       --set block_global=false
     ports:
@@ -106,7 +108,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/'')"',
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
         ]
       interval: 5s
       timeout: 5s
@@ -135,7 +137,7 @@ services:
   # MITMproxy for Postgres (reverse TCP mode, with the package's pgwire addon:
   # the SQL, its parameters, the rows and errors, readable in Stream Data)
   mitmproxy-pg:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-pg
     command: >
       mitmweb
@@ -143,6 +145,7 @@ services:
       --web-host 0.0.0.0
       --web-port 8081
       --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
       -s /addons/pgwire.py
     volumes:
       - ../mitmproxy-addons:/addons:ro
@@ -157,7 +160,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/'')"',
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
         ]
       interval: 5s
       timeout: 5s
@@ -177,6 +180,8 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       # Postgres through Caddy's layer4 route, so inspection can swap it
       - DATABASE_URL=postgres://demo:demo@caddy:5432/shop
+      # mitmweb 11.1+ wants a password; Caddy passes it on to the mitmweb UIs
+      - MITMWEB_PASSWORD=${DEMO_MITMWEB_PASSWORD:-demo}
     volumes:
       - ./app:/app/public:ro
       - ./api/server.ts:/app/demo/server.ts:ro
