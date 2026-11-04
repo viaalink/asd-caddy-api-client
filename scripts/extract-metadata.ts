@@ -196,7 +196,23 @@ function extractBuilderFunctions(
         }
         // Options declared in another file, as a type alias, or as z.infer<>:
         // ask the type checker instead of only scanning this file's interfaces.
-        if (params.length === 0) {
+        if (isPositionalParam(firstParam, checker)) {
+          // buildX(value: string | string[], options?): the properties of a
+          // string or an array are not the builder's parameters.
+          params = node.parameters.map((p) => {
+            const name = p.name.getText();
+            const tag = ts
+              .getJSDocTags(node)
+              .find((t) => ts.isJSDocParameterTag(t) && t.name.getText() === name);
+            const comment = tag && typeof tag.comment === "string" ? tag.comment : "";
+            return {
+              name,
+              type: checker.typeToString(checker.getTypeAtLocation(p)),
+              required: !p.questionToken && !p.initializer,
+              description: comment.replace(/^-\s*/, ""),
+            };
+          });
+        } else if (params.length === 0) {
           params = extractParamsFromType(firstParam, checker);
         }
       }
@@ -326,7 +342,9 @@ class SnippetValueWriter {
       const required = checker
         .getPropertiesOfType(obj)
         .filter((p) => (p.flags & ts.SymbolFlags.Optional) === 0);
-      if (required.length === 0 || depth >= 3) return "{}";
+      // Deep enough for nested config like routes -> handle -> upstreams -> dial,
+      // still bounded for recursive types (a subroute's routes).
+      if (required.length === 0 || depth >= 6) return "{}";
       const fields = required.map((p) => {
         const pt = checker.getTypeOfSymbolAtLocation(p, this.location);
         const nested = this.write(pt, p.getName(), undefined, depth + 1, `${context} ${name}`);
@@ -354,6 +372,20 @@ function escapeChoice(text: string): string {
   return text.replace(/[,|\\$}]/g, (c) => `\\${c}`);
 }
 
+/**
+ * A first parameter that is a value rather than an options object: a string,
+ * number or boolean, a list (`buildLayer4TeeHandler(branch: Layer4Handler[])`),
+ * or a union of those (`buildLayer4ProxyHandler(upstreams: string | string[])`).
+ */
+function isPositionalParam(param: ts.ParameterDeclaration, checker: ts.TypeChecker): boolean {
+  const type = checker.getNonNullableType(checker.getTypeAtLocation(param));
+  const primitiveFlags =
+    ts.TypeFlags.StringLike | ts.TypeFlags.NumberLike | ts.TypeFlags.BooleanLike;
+  return (type.isUnion() ? type.types : [type]).every(
+    (t) => (t.flags & primitiveFlags) !== 0 || checker.isArrayType(t)
+  );
+}
+
 function generateSnippet(
   funcName: string,
   params: ParamMetadata[],
@@ -379,16 +411,7 @@ function generateSnippet(
   const declaration = optionsParam?.parent;
   const allParams =
     declaration && ts.isFunctionDeclaration(declaration) ? [...declaration.parameters] : [];
-  const firstType = optionsParam
-    ? checker.getNonNullableType(checker.getTypeAtLocation(optionsParam))
-    : undefined;
-  const primitiveFlags =
-    ts.TypeFlags.StringLike | ts.TypeFlags.NumberLike | ts.TypeFlags.BooleanLike;
-  const isPositional =
-    firstType !== undefined &&
-    (firstType.isUnion() ? firstType.types : [firstType]).every(
-      (t) => (t.flags & primitiveFlags) !== 0
-    );
+  const isPositional = optionsParam !== undefined && isPositionalParam(optionsParam, checker);
 
   if (!optionsParam) {
     body.push(`${funcName}()$0`);
@@ -472,7 +495,10 @@ function placeholderFor(name: string, funcName: string): string {
   if (n === "root" || n === "fileroot") return "/var/www/html";
   if (n === "pathprefix") return "/app";
   if (n === "to" || n.endsWith("url")) return "https://example.com";
-  if (n === "upstream") return "localhost:3000";
+  if (n === "upstream" || n === "upstreams") return "localhost:3000";
+  if (n === "listen") return ":5432";
+  if (n === "sni") return "db.example.com";
+  if (n === "ranges") return "10.0.0.0/8";
   if (n.includes("upstreamhost")) return "localhost";
   if (n.includes("host") || n.includes("domain")) return "example.com";
   if (n === "source") return "{http.request.host}";
@@ -683,6 +709,7 @@ function generateExtensionAssets(): ExtensionAssets {
     join(ROOT_DIR, "src/plugins/caddy-security/types.ts"),
     join(ROOT_DIR, "src/caddy/routes.ts"),
     join(ROOT_DIR, "src/caddy/helpers.ts"),
+    join(ROOT_DIR, "src/caddy/layer4-builders.ts"),
     join(ROOT_DIR, "src/types.ts"),
   ];
 

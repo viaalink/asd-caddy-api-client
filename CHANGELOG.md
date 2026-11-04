@@ -30,6 +30,41 @@ match, proxy }` and `enable()` / `disable()` swap the layer4 route between the b
   (required since 11.1); `just test-layer4` runs the SQL-over-TCP integration test. The source is embedded too (`mitmproxyAddonSource()`,
   `writeMitmproxyAddon(addon, dir)`), for bundled or compiled programs that have no package
   directory on disk.
+- Full caddy-l4 support, typed from the caddy-l4 Go source like caddy-security: types and Zod
+  schemas generated for the core `layer4` package and all 23 modules
+  (`src/generated/plugins/caddy-l4-*.ts`), pinned to caddy-l4 commit `96e1a6bf` (the latest tag
+  is months behind). On top: typed matchers for every matcher module (`postgres`, `tls`/`quic`
+  with `sni`, `sni_regexp`, `alpn`, `remote_ip`, `local_ip`; `http` with HTTP matcher sets; `ssh`,
+  `rdp`, `openvpn`, `xmpp`, `socks4`, `socks5`, `proxy_protocol`, `remote_ip`, `local_ip`,
+  `remote_ip_list`, `regexp`, `clock`, `dns`, `vars`, `vars_regexp`, `winbox`, `wireguard`,
+  `not`), typed handlers (`proxy` with upstream TLS, health checks and every load-balancing
+  policy, `tls`, `subroute`, `throttle`, `proxy_protocol`, `socks5`, `tee`, `echo`, `close`,
+  `postgres_tls`, `vars`), `Layer4AppSchema` and the `layer4` listener wrapper. New builders:
+  `buildLayer4Route`, `buildLayer4SniRoute`, `buildLayer4TlsMatcherSet`,
+  `buildLayer4HttpMatcherSet`, `buildLayer4PostgresMatcherSet`, `buildLayer4RemoteIpMatcherSet`,
+  `buildLayer4TlsHandler`, `buildLayer4SubrouteHandler`, `buildLayer4ThrottleHandler`,
+  `buildLayer4ProxyProtocolHandler`, `buildLayer4Socks5Handler`, `buildLayer4TeeHandler`,
+  `buildLayer4EchoHandler`, `buildLayer4CloseHandler`, `buildLayer4PostgresTlsHandler`,
+  `buildLayer4App`, `buildLayer4ListenerWrapper`; `buildLayer4ProxyHandler` takes load balancing,
+  retries, health checks and upstream TLS options, `buildLayer4ProxyRoute` passes them through
+  (`proxy`), `buildLayer4Server` takes idle/matching timeouts. Existing exports keep their
+  signatures; `Layer4Protocol` now lists every options-free protocol matcher. Matchers and
+  handlers of modules the library doesn't know still pass through, so configs read back from
+  Caddy parse. The layer4 builders show up in the VS Code extension's snippets and hover docs.
+
+### Changed
+
+- `Layer4RouteSchema`, `Layer4HandlerSchema` and `Layer4MatcherSetSchema` are typed
+  `z.ZodType<…>` (they are recursive: `subroute`, `tee`, `not`) instead of a
+  `ZodObject`/`ZodUnion`/`ZodRecord`; `.parse()`/`.safeParse()` are unchanged, `.extend()` and
+  `.options` are no longer available on them.
+
+### Fixed
+
+- `buildLayer4ProxyRoute({ match: "http" })` emits `{ "http": [] }`; caddy-l4's `http` matcher
+  takes a list of HTTP matcher sets and rejected the old `{ "http": {} }`.
+- VS Code snippets/metadata for builders whose first parameter is a value (`string`, a list, or
+  a union like `string | string[]`) list the function's parameters, not a string's methods.
 
 ## [0.10.2](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.1...v0.10.2) (2026-11-03)
 
