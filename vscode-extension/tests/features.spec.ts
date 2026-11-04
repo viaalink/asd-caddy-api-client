@@ -76,3 +76,34 @@ test.describe("0.3.0 features", () => {
     );
   });
 });
+
+test.describe("0.4.0: which running Caddy", () => {
+  test("Choose Running Caddy lists what it found, plus enter or look again", async ({ page }) => {
+    await runCommand(page, "Caddy: Choose Running Caddy");
+    await expect(page.locator(".quick-input-title")).toContainText("Which running Caddy?", {
+      timeout: 15000,
+    });
+    const options = page.locator('.quick-input-list [role="option"]');
+    await expect(options.filter({ hasText: "Enter an admin URL" })).toBeVisible({ timeout: 15000 });
+    await expect(options.filter({ hasText: "Look again" })).toBeVisible();
+    await page.keyboard.press("Escape");
+  });
+
+  test("an admin URL that is not on this machine is refused, with the reason", async ({ page }) => {
+    await runCommand(page, "Caddy: Choose Running Caddy");
+    const enter = page.locator('.quick-input-list [role="option"]', {
+      hasText: "Enter an admin URL",
+    });
+    await expect(enter).toBeVisible({ timeout: 15000 });
+    await enter.click();
+    const input = page.locator(".quick-input-box input");
+    await expect(input).toHaveValue("http://localhost:2019");
+    await input.fill("http://192.0.2.10:2019");
+    await page.keyboard.press("Enter");
+
+    const dialog = page.locator(".monaco-dialog-box");
+    await expect(dialog).toContainText("is not on this machine", { timeout: 10000 });
+    await expect(dialog).toContainText("SSH tunnel");
+    await page.keyboard.press("Escape");
+  });
+});

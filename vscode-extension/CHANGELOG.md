@@ -5,6 +5,28 @@ All notable changes to the Caddy Configuration Tools extension will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-11-04
+
+### Added
+
+- The extension finds the Caddys running on your machine: `caddy run` / `caddy start` processes
+  (their config names the admin address, including the Caddys the Viaalink CLI starts per project),
+  Docker containers publishing port 2019, `CADDY_ADMIN` and `localhost:2019`. Each is asked whether
+  it answers; one is used straight away, with several you pick one and the workspace remembers it.
+- **Caddy: Choose Running Caddy**, and a status bar item showing which Caddy Apply and Show Running
+  Config use; click it to switch.
+- Settings: `caddy.targets` (your own list, e.g. dev and staging), `caddy.autoDetect` and
+  `caddy.allowRemoteAdmin`.
+
+### Changed
+
+- `caddy.adminUrl` is now the override: empty by default (find Caddy), and when set it is always
+  used, without looking anything up.
+- An admin URL that is not on this machine is refused unless `caddy.allowRemoteAdmin` is on: the
+  admin API has no login. The message explains the safe way (an SSH tunnel to localhost).
+- The README says what the extension covers next to a Caddyfile extension, and that admin API
+  changes are not written back to a config file.
+
 ## [0.3.1] - 2026-11-03
 
 ### Changed

@@ -10,6 +10,8 @@
  *                            replace in place when a route's @id already exists
  *
  * Every write asks for confirmation first: these change a live server.
+ * Which Caddy: the admin URL comes from targets.ts (found, picked, or the
+ * caddy.adminUrl override); every function here takes it as an argument.
  */
 
 import * as vscode from "vscode";
@@ -19,15 +21,8 @@ import { caddyFileKind } from "./file-kinds";
 
 import { RUNNING_CONFIG_SCHEME } from "./lazy";
 
-function adminUrl(): string {
-  return vscode.workspace
-    .getConfiguration("caddy")
-    .get<string>("adminUrl", "http://localhost:2019")
-    .replace(/\/$/, "");
-}
-
-function client(): CaddyClient {
-  return new CaddyClient({ adminUrl: adminUrl() });
+function client(adminUrl: string): CaddyClient {
+  return new CaddyClient({ adminUrl });
 }
 
 function describeError(err: unknown): string {
@@ -45,33 +40,34 @@ function describeError(err: unknown): string {
 }
 
 /** Content for the read-only running-config view (see extension.ts). */
-export async function runningConfigText(): Promise<string> {
-  const config = await client().getConfig();
+export async function runningConfigText(adminUrl: string): Promise<string> {
+  const config = await client(adminUrl).getConfig();
   return JSON.stringify(config, null, 2) + "\n";
 }
 
-export async function showRunningConfig(refresh: (uri: vscode.Uri) => void): Promise<void> {
+export async function showRunningConfig(
+  adminUrl: string,
+  refresh: (uri: vscode.Uri) => void
+): Promise<void> {
   // The path ends in caddy-server.json so the full-config schema, hover and
   // CodeLens apply to the read-only view too.
   const uri = vscode.Uri.parse(`${RUNNING_CONFIG_SCHEME}:/running/caddy-server.json`);
   try {
-    await runningConfigText(); // surface "unreachable" as a message, not an empty editor
+    await runningConfigText(adminUrl); // surface "unreachable" as a message, not an empty editor
     refresh(uri);
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.languages.setTextDocumentLanguage(doc, "json");
     await vscode.window.showTextDocument(doc, { preview: false });
   } catch (err) {
     await offerAdminUrl(
-      `Could not read the config from Caddy at ${adminUrl()}: ${describeError(err)}`
+      `Could not read the config from Caddy at ${adminUrl}: ${describeError(err)}`
     );
   }
 }
 
 async function offerAdminUrl(message: string): Promise<void> {
-  const choice = await vscode.window.showErrorMessage(message, "Change Admin URL");
-  if (choice) {
-    await vscode.commands.executeCommand("workbench.action.openSettings", "caddy.adminUrl");
-  }
+  const choice = await vscode.window.showErrorMessage(message, "Choose Caddy");
+  if (choice) await vscode.commands.executeCommand("caddy.selectTarget");
 }
 
 function routesIn(value: unknown): CaddyRoute[] | undefined {
@@ -81,7 +77,7 @@ function routesIn(value: unknown): CaddyRoute[] | undefined {
   return undefined;
 }
 
-async function applyRoutes(text: string): Promise<void> {
+async function applyRoutes(adminUrl: string, text: string): Promise<void> {
   let routes: CaddyRoute[] | undefined;
   try {
     routes = routesIn(JSON.parse(text) as unknown);
@@ -96,12 +92,12 @@ async function applyRoutes(text: string): Promise<void> {
     return;
   }
 
-  const api = client();
+  const api = client(adminUrl);
   let servers: string[];
   try {
     servers = Object.keys(await api.getServers());
   } catch (err) {
-    await offerAdminUrl(`Could not list HTTP servers at ${adminUrl()}: ${describeError(err)}`);
+    await offerAdminUrl(`Could not list HTTP servers at ${adminUrl}: ${describeError(err)}`);
     return;
   }
   if (servers.length === 0) {
@@ -123,7 +119,7 @@ async function applyRoutes(text: string): Promise<void> {
     .map((r) => (typeof r["@id"] === "string" ? r["@id"] : "(no @id)"))
     .join(", ");
   const confirm = await vscode.window.showWarningMessage(
-    `Apply ${routes.length} route(s) [${summary}] to server "${server}" at ${adminUrl()}?`,
+    `Apply ${routes.length} route(s) [${summary}] to server "${server}" at ${adminUrl}?`,
     {
       modal: true,
       detail: "Routes with an existing @id are replaced in place; others are appended.",
@@ -155,7 +151,7 @@ async function applyRoutes(text: string): Promise<void> {
   }
 }
 
-async function applyFullConfig(text: string): Promise<void> {
+async function applyFullConfig(adminUrl: string, text: string): Promise<void> {
   let config: unknown;
   try {
     config = JSON.parse(text);
@@ -164,7 +160,7 @@ async function applyFullConfig(text: string): Promise<void> {
     return;
   }
   const confirm = await vscode.window.showWarningMessage(
-    `Replace the entire running config of Caddy at ${adminUrl()}?`,
+    `Replace the entire running config of Caddy at ${adminUrl}?`,
     {
       modal: true,
       detail:
@@ -175,14 +171,14 @@ async function applyFullConfig(text: string): Promise<void> {
   if (confirm !== "Load Config") return;
 
   try {
-    await client().applyConfig(config as Parameters<CaddyClient["applyConfig"]>[0]);
+    await client(adminUrl).applyConfig(config as Parameters<CaddyClient["applyConfig"]>[0]);
     vscode.window.showInformationMessage("Caddy loaded the new config.");
   } catch (err) {
     vscode.window.showErrorMessage(`Caddy rejected the config: ${describeError(err)}`);
   }
 }
 
-export async function applyActiveFile(): Promise<void> {
+export async function applyActiveFile(adminUrl: string): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   const kind = editor && caddyFileKind(editor.document.fileName);
   if (!editor || !kind) {
@@ -192,8 +188,8 @@ export async function applyActiveFile(): Promise<void> {
     return;
   }
   const text = editor.document.getText();
-  if (kind.schemaFile === "caddy-full-config.json") return applyFullConfig(text);
-  if (kind.schemaFile === "caddy-route.json") return applyRoutes(text);
+  if (kind.schemaFile === "caddy-full-config.json") return applyFullConfig(adminUrl, text);
+  if (kind.schemaFile === "caddy-route.json") return applyRoutes(adminUrl, text);
   vscode.window.showInformationMessage(
     `${kind.label} files are applied as part of a full config (apps.security) — paste it into caddy-server.json.`
   );
