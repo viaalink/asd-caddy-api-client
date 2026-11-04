@@ -1,0 +1,18 @@
+# tygo configuration for generating TypeScript from caddy-security Go source
+# Run from local/caddy-security directory: tygo generate
+
+packages:
+  # Main caddy-security package - contains App, AuthnMiddleware, AuthzMiddleware
+  - path: "github.com/greenpau/caddy-security"
+    output_path: "../../src/generated/plugins/caddy-security.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "number | string"
+      "Duration": "number | string"
+      "error": "Error"
+      # External authcrunch types - mapped to unknown (complex external dependency)
+      "*authcrunch.Config": "unknown"
+      "*authcrunch.Server": "unknown"
+      "*authn.Portal": "unknown"
+      "*authz.Gatekeeper": "unknown"
+      "*zap.Logger": "unknown"

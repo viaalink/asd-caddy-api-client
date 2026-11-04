@@ -119,7 +119,7 @@ const plugins: PluginConfig[] = [
   {
     name: "caddy-l4",
     localPath: "caddy-l4",
-    tygoConfig: "scripts/tygo/caddy-l4.yaml",
+    tygoConfig: "scripts/upstreams/tygo/caddy-l4.yaml",
     outputFile: "caddy-l4-core",
     extraOutputFiles: CADDY_L4_MODULES.map((m) => `caddy-l4-${m}`),
     stripConstants: true,

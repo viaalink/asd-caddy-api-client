@@ -72,7 +72,7 @@ same commit is pinned in `tests/integration/Dockerfile.caddy-l4` and `demo/Docke
 install fetches that toolchain on its own.
 
 **Source:** `local/caddy-l4` (git clone, checked out at the pinned commit)
-**tygo config:** `scripts/tygo/caddy-l4.yaml`, tracked in the repo (unlike the other plugins'
+**tygo config:** `scripts/upstreams/tygo/caddy-l4.yaml`, tracked in the repo (unlike the other plugins'
 `local/*/tygo.yaml`); one output file per Go package, since modules reuse names (`Handler`,
 `MatchRegexp`). Wire-protocol/runtime-only files (`connection.go`, `handlers.go`,
 `caddyfile.go`, openvpn `crypto.go`/`messages.go`, tls `clienthello.go`/`parsehello.go`,
@@ -153,13 +153,15 @@ a pointer embed across separate Go modules — see `local/caddy-dns-route53/tygo
    `*libdns.Provider` — the actual JSON-tagged struct is in `github.com/libdns/<provider>`.
 2. Clone it: `git clone git@github.com:libdns/<provider>.git local/libdns-<provider>`,
    checkout the target tag/commit.
-3. Add `local/libdns-<provider>/tygo.yaml`:
+3. Add `scripts/upstreams/tygo/libdns-<provider>.yaml` (versioned; `just upstreams-sync`
+   copies it to `local/libdns-<provider>/tygo.yaml`):
    ```yaml
    packages:
      - path: "github.com/libdns/<provider>"
        output_path: "../../src/generated/plugins/caddy-dns-<provider>.ts"
    ```
-4. Add an entry to the `plugins` array in `scripts/generate-plugin-types.ts`.
+4. Add an entry to the `plugins` array in `scripts/generate-plugin-types.ts`, and one to
+   `upstreams.json` (see [The update cycle](#the-update-cycle)).
 5. Run `npm run generate:plugin-types`, then `npm run typecheck` immediately — tygo has a
    known comment-merging artifact (turns a field's trailing Go doc comment into a
    malformed `//` line comment that swallows the next field's `/**` opener, causing a
@@ -172,9 +174,64 @@ a pointer embed across separate Go modules — see `local/caddy-dns-route53/tygo
 7. Update this file with the new version info.
 8. `npm run typecheck && npm run lint && npm run test` to verify.
 
+## The update cycle
+
+Every Go source the generated code comes from is listed in [`upstreams.json`](./upstreams.json):
+repo, `local/` clone, how it is tracked, the pinned ref and commit, and its tygo config
+(versioned in `scripts/upstreams/tygo/`, so a clean checkout can regenerate). Tracking:
+
+| `track.type` | Moves to                                                  | Used by                                                    |
+| ------------ | --------------------------------------------------------- | ---------------------------------------------------------- |
+| `tag`        | the newest stable semver tag matching `pattern`           | Caddy, caddy-security, caddy-dns/route53, libdns/\* tagged |
+| `gomod`      | the version its `parent`'s go.mod requires at its new pin | go-authcrunch (caddy-security), libdns/route53             |
+| `branch`     | the branch head, pinned by commit (tags absent or stale)  | caddy-l4, libdns/digitalocean                              |
+
+`gomod` keeps the types honest: caddy-security v1.1.64 builds against go-authcrunch
+v1.1.41, not the newest go-authcrunch, so that is the one to generate from.
+
+```bash
+just upstreams-check    # report; exit 10 when a pin is behind. Read-only (git ls-remote)
+just upstreams-update   # move the pins, regenerate, run the gate, write the PR body
+just upstreams-sync     # put every local/ clone on its pin (clones what is missing)
+```
+
+`just upstreams-update` (options: `--only a,b`, `--target name=ref`, `--skip-vscode`,
+`--no-gate`):
+
+1. Puts every clone on its current pin and runs `generate:all` (the **baseline**).
+   Where the committed file differs from the baseline, it carries a fix by hand
+   (tygo's comment-merging artifact, the `queryOps` types in `caddy-rewrite.ts`).
+2. Checks out the new refs and runs `generate:all` again, then three-way merges each
+   hand-fix onto the new output (`git merge-file`: new output, baseline, committed).
+   A fix on lines upstream also changed becomes a conflict, which fails the gate. The
+   editor metadata and JSON schemas are then derived again from the merged sources.
+3. Rewrites the pins in `upstreams.json`, the rows in this file's tables, the
+   `install-caddy` action's default version and, for a new Caddy, adds a row to the
+   supported-Caddy tables in `README.md` and `vscode-extension/README.md` (rendered
+   from `upstreams.json` → `supportedCaddy`).
+4. Gate: `just format-check`, `lint`, `typecheck`, `test` (that is `just check`, one
+   recipe at a time) and `just build`; on a Caddy bump also `just vscode-deps` and
+   `just vscode-test`.
+5. Writes `local/upstreams/summary.md` (gate table, bumps with `json:"…"` tag-line
+   counts and compare links, warnings, regenerated files, log tails of what failed)
+   and `local/upstreams/result.json`. Exit 0 = green or nothing to do, 20 = gate failed.
+
+It never commits. `.github/workflows/upstreams.yml` runs it every Monday (and on
+demand) and opens or updates **one** pull request from `bot/upstreams` with the summary
+as its body — also when the gate fails, then titled `[gate failing]` and labelled
+`gate-failing`, so the new syntax is visible. Merging, the version bump, the CHANGELOG
+and publishing stay manual. For CI to run on that PR, set an `UPSTREAMS_TOKEN` secret
+(fine-grained PAT or GitHub App token, contents + pull-requests write): a PR pushed
+with the default `GITHUB_TOKEN` starts no workflows. The repository setting _Allow
+GitHub Actions to create and approve pull requests_ must be on.
+
+Locally, a Go older than an upstream's `go` line fails tygo (`toolchain not available`);
+run with `GOTOOLCHAIN=go1.25.0+auto`. The update reports a swallowed tygo failure in
+`generate-plugin-types.ts` as a failed generation instead of leaving stale types.
+
 ## Regenerating Types
 
-When updating Caddy types:
+When updating Caddy types (or let `just upstreams-update` do all of this):
 
 1. Update `local/caddy` to target version:
 

@@ -1,0 +1,13 @@
+# tygo configuration for generating TypeScript from the caddy-dns/route53
+# wrapper's OWN field (debug_logging) — the wrapper embeds *route53.Provider
+# by pointer across a separate Go module, which tygo can't follow, so that
+# embed is mapped to `unknown` here and the real fields come from
+# local/libdns-route53/tygo.yaml's separate generation instead. Merged by
+# hand in src/plugins/caddy-dns/types.ts.
+# Run from local/caddy-dns-route53 directory: tygo generate
+
+packages:
+  - path: "github.com/caddy-dns/route53"
+    output_path: "../../src/generated/plugins/caddy-dns-route53-wrapper.ts"
+    type_mappings:
+      "*route53.Provider": "unknown"

@@ -1,0 +1,12 @@
+# tygo configuration for generating TypeScript from the real Provider struct
+# behind caddy-dns/route53's embedded *libdns/route53.Provider — the 10 real
+# optional providerConfig fields (region, access_key_id, hosted_zone_id, ...)
+# live here. See local/caddy-dns-route53/tygo.yaml for the wrapper's own
+# extra `debug_logging` field, merged by hand in src/plugins/caddy-dns/types.ts.
+# Run from local/libdns-route53 directory: tygo generate
+
+packages:
+  - path: "github.com/libdns/route53"
+    output_path: "../../src/generated/plugins/caddy-dns-route53-libdns.ts"
+    type_mappings:
+      "time.Duration": "number"

@@ -87,6 +87,19 @@ await caddy.setLayer4Server(
 );
 ```
 
+### Supported Caddy versions
+
+A weekly job checks every Caddy, caddy-security, caddy-l4 and DNS-provider release and opens a pull request with the regenerated types; this table follows from it ([how](./DEPENDENCIES.md#the-update-cycle)).
+
+<!-- upstreams:supported-caddy:start -->
+
+| Caddy   | Library        | VS Code extension | How it is validated                                                                                                                                                                    |
+| ------- | -------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v2.11.4 | 0.9.0 – 0.10.x | 0.2.0 – 0.4.x     | Types generated from this source. CI's unit and differential fuzz tests run `caddy validate`/`caddy adapt` on this binary; the extension's tests run on the schemas generated from it. |
+| v2.11.2 | 0.6.0 – 0.10.x | 0.2.0 – 0.4.x     | Known-good baseline: the maintainers' day-to-day Caddy, used against the library and the extension.                                                                                    |
+
+<!-- upstreams:supported-caddy:end -->
+
 ## Live Demo
 
 Experience the library in action with our interactive demo showing dynamic MITMproxy traffic inspection via Caddy Admin API.
