@@ -405,8 +405,6 @@ demo-video variant="promo":
 demo action:
     #!/usr/bin/env bash
     set -euo pipefail
-    # via checks .env before its before-hooks run, so a fresh clone resolves tpl.env first
-    grep -q '^DEMO_HTTP_PORT=' .env 2>/dev/null || via env init
     case "{{action}}" in
         start) via run up ;;
         share) via run share ;;

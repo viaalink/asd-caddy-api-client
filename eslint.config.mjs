@@ -13,6 +13,7 @@ export default tseslint.config(
       "coverage/**",
       "local/**",
       ".claude/worktrees/**", // agent worktrees, checked by their own runs
+      "workspace/**", // the Viaalink CLI's runtime folder (gitignored)
       ".asd/**",
       "demo/**", // Demo files are standalone
       "examples/**", // Example files are standalone demos

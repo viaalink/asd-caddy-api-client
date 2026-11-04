@@ -14,6 +14,8 @@ This demo showcases the `@viaalink/caddy-api-client` library's ability to dynami
 
 ## Quick Start
 
+Needs the Viaalink CLI 3.2.6 or later (`via update`); a fresh clone starts without any setup step.
+
 ```bash
 just demo start   # via run up: own ports for this checkout, routed in Caddy
 just demo url     # https://caddy-mitm-<id>.localhost/dashboard
