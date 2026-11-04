@@ -897,6 +897,13 @@ export interface MitmwebOptions {
    * Working directory for mitmproxy
    */
   workingDir?: string;
+
+  /**
+   * Password for the mitmweb UI and API (mitmproxy 11.1 and later require one).
+   * Left out: a random one is generated and returned by startMitmweb().
+   * Ignored on mitmproxy older than 11.1, which has no web password.
+   */
+  webPassword?: string;
 }
 
 /**

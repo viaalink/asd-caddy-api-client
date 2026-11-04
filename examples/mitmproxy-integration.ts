@@ -25,12 +25,13 @@ async function main() {
   console.log("    -p 8082:8080 \\");
   console.log("    -p 8081:8081 \\");
   console.log("    --name mitmproxy \\");
-  console.log("    mitmproxy/mitmproxy:10.4.2 \\");
+  console.log("    mitmproxy/mitmproxy:12.2.1 \\");
   console.log("    mitmweb \\");
   console.log("    --mode reverse:http://host.docker.internal:3000 \\");
   console.log("    --web-host 0.0.0.0 \\");
   console.log("    --listen-host 0.0.0.0 \\");
   console.log("    --no-web-open-browser \\");
+  console.log("    --set web_password=change-me \\");
   console.log("    --set keep_host_header=true\n");
 
   // 2. Create Caddy client

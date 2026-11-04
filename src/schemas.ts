@@ -1436,6 +1436,7 @@ export const MitmwebOptionsSchema = z.object({
   openBrowser: z.boolean().optional().default(true),
   scripts: z.array(z.string()).optional(),
   workingDir: z.string().optional(),
+  webPassword: z.string().min(1).optional(),
 });
 
 // ============================================================================

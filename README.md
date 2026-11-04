@@ -260,12 +260,13 @@ docker run -d \
   -p 8082:8080 \
   -p 8081:8081 \
   --name mitmproxy \
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmweb \
   --mode reverse:http://your-backend:3000 \
   --web-host 0.0.0.0 \
   --listen-host 0.0.0.0 \
   --no-web-open-browser \
+  --set web_password=change-me \
   --set keep_host_header=true
 ```
 
@@ -345,7 +346,7 @@ await client.addRoute("https_server", lbRoute);
 ```yaml
 services:
   mitmproxy:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     ports:
       - "8082:8080" # Proxy port
       - "8081:8081" # Web UI
@@ -357,6 +358,7 @@ services:
       --listen-host 0.0.0.0
       --listen-port 8080
       --no-web-open-browser
+      --set web_password=change-me
       --set keep_host_header=true
     restart: unless-stopped
 

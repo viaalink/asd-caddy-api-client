@@ -4,11 +4,36 @@ Common issues and solutions when using MITMproxy integration with @viaalink/cadd
 
 ## Table of Contents
 
+- [Web UI or API Answers 403 (mitmproxy 11.1+)](#web-ui-or-api-answers-403-mitmproxy-111)
 - [Installation Issues](#installation-issues)
 - [Connection Issues](#connection-issues)
 - [Traffic Not Captured](#traffic-not-captured)
 - [Docker Networking](#docker-networking)
 - [Performance Issues](#performance-issues)
+
+---
+
+## Web UI or API Answers 403 (mitmproxy 11.1+)
+
+**Symptoms:** the mitmweb page or `curl http://localhost:8081/flows` answers `403 Forbidden`, or a
+health check against port 8081 never turns healthy.
+
+**Cause:** since 11.1, mitmweb refuses its UI and API without a web password. Without one it makes
+up a random token and only prints it in its log.
+
+**Solution:** set the password yourself and pass it along:
+
+```bash
+docker run -d -p 8081:8081 --name mitmproxy mitmproxy/mitmproxy:12.2.1 \
+  mitmweb --web-host 0.0.0.0 --set web_password=change-me
+```
+
+- Browser: `http://localhost:8081/?token=change-me`
+- API: `curl "http://localhost:8081/flows?token=change-me"` (12.x also takes
+  `Authorization: Bearer change-me`; 11.1 only the `token` parameter)
+
+`startMitmweb()` from this library does this for you: it sets a password (yours via
+`webPassword`, or a random one), returns it, and opens the browser with the token.
 
 ---
 
@@ -25,7 +50,7 @@ docker: Error response from daemon: failed to create shim task
 **Solution:**
 
 1. Check Docker is running: `docker ps`
-2. Pull the image manually: `docker pull mitmproxy/mitmproxy:10.4.2`
+2. Pull the image manually: `docker pull mitmproxy/mitmproxy:12.2.1`
 3. Check for port conflicts: `lsof -i :8081` and `lsof -i :8082`
 
 ### Port Already in Use
@@ -93,7 +118,7 @@ If your backend is running on the host machine:
 # Use host.docker.internal instead of localhost
 docker run -d \
   --name mitmproxy \
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmweb \
   --mode reverse:http://host.docker.internal:3000 \  # Not localhost:3000
   ...
@@ -106,7 +131,7 @@ If your backend is in Docker:
 docker run -d \
   --name mitmproxy \
   --network my-app-network \  # Same network as backend
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmweb \
   --mode reverse:http://backend-service:3000 \  # Container name
   ...
@@ -121,7 +146,7 @@ docker run -d \
 **Symptoms:**
 
 ```bash
-curl http://localhost:8081/flows
+curl "http://localhost:8081/flows?token=change-me"
 []
 ```
 
@@ -151,7 +176,7 @@ docker logs mitmproxy
 curl -v http://localhost:8082/test
 
 # Check if flow was captured
-curl http://localhost:8081/flows | jq 'length'
+curl "http://localhost:8081/flows?token=change-me" | jq 'length'
 # Should show: 1 (or more)
 ```
 
@@ -178,7 +203,7 @@ Add `--set keep_host_header=true` to MITMproxy command:
 ```bash
 docker run -d \
   --name mitmproxy \
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmweb \
   --mode reverse:http://backend:3000 \
   --set keep_host_header=true \  # Important!
@@ -207,7 +232,7 @@ await client.addRoute("https_server", route);
 docker run -d \
   --network host \
   --name mitmproxy \
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmweb --mode reverse:http://localhost:3000
 ```
 
@@ -233,7 +258,7 @@ services:
       - "2019:2019"
 
   mitmproxy:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     networks:
       - app-network
     command: >
@@ -241,6 +266,7 @@ services:
       --mode reverse:http://backend:3000
       --web-host 0.0.0.0
       --listen-host 0.0.0.0
+      --set web_password=change-me
       --set keep_host_header=true
 
   backend:
@@ -300,7 +326,7 @@ docker network connect caddy_network mitmproxy
 # Use mitmdump instead of mitmweb (no web UI overhead)
 docker run -d \
   --name mitmproxy \
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmdump \
   --mode reverse:http://backend:3000 \
   --set keep_host_header=true
@@ -332,7 +358,7 @@ await client.addRoute("https_server", routes.direct, routes.direct["@id"]);
 # docker-compose.yml
 services:
   mitmproxy:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     deploy:
       resources:
         limits:
@@ -349,11 +375,11 @@ services:
 
 **Solution:**
 
-**Option 1: Clear flows periodically** (requires CSRF token)
+**Option 1: Clear flows periodically**
 
-```typescript
-// Note: MITMproxy 10.4.2 requires CSRF token for POST /clear
-// This is a security feature - manual clearing via Web UI is recommended
+```bash
+# mitmproxy 11.1+: the web password, plus a matching XSRF cookie and header (any value)
+curl -X POST -H "Cookie: _xsrf=x" -H "X-XSRFToken: x" "http://localhost:8081/clear?token=change-me"
 ```
 
 **Option 2: Restart MITMproxy periodically**
@@ -367,7 +393,7 @@ docker restart mitmproxy
 ```bash
 docker run -d \
   --name mitmproxy \
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmweb \
   --mode reverse:http://backend:3000 \
   --set flow_detail=0 \  # Don't store request/response bodies
