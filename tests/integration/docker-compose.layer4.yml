@@ -5,6 +5,12 @@
 #   Caddy admin   127.0.0.1:2021
 #   Postgres via Caddy (layer4 listener, created by the tests)   127.0.0.1:15432
 #   mitmweb UI / API                                             127.0.0.1:18081
+#     (mitmproxy 11.1+ wants a password: Authorization: Bearer layer4-test)
+#
+# Postgres has a second user, `clear`, that logs in with a CLEARTEXT password
+# (pg_hba `password`), to prove the addon hides it from the stored flow.
+# LAYER4_MITMPROXY_VERSION picks another mitmproxy (default 12.2.1, what the
+# Viaalink CLI installs); 10.4.2 runs the addon's older content view API.
 name: caddy-layer4-test
 services:
   caddy:
@@ -24,6 +30,8 @@ services:
       POSTGRES_USER: demo
       POSTGRES_PASSWORD: demo
       POSTGRES_DB: shop
+    volumes:
+      - ./layer4/pg-cleartext-user.sh:/docker-entrypoint-initdb.d/pg-cleartext-user.sh:ro
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "demo", "-d", "shop"]
       interval: 2s
@@ -31,10 +39,10 @@ services:
       retries: 30
 
   mitmproxy:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:${LAYER4_MITMPROXY_VERSION:-12.2.1}
     command: >
       mitmweb --mode reverse:tcp://postgres:5432@5432
-      --web-host 0.0.0.0 --web-port 8081 --set web_password=
+      --web-host 0.0.0.0 --web-port 8081 --set web_password=layer4-test
       -s /addons/pgwire.py
     volumes:
       - ../../mitmproxy-addons:/addons:ro

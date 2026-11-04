@@ -314,7 +314,9 @@ def load(loader) -> None:
 
 
 def done() -> None:
-    contentviews.remove(view)
+    # mitmproxy 12 has no way to unregister a view (its remove() is a deprecated no-op).
+    if not hasattr(contentviews, "Contentview"):
+        contentviews.remove(view)
 
 
 addons = [PgWire()]

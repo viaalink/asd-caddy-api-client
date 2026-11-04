@@ -56,7 +56,8 @@ test-layer4:
     #!/usr/bin/env bash
     set -e
     compose="docker compose -p caddy-layer4-test -f tests/integration/docker-compose.layer4.yml"
-    $compose up -d --build --wait
+    # -V: a fresh Postgres every run, so its init script (the cleartext user) runs.
+    $compose up -d --build --wait --renew-anon-volumes
     echo "⏳ Waiting for the Caddy admin API and mitmweb..."
     for i in $(seq 1 60); do
         curl -sf -H "Origin: http://127.0.0.1:2021" http://127.0.0.1:2021/config/ > /dev/null \
