@@ -5,7 +5,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["src/__tests__/integration/**/*.test.ts"],
-    exclude: ["node_modules/**", "dist/**", ".asd/**"],
+    exclude: ["node_modules/**", "dist/**"],
     testTimeout: 30000, // 30s for integration tests with real Caddy
     // Run test files sequentially to avoid Caddy state conflicts
     fileParallelism: false,
@@ -30,7 +30,6 @@ export default defineConfig({
       exclude: [
         "node_modules/",
         "dist/",
-        ".asd/",
         "local/",
         "demo/",
         "**/*.test.ts",

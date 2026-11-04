@@ -6,8 +6,8 @@
  * click, type at a human pace, show the shortcut). They share selectors only.
  */
 
-import { expect, type Locator, type Page } from "@playwright/test";
-import { click, key, press, type } from "./actions";
+import { expect, type Locator, type Page } from "product-video/test";
+import { click, key, press, type } from "product-video/actions";
 
 // ---------------------------------------------------------------- locators
 

@@ -91,10 +91,11 @@ export default async function globalSetup() {
   console.log("🚀 Starting code-server for extension tests...");
 
   const projectRoot = path.resolve(__dirname, "../..");
-  const asdWorkspace = path.join(projectRoot, ".asd/workspace");
-  const codeServerDir = path.join(asdWorkspace, "code/code-server");
+  // code-server and its extensions live in the gitignored local/ folder
+  const localDir = path.join(projectRoot, "local");
+  const codeServerDir = path.join(localDir, "code/code-server");
   const codeServerBin = path.join(codeServerDir, "bin/code-server");
-  const extensionsDir = path.join(asdWorkspace, "code/data/extensions");
+  const extensionsDir = path.join(localDir, "code/data/extensions");
   // Dynamically find the latest vsix file. Re-run after a build/rebuild --
   // a fresh checkout has zero vsix files (they're gitignored build output),
   // so the pre-build lookup can return null; re-scanning afterwards is what
@@ -207,7 +208,7 @@ export default async function globalSetup() {
   fs.writeFileSync(path.join(__dirname, ".codeserver-workspace"), testWorkspace);
 
   // Pre-configure workspace trust to avoid the trust dialog
-  const userDataDir = path.join(asdWorkspace, "code/data");
+  const userDataDir = path.join(localDir, "code/data");
   const userDir = path.join(userDataDir, "User");
 
   // Clear workspace state to avoid stale cache issues
@@ -242,7 +243,7 @@ export default async function globalSetup() {
       "--extensions-dir",
       extensionsDir,
       "--user-data-dir",
-      path.join(asdWorkspace, "code/data"),
+      path.join(localDir, "code/data"),
       testWorkspace,
     ],
     {

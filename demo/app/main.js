@@ -2,8 +2,9 @@
  * Demo Frontend - ES Search with MITMproxy Monitoring
  */
 
-// API base URL (use relative paths when served by demo-api)
-const API_BASE = window.location.port === "3000" ? "" : "http://localhost:3000";
+// Same origin: the demo Caddy serves the app, the API and /es/ on one port,
+// which via picks per checkout (tpl.env) and can publish as-is.
+const API_BASE = "";
 
 // DOM elements
 const statusIndicator = document.getElementById("statusIndicator");
@@ -182,7 +183,7 @@ async function searchProducts(query, index = "products") {
 
     // Note: In production, this would go through Caddy's /es/ route
     // For demo, we'll call the ES endpoint directly through Caddy
-    const response = await fetch(`http://localhost:9080/es/${index}/_search`, {
+    const response = await fetch(`/es/${index}/_search`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(esQuery),
@@ -242,7 +243,7 @@ function handleSearch() {
  */
 async function logSearchToNode(query) {
   try {
-    await fetch("http://localhost:9080/node/echo", {
+    await fetch("/node/echo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "search", query, timestamp: Date.now() }),
@@ -289,7 +290,7 @@ let appConfig = {
  */
 async function fetchConfig() {
   try {
-    const res = await fetch("http://localhost:9080/node/config");
+    const res = await fetch("/node/config");
     const config = await res.json();
     appConfig = { ...appConfig, ...config };
     applyTheme(config);

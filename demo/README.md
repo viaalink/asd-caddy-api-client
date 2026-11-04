@@ -15,21 +15,21 @@ This demo showcases the `@viaalink/caddy-api-client` library's ability to dynami
 ## Quick Start
 
 ```bash
-# From the project root
-just demo start
-
-# Open in browser
-http://localhost:9080/dashboard
-
-# Stop when done
+just demo start   # via run up: own ports for this checkout, routed in Caddy
+just demo url     # https://caddy-mitm-<id>.localhost/dashboard
+just demo share   # via run share: same, plus a public URL on your relay
 just demo stop
 ```
+
+Every checkout gets its own ports and container names from `tpl.env`
+(`getRandomPort`, `getRandomString`), resolved once into `.env` by `via env init`.
+Several clones or worktrees run the demo side by side without clashing.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  localhost:9080/dashboard (split-screen view)               │
+│  caddy-mitm-<id>.localhost/dashboard                      │
 │  ┌─────────────────────────┐  ┌───────────────────────────┐ │
 │  │   Demo Search App       │  │  MITMproxy Web UI         │
 │  │   /app/                 │  │  /mitmproxy/              │
@@ -40,7 +40,7 @@ just demo stop
                     │
                     ▼
 ┌───────────────────────────────────────────────────────────┐
-│  Caddy (localhost:9080, Admin API: localhost:9019)        │
+│  demo Caddy (DEMO_HTTP_PORT, admin on DEMO_ADMIN_PORT)    │
 │                                                           │
 │  /es/* route dynamically switches between:                │
 │  - Direct:   elasticsearch:9200                           │
@@ -94,32 +94,34 @@ await caddy.request(`/config/apps/http/servers/srv0/routes/${index}`, {
 
 ## Services
 
-| Service       | Port | Description                          |
-| ------------- | ---- | ------------------------------------ |
-| Caddy         | 9080 | Reverse proxy (HTTP)                 |
-| Caddy Admin   | 9019 | Admin API for dynamic config         |
-| Elasticsearch | 9200 | Backend data store                   |
-| MITMproxy     | 9082 | Proxy port (reverse mode)            |
-| MITMproxy UI  | 9081 | Web interface for traffic inspection |
-| Demo API      | 3000 | Search app + monitoring toggle       |
+| Service       | Port (.env)          | Description                          |
+| ------------- | -------------------- | ------------------------------------ |
+| Caddy         | DEMO_HTTP_PORT       | Reverse proxy (HTTP)                 |
+| Caddy Admin   | DEMO_ADMIN_PORT      | Admin API for dynamic config         |
+| Elasticsearch | DEMO_ES_PORT         | Backend data store                   |
+| MITMproxy     | DEMO_MITM_PROXY_PORT | Proxy port (reverse mode)            |
+| MITMproxy UI  | DEMO_MITM_WEB_PORT   | Web interface for traffic inspection |
+| Demo API      | DEMO_API_PORT        | Search app + monitoring toggle       |
 
 ## Manual Testing
 
 ```bash
+source <(grep ^DEMO_ .env)   # this checkout's ports
+
 # Check service health
-curl http://localhost:9080/api/health
+curl http://localhost:$DEMO_HTTP_PORT/api/health
 
 # Check monitoring status
-curl http://localhost:9080/api/monitoring/status
+curl http://localhost:$DEMO_HTTP_PORT/api/monitoring/status
 
 # Enable monitoring
-curl -X POST http://localhost:9080/api/monitoring/enable
+curl -X POST http://localhost:$DEMO_HTTP_PORT/api/monitoring/enable
 
 # Disable monitoring
-curl -X POST http://localhost:9080/api/monitoring/disable
+curl -X POST http://localhost:$DEMO_HTTP_PORT/api/monitoring/disable
 
 # Search products (goes through Caddy /es/ route)
-curl -X POST http://localhost:9080/es/products/_search \
+curl -X POST http://localhost:$DEMO_HTTP_PORT/es/products/_search \
   -H "Content-Type: application/json" \
   -d '{"query":{"match":{"name":"keyboard"}}}'
 ```

@@ -39,7 +39,7 @@ const CADDY_BIN =
 /** The folder name shows in the explorer title, so it is chosen for the camera. */
 export const WORKSPACE_NAME = "my-gateway";
 
-const CODE_SERVER_BIN = path.join(REPO_ROOT, ".asd/workspace/code/code-server/bin/code-server");
+const CODE_SERVER_BIN = path.join(REPO_ROOT, "local/code/code-server/bin/code-server");
 
 /** Settings that make code-server look good on camera. */
 const SETTINGS: Record<string, unknown> = {
@@ -217,6 +217,10 @@ function seedWorkspace(target: string): void {
 }
 
 export default async function globalSetup(): Promise<void> {
+  // Other boards film their own UI (storyboard.open); only caddy-tools needs
+  // code-server, the vsix and the live Caddy.
+  if ((process.env["DEMO_BOARD"] ?? "caddy-tools") !== "caddy-tools") return;
+
   if (!fs.existsSync(CODE_SERVER_BIN)) {
     throw new Error(
       `code-server not found at ${CODE_SERVER_BIN} — run \`just vscode-test\` once (it installs it) or symlink it.`

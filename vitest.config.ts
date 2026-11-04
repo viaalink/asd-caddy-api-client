@@ -21,7 +21,6 @@ export default defineConfig({
     exclude: [
       "node_modules/**",
       "dist/**",
-      ".asd/**",
       "examples/**",
       // Exclude integration tests from regular test runs
       "src/__tests__/integration/**",
@@ -33,7 +32,6 @@ export default defineConfig({
       exclude: [
         "node_modules/",
         "dist/",
-        ".asd/",
         "docs/",
         "docs/api/",
         "local/",

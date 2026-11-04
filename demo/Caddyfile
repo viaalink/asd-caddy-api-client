@@ -2,8 +2,12 @@
 # Routes are dynamically configured via caddy-api-client library
 
 {
-    # Enable Admin API on all interfaces (for Docker)
-    admin :2019
+    # Admin API on all interfaces (for Docker). Caddy 2.11+ checks the Origin
+    # header (CVE-2026-27589): allow the container name and the host port
+    # (DEMO_ADMIN_PORT, picked per checkout in tpl.env).
+    admin :2019 {
+        origins caddy:2019 localhost:2019 127.0.0.1:2019 localhost:{$DEMO_ADMIN_PORT} 127.0.0.1:{$DEMO_ADMIN_PORT}
+    }
 
     # Disable automatic HTTPS for demo
     auto_https off

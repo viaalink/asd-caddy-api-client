@@ -527,7 +527,7 @@
       <!-- App Pane -->
       <div class="app-pane" id="app-pane">
         <div class="app-header">Product Search Demo</div>
-        <iframe class="app-iframe" id="app-iframe" src="http://localhost:9080/app/"></iframe>
+        <iframe class="app-iframe" id="app-iframe" src="/app/"></iframe>
       </div>
 
       <div class="resize-handle" id="resize-handle"></div>
@@ -560,11 +560,7 @@
               <button class="action-btn" id="test-bulk">Bulk Index <code>/es/_bulk</code></button>
               <button class="action-btn" id="test-query-bug">Bad Query <code>0 hits</code></button>
             </div>
-            <iframe
-              class="mitm-iframe"
-              id="iframe-es"
-              src="http://localhost:9080/mitmproxy/"
-            ></iframe>
+            <iframe class="mitm-iframe" id="iframe-es" src="/mitmproxy/"></iframe>
           </div>
 
           <!-- Node API Tab -->
@@ -575,11 +571,7 @@
               <button class="action-btn" id="test-random">Random <code>/node/random</code></button>
               <button class="action-btn" id="test-config">Config <code>/node/config</code></button>
             </div>
-            <iframe
-              class="mitm-iframe"
-              id="iframe-node"
-              src="http://localhost:9080/mitmproxy-node/"
-            ></iframe>
+            <iframe class="mitm-iframe" id="iframe-node" src="/mitmproxy-node/"></iframe>
           </div>
         </div>
 
@@ -727,7 +719,7 @@
     <div class="toast" id="toast"></div>
 
     <script>
-      const API = "http://localhost:9080";
+      const API = ""; // same origin as the dashboard
 
       // State
       let currentTab = "es";

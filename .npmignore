@@ -8,7 +8,6 @@ coverage/
 *.log
 
 # Config files
-.asd/
 .versionrc.json
 tsconfig.json
 tsup.config.ts
