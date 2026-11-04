@@ -144,8 +144,19 @@ export const Layer4RemoteIpListMatcherSchema = GeneratedRemoteIpListSchema.exten
   remote_ip_file: z.string().min(1),
 }).passthrough();
 
-/** `clock`: the connection arrives between `after` and `before` (`HH:MM[:SS]`). */
-export const Layer4ClockMatcherSchema = GeneratedMatchClockSchema.passthrough();
+/** A clock time as caddy-l4 parses it (Go layout `15:04:05`), or a placeholder. */
+const Layer4ClockTimeSchema = z
+  .string()
+  .regex(/^(\d{2}:\d{2}:\d{2}|.*\{[^}]+\}.*)$/, "use HH:MM:SS (e.g. 08:00:00) or a placeholder");
+
+/**
+ * `clock`: the connection arrives between `after` and `before` (`HH:MM:SS`,
+ * in `timezone`, default UTC); `after` later than `before` spans midnight.
+ */
+export const Layer4ClockMatcherSchema = GeneratedMatchClockSchema.extend({
+  after: Layer4ClockTimeSchema.optional(),
+  before: Layer4ClockTimeSchema.optional(),
+}).passthrough();
 
 /** One DNS question rule for the `dns` matcher. */
 export const Layer4DnsRuleSchema = GeneratedMatchDnsRuleSchema.passthrough();

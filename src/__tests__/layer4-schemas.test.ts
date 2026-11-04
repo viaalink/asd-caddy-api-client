@@ -90,7 +90,7 @@ describe("layer4 types", () => {
 describe("layer4 matcher sets", () => {
   test("every protocol matcher of caddy-l4 has a typed schema", () => {
     const valid: Record<(typeof LAYER4_MATCHERS)[number], unknown> = {
-      clock: { after: "08:00", before: "18:00", timezone: "Europe/Amsterdam" },
+      clock: { after: "08:00:00", before: "18:00:00", timezone: "Europe/Amsterdam" },
       dns: { allow: [{ name: "example.com.", type: "A" }], default_deny: true },
       http: [{ host: ["example.com"] }],
       local_ip: { ranges: ["127.0.0.1"] },
@@ -128,6 +128,7 @@ describe("layer4 matcher sets", () => {
       { socks4: { commands: ["ASSOCIATE"] } }, // socks4 has CONNECT/BIND only
       { http: { host: ["example.com"] } }, // a list of HTTP matcher sets
       { openvpn: { modes: ["tls"] } },
+      { clock: { after: "08:00" } }, // caddy-l4 parses 15:04:05
       { not: [{ tls: { alpn: "h2" } }] }, // checked inside `not` too
     ];
     for (const set of bad) {

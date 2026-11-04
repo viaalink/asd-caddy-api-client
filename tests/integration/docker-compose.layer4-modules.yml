@@ -1,0 +1,24 @@
+# caddy-l4 modules: a bare Caddy with the pinned caddy-l4 build, nothing behind
+# it. src/__tests__/integration/layer4-modules.integration.test.ts loads configs
+# built with the library's layer4 builders (TLS SNI, subroute, throttle, tee,
+# proxy_protocol, socks5, every matcher) and checks Caddy accepts them, then
+# sends traffic through a throttle + echo route.
+#
+# Its own project and ports, so it never disturbs the SQL stack
+# (docker-compose.layer4.yml) or a running demo:
+#   docker compose -f tests/integration/docker-compose.layer4-modules.yml up -d --build
+#
+#   Caddy admin                                 127.0.0.1:2022
+#   layer4 listener (created by the tests)      127.0.0.1:17000
+name: caddy-layer4-modules-test
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy-l4
+    command: caddy run --config /etc/caddy/caddy.json
+    volumes:
+      - ./layer4/caddy-modules.json:/etc/caddy/caddy.json:ro
+    ports:
+      - "127.0.0.1:2022:2019"
+      - "127.0.0.1:17000:7000"
