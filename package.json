@@ -104,7 +104,8 @@
     "generate:plugin-types": "npx tsx scripts/generate-plugin-types.ts",
     "generate:extension": "npx tsx scripts/extract-metadata.ts",
     "generate:json-schemas": "npx tsx scripts/generate-json-schemas.ts",
-    "generate:all": "npm run generate:types && npm run generate:plugin-types && npm run generate:extension && npm run generate:json-schemas",
+    "generate:mitmproxy-addons": "npx tsx scripts/generate-mitmproxy-addons.ts",
+    "generate:all": "npm run generate:types && npm run generate:plugin-types && npm run generate:extension && npm run generate:json-schemas && npm run generate:mitmproxy-addons",
     "sync:caddy": "git -C local/caddy pull && npm run generate:types",
     "sync:plugins": "git -C local/caddy-security pull && npm run generate:plugin-types",
     "sync:all": "npm run sync:caddy && npm run sync:plugins"

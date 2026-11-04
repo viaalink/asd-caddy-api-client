@@ -4,13 +4,39 @@
  *   pgwire  PostgreSQL wire protocol → readable SQL, parameters, results and
  *           errors on every TCP flow (see TcpServiceRegistration)
  *
- * Node only: it resolves a file inside the installed package.
+ * mitmproxyAddonPath() finds the file inside the installed package. A bundled
+ * or compiled program (`bun build --compile`) has no package directory: it
+ * uses mitmproxyAddonSource() or writeMitmproxyAddon() instead, which carry
+ * the addon as text.
  */
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MITMPROXY_ADDON_SOURCES } from "../generated/mitmproxy-addons.js";
 
-export type MitmproxyAddon = "pgwire";
+export type MitmproxyAddon = keyof typeof MITMPROXY_ADDON_SOURCES;
+
+/** The addon's Python source, embedded in the library (works in any bundle). */
+export function mitmproxyAddonSource(addon: MitmproxyAddon): string {
+  return MITMPROXY_ADDON_SOURCES[addon];
+}
+
+/**
+ * Write the addon to `dir` (created if missing) and return its path, for
+ * `mitmweb -s <path>` when the package directory is not on disk, or for a
+ * container that mounts `dir`.
+ *
+ * @example
+ * ```typescript
+ * const addon = writeMitmproxyAddon("pgwire", ".via/mitmproxy"); // ".via/mitmproxy/pgwire.py"
+ * ```
+ */
+export function writeMitmproxyAddon(addon: MitmproxyAddon, dir: string): string {
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, `${addon}.py`);
+  writeFileSync(file, mitmproxyAddonSource(addon));
+  return file;
+}
 
 /**
  * Absolute path of a bundled mitmproxy addon, for `mitmweb -s <path>`.
@@ -29,5 +55,8 @@ export function mitmproxyAddonPath(addon: MitmproxyAddon): string {
     if (existsSync(candidate)) return candidate;
     dir = dirname(dir);
   }
-  throw new Error(`mitmproxy addon "${addon}" not found next to @viaalink/caddy-api-client`);
+  throw new Error(
+    `mitmproxy addon "${addon}" not found next to @viaalink/caddy-api-client ` +
+      `(bundled or compiled? use writeMitmproxyAddon("${addon}", dir))`
+  );
 }

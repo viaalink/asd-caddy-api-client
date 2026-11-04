@@ -1,5 +1,7 @@
 import { describe, test, expect, beforeEach, vi } from "vitest";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import { CaddyClient } from "../caddy/client.js";
 import {
   buildLayer4ProxyHandler,
@@ -8,7 +10,13 @@ import {
   Layer4RouteSchema,
 } from "../caddy/layer4.js";
 import { CaddyApiClientError, ValidationError } from "../errors.js";
-import { MitmproxyManager, mitmproxyAddonPath, mitmproxyReverseTcpMode } from "../mitm/index.js";
+import {
+  MitmproxyManager,
+  mitmproxyAddonPath,
+  mitmproxyAddonSource,
+  mitmproxyReverseTcpMode,
+  writeMitmproxyAddon,
+} from "../mitm/index.js";
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as typeof fetch;
@@ -199,5 +207,18 @@ describe("mitmproxy helpers", () => {
     const file = mitmproxyAddonPath("pgwire");
     expect(existsSync(file)).toBe(true);
     expect(readFileSync(file, "utf8")).toContain("def tcp_message");
+  });
+  test("the embedded source is the file (else: bun run generate:mitmproxy-addons)", () => {
+    expect(mitmproxyAddonSource("pgwire")).toBe(readFileSync(mitmproxyAddonPath("pgwire"), "utf8"));
+  });
+  test("writeMitmproxyAddon writes it out, for compiled programs", () => {
+    const dir = mkdtempSync(join(tmpdir(), "addon-"));
+    try {
+      const file = writeMitmproxyAddon("pgwire", join(dir, "nested"));
+      expect(file).toBe(join(dir, "nested", "pgwire.py"));
+      expect(readFileSync(file, "utf8")).toBe(mitmproxyAddonSource("pgwire"));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

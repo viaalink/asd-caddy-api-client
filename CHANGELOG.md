@@ -17,7 +17,9 @@ match, proxy }` and `enable()` / `disable()` swap the layer4 route between the b
 - A mitmproxy addon for the PostgreSQL wire protocol, shipped in the package
   (`mitmproxy-addons/pgwire.py`, path from `mitmproxyAddonPath("pgwire")`): every intercepted
   connection reads as a transcript of the SQL sent, its parameters, the columns, the rows returned
-  and errors, in mitmweb's Comment tab.
+  and errors, in mitmweb's Comment tab. The source is embedded too (`mitmproxyAddonSource()`,
+  `writeMitmproxyAddon(addon, dir)`), for bundled or compiled programs that have no package
+  directory on disk.
 
 ## [0.10.2](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.1...v0.10.2) (2026-11-03)
 
