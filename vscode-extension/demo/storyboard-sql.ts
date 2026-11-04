@@ -95,6 +95,13 @@ const why: Scene = {
     },
     {
       caption:
+        "You could turn on the database's query log, if you are allowed to. Often you are not, and it mixes the queries of every client, so you cannot tell which one came from this click.",
+      act: async (page) => stage(page, 5),
+      hold: 3000,
+      still: "sql-why-query-log",
+    },
+    {
+      caption:
         "SQL travels over TCP, not HTTP. Caddy routes it with its layer 4 app, and our Caddy client library swaps that route through mitmproxy and back, while everything keeps running.",
       act: async (page) => stage(page, 3),
       hold: 3000,
