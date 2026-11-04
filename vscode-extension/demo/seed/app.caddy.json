@@ -1,12 +1,6 @@
 {
   "@id": "api",
-  "match": [
-    {
-    }
-  ],
-  "handle": [
-    {
-    }
-  ],
+  "match": [{}],
+  "handle": [{}],
   "terminal": true
 }

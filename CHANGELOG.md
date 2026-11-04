@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file. See [standa
   `buildLayer4ProxyRoute` (with protocol matchers such as `"postgres"`), `buildLayer4Server`, their
   Zod schemas, and `CaddyClient.getLayer4Servers()`, `setLayer4Server()` and `putLayer4Route()`,
   which replaces a route in place by its `@id` (`PATCH /id/…`) or appends it.
+  `getLayer4Servers()` returns `{}` on a Caddy without `apps.layer4` (Caddy answers that GET with
+  HTTP 400 "invalid traversal path"; other errors are still thrown). `setLayer4Server()` creates
+  whatever is missing on the way (`apps`, `apps.layer4`, its `servers`, or the whole config of a
+  Caddy started without one). `putLayer4Route()` also works on a server without a `routes` key,
+  and says so plainly when the server does not exist.
 - `MitmproxyManager` intercepts TCP services: register `{ protocol: "tcp", serverId, backend,
 match, proxy }` and `enable()` / `disable()` swap the layer4 route between the backend and a
   mitmproxy reverse TCP listener (`mitmproxyReverseTcpMode()`). Connections already open keep their

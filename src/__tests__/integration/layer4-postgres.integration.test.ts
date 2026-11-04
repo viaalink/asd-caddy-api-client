@@ -5,7 +5,7 @@
  *                         ↘ mitmproxy reverse:tcp + pgwire addon → Postgres
  *
  * Stack: tests/integration/docker-compose.layer4.yml
- *   docker compose -f tests/integration/docker-compose.layer4.yml up -d --build
+ *   just test-layer4   (brings the stack up, then runs this file with LAYER4_TEST=true)
  *
  * What is proven here:
  *   1. the library builds a layer4 server and Postgres answers through it;
@@ -59,7 +59,21 @@ async function connect(): Promise<pg.Client> {
   return client;
 }
 
-const enabled = process.env.INTEGRATION_TEST === "true";
+// Own switch: this file needs its own stack, not docker-compose.test.yml.
+const enabled = process.env.LAYER4_TEST === "true";
+
+function pgServer() {
+  return buildLayer4Server({
+    listen: ":5432",
+    routes: [
+      buildLayer4ProxyRoute({
+        id: `mitm_${SERVICE}`,
+        upstream: "postgres:5432",
+        match: "postgres",
+      }),
+    ],
+  });
+}
 
 describe.skipIf(!enabled)("SQL over TCP: Caddy layer4 + mitmproxy + pgwire", () => {
   const caddy = new CaddyClient({ adminUrl: ADMIN });
@@ -70,19 +84,7 @@ describe.skipIf(!enabled)("SQL over TCP: Caddy layer4 + mitmproxy + pgwire", () 
 
   beforeAll(async () => {
     // Postgres straight behind a layer4 server, built by the library.
-    await caddy.setLayer4Server(
-      SERVER,
-      buildLayer4Server({
-        listen: ":5432",
-        routes: [
-          buildLayer4ProxyRoute({
-            id: `mitm_${SERVICE}`,
-            upstream: "postgres:5432",
-            match: "postgres",
-          }),
-        ],
-      })
-    );
+    await caddy.setLayer4Server(SERVER, pgServer());
     manager.register({
       protocol: "tcp",
       id: SERVICE,
@@ -114,6 +116,57 @@ describe.skipIf(!enabled)("SQL over TCP: Caddy layer4 + mitmproxy + pgwire", () 
 
   afterAll(async () => {
     await manager.disable(SERVICE).catch(() => undefined);
+  });
+
+  test("no apps.layer4: getLayer4Servers() is {}, setLayer4Server() creates it again", async () => {
+    // Caddy answers GET /config/apps/layer4/servers with HTTP 400 here.
+    await caddy.request("/config/apps/layer4", { method: "DELETE" });
+    const raw = await fetch(`${ADMIN}/config/apps/layer4/servers`, {
+      headers: { Origin: ADMIN },
+    });
+    expect(raw.status).toBe(400);
+    expect(await caddy.getLayer4Servers()).toEqual({});
+
+    // apps.layer4 without servers: Caddy refuses a POST below the missing key.
+    await caddy.request("/config/apps/layer4", { method: "POST", body: "{}" });
+    expect(await caddy.getLayer4Servers()).toEqual({});
+    await caddy.setLayer4Server(SERVER, pgServer());
+    expect(Object.keys(await caddy.getLayer4Servers())).toEqual([SERVER]);
+
+    // And from no apps.layer4 at all.
+    await caddy.request("/config/apps/layer4", { method: "DELETE" });
+    await caddy.setLayer4Server(SERVER, pgServer());
+    expect(await caddy.getLayer4Servers()).toEqual({ [SERVER]: pgServer() });
+    for (let i = 0; ; i++) {
+      try {
+        const c = await connect();
+        await c.end();
+        break;
+      } catch (e) {
+        if (i === 19) throw e;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    }
+  });
+
+  test("putLayer4Route on a server that does not exist is a clear error", async () => {
+    await expect(
+      caddy.putLayer4Route(
+        "ghost",
+        buildLayer4ProxyRoute({ id: "it_ghost", upstream: "postgres:5432" })
+      )
+    ).rejects.toThrow(/no layer4 server "ghost"/);
+  });
+
+  test("putLayer4Route on a server without a routes key creates the list", async () => {
+    await caddy.request("/config/apps/layer4/servers/it_noroutes", {
+      method: "POST",
+      body: JSON.stringify({ listen: [":6000"] }),
+    });
+    const route = buildLayer4ProxyRoute({ id: "it_first", upstream: "postgres:5432" });
+    expect(await caddy.putLayer4Route("it_noroutes", route)).toBe("added");
+    expect((await caddy.getLayer4Servers()).it_noroutes?.routes).toEqual([route]);
+    await caddy.request("/config/apps/layer4/servers/it_noroutes", { method: "DELETE" });
   });
 
   test("direct: Postgres answers through Caddy, mitmproxy sees nothing", async () => {
