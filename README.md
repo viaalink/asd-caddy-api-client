@@ -34,6 +34,7 @@ ext install Viaalink.vscode-caddy-tools
 - ✅ **Domain management** - TLS automation with Let's Encrypt
 - ✅ **Load balancing** - Health checks and multiple upstream support
 - ✅ **MITMweb integration** - Traffic inspection for tunnels
+- ✅ **Layer 4 (TCP/UDP)** - Typed config for the caddy-l4 plugin: route Postgres, SSH, TLS by SNI, …
 - ✅ **Minimal dependencies** - Only peer dependency: `zod` for runtime validation
 
 ## Caddy Version Compatibility
@@ -47,6 +48,44 @@ ext install Viaalink.vscode-caddy-tools
 | 0.1.x–0.2.x  | —       | —              | Used external caddy-json-types                                                                                                                                                     |
 
 See [DEPENDENCIES.md](./DEPENDENCIES.md) for full version details including commit hashes.
+
+### Plugin Support
+
+Plugin config is typed from the plugin's own Go source (types and Zod schemas generated with
+tygo + ts-to-zod), with hand-written builders on top. Pinned versions are in
+[DEPENDENCIES.md](./DEPENDENCIES.md).
+
+| Plugin                                                        | Pinned           | What you get                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [caddy-security](https://github.com/greenpau/caddy-security)  | v1.1.64          | Authentication portals, authorization policies, identity stores and providers (`@viaalink/caddy-api-client/plugins`)                                                                                                                                                              |
+| [caddy-dns](https://github.com/caddy-dns) providers           | per provider     | Typed ACME DNS challenge config (Porkbun, Cloudflare, Route 53, DigitalOcean, GoDaddy)                                                                                                                                                                                            |
+| [caddy-l4](https://github.com/mholt/caddy-l4) (`apps.layer4`) | commit `96e1a6b` | Every matcher (`postgres`, `tls` with `sni`/`alpn`, `http`, `ssh`, `rdp`, `openvpn`, `socks4/5`, `quic`, `dns`, `remote_ip`, `regexp`, `not`, …) and handler (`proxy` with load balancing and health checks, `tls`, `subroute`, `throttle`, `proxy_protocol`, `socks5`, `tee`, …) |
+
+Layer 4 needs a Caddy built with caddy-l4
+(`xcaddy build --with github.com/mholt/caddy-l4@96e1a6bf063c206c3bd09ca6dc4a0484a158d83f`):
+
+```typescript
+import {
+  CaddyClient,
+  buildLayer4Server,
+  buildLayer4ProxyRoute,
+  buildLayer4SniRoute,
+} from "@viaalink/caddy-api-client";
+
+const caddy = new CaddyClient();
+await caddy.setLayer4Server(
+  "edge",
+  buildLayer4Server({
+    listen: [":443"],
+    routes: [
+      // TLS passthrough by server name: the database terminates TLS itself
+      buildLayer4SniRoute({ sni: "db.example.com", upstream: "postgres:5432" }),
+      // SSH on the same port
+      buildLayer4ProxyRoute({ upstream: "localhost:22", match: "ssh" }),
+    ],
+  })
+);
+```
 
 ## Live Demo
 

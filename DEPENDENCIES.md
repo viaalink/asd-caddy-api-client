@@ -39,10 +39,11 @@ by hand before trusting the output.
 
 ## Plugins
 
-| Plugin         | Version | Source               | Updated    |
-| -------------- | ------- | -------------------- | ---------- |
-| caddy-security | v1.1.64 | local/caddy-security | 2026-08-11 |
-| go-authcrunch  | v1.1.41 | local/go-authcrunch  | 2026-08-11 |
+| Plugin         | Version           | Source               | Updated    |
+| -------------- | ----------------- | -------------------- | ---------- |
+| caddy-security | v1.1.64           | local/caddy-security | 2026-08-11 |
+| go-authcrunch  | v1.1.41           | local/go-authcrunch  | 2026-08-11 |
+| caddy-l4       | commit `96e1a6bf` | local/caddy-l4       | 2026-11-04 |
 
 **v1.1.59 → v1.1.64 notes:** caddy-security's own exported struct shape is unchanged
 (zero `json:"..."` tag diffs) — `caddy-security.ts`/`.zod.ts` regenerate byte-identical.
@@ -56,6 +57,57 @@ only.
 **Source:** `local/caddy-security` (git repository)
 **Generated files:** `src/generated/plugins/caddy-security.ts`, `src/generated/plugins/caddy-security.zod.ts`
 **Hand-written builders:** `src/plugins/caddy-security/`
+
+## caddy-l4 (Layer 4)
+
+| Component | Upstream                    | Pinned                                                         | Updated    |
+| --------- | --------------------------- | -------------------------------------------------------------- | ---------- |
+| caddy-l4  | `github.com/mholt/caddy-l4` | commit `96e1a6bf063c206c3bd09ca6dc4a0484a158d83f` (2026-11-02) | 2026-11-04 |
+
+Pinned to a commit, not a tag: the latest tag (`v0.1.2`, 2026-07-15) is months behind what
+everyone builds (`xcaddy build --with github.com/mholt/caddy-l4` takes the default branch). The
+same commit is pinned in `tests/integration/Dockerfile.caddy-l4` and `demo/Dockerfile.caddy`
+(`xcaddy build --with github.com/mholt/caddy-l4@<commit>`). caddy-l4's `go.mod` asks for Go
+1.26.9; tygo parses through `go list`, and with `GOTOOLCHAIN=auto` (the default) a Go 1.22
+install fetches that toolchain on its own.
+
+**Source:** `local/caddy-l4` (git clone, checked out at the pinned commit)
+**tygo config:** `scripts/tygo/caddy-l4.yaml`, tracked in the repo (unlike the other plugins'
+`local/*/tygo.yaml`); one output file per Go package, since modules reuse names (`Handler`,
+`MatchRegexp`). Wire-protocol/runtime-only files (`connection.go`, `handlers.go`,
+`caddyfile.go`, openvpn `crypto.go`/`messages.go`, tls `clienthello.go`/`parsehello.go`,
+`iplist.go`, `metrics.go`) are excluded, and the generator drops Go runtime constants for this
+plugin (`stripConstants`) and repairs tygo's comment-merging artifact itself.
+**Regenerate only caddy-l4:** `npx tsx scripts/generate-plugin-types.ts --only caddy-l4`, then
+`npx prettier --write src/generated/plugins/caddy-l4-*.ts` and `npm run typecheck`.
+**Generated files:** `src/generated/plugins/caddy-l4-{core,clock,close,dns,echo,http,openvpn,postgres,proxy,proxyprotocol,quic,rdp,regexp,remoteiplist,socks,ssh,subroute,tee,throttle,tls,vars,winbox,wireguard,xmpp}.ts` and `.zod.ts`
+**Hand-written schemas/builders:** `src/caddy/layer4-schemas.ts`, `src/caddy/layer4-builders.ts`
+(re-exported by `src/caddy/layer4.ts`)
+
+Modules covered (all of `caddy list-modules` for a build at the pinned commit): the `layer4`
+app and the `caddy.listeners.layer4` wrapper; 22 matchers (`clock`, `dns`, `http`, `local_ip`,
+`not`, `openvpn`, `postgres`, `proxy_protocol`, `quic`, `rdp`, `regexp`, `remote_ip`,
+`remote_ip_list`, `socks4`, `socks5`, `ssh`, `tls`, `vars`, `vars_regexp`, `winbox`,
+`wireguard`, `xmpp`) plus `tls.handshake_match.alpn`; 11 handlers (`close`, `echo`,
+`postgres_tls`, `proxy`, `proxy_protocol`, `socks5`, `subroute`, `tee`, `throttle`, `tls`,
+`vars`); 7 proxy selection policies.
+
+**What the generator can't see, composed by hand in `layer4-schemas.ts`:** modules with custom
+JSON whose Go structs only have `json:"-"` fields (`tls`/`quic` matchers = an inline map of
+`tls.handshake_match.*` modules, `http` = a list of HTTP matcher sets, `not` = a list of matcher
+sets); `Policy` (an `int` in Go, text in JSON); the `handler`/`policy` module-name keys; value
+sets checked at provision time (e.g. `clock` times must be `HH:MM:SS`); cross-package refs that
+ts-to-zod leaves as `z.any()` (`caddy.Duration`, `reverseproxy.TLSConfig`,
+`caddytls.ConnectionPolicies`).
+
+**Known upstream issue at this commit:** `remote_ip_list`'s `Cleanup` can deadlock the next
+config reload (`IPList.StopMonitoring` sends on an unbuffered channel the monitor goroutine no
+longer reads once Caddy cancelled its context), which hangs the admin API. The integration test
+leaves it out of its live loads.
+
+**Integration test:** `src/__tests__/integration/layer4-modules.integration.test.ts` against
+`tests/integration/docker-compose.layer4-modules.yml` (own compose project, admin
+`127.0.0.1:2022`).
 
 ## Handler Name Mapping
 
