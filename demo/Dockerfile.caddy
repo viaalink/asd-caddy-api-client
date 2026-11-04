@@ -1,0 +1,7 @@
+# Caddy with the caddy-l4 (layer4) plugin: besides the HTTP routes, the demo
+# puts Postgres behind Caddy, so the database route can be swapped too.
+FROM caddy:2.11-builder AS builder
+RUN xcaddy build --with github.com/mholt/caddy-l4
+
+FROM caddy:2.11-alpine
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

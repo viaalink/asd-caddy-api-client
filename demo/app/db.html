@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shop on Postgres - SQL Traffic Inspection</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin: 4px 0 18px;
+      }
+      .filters label {
+        font-size: 13px;
+        color: #94a3b8;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .filters select {
+        background: #0f172a;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 6px 8px;
+      }
+      .suggestion.active {
+        border-color: #38bdf8;
+        color: #e2e8f0;
+        background: rgba(56, 189, 248, 0.15);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Shop</h1>
+        <p class="subtitle">Postgres, queried by the backend from your filters</p>
+      </header>
+
+      <div class="monitoring-status">
+        <span class="status-indicator" id="statusIndicator"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search products..." autocomplete="off" />
+        <button id="searchBtn" class="btn btn-primary">Search</button>
+      </div>
+
+      <div class="search-suggestions" id="categories">
+        <span class="suggestions-label">Category:</span>
+        <button class="suggestion" data-category="electronics">Electronics</button>
+        <button class="suggestion" data-category="kitchen">Kitchen</button>
+        <button class="suggestion" data-category="sports">Sports</button>
+        <button class="suggestion" data-category="books">Books</button>
+        <button class="suggestion" data-category="games">Games</button>
+      </div>
+
+      <div class="filters">
+        <label
+          >Max price
+          <select id="maxPrice">
+            <option value="">any</option>
+            <option value="50">€50</option>
+            <option value="100">€100</option>
+            <option value="200">€200</option>
+          </select>
+        </label>
+        <label
+          >Sort by
+          <select id="sort">
+            <option value="price">Price</option>
+            <option value="name">Name</option>
+            <option value="rating">Rating</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="results" id="results">
+        <p class="placeholder">Search, or pick a category</p>
+      </div>
+
+      <div class="stats" id="stats"></div>
+    </div>
+
+    <script src="db.js"></script>
+  </body>
+</html>
