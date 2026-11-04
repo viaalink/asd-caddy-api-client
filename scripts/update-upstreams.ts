@@ -122,7 +122,8 @@ function step(name: string, cmd: string, args: string[], env: NodeJS.ProcessEnv 
   mkdirSync(LOG_DIR, { recursive: true });
   const log = join(LOG_DIR, `${name}.log`);
   const started = Date.now();
-  process.stdout.write(`  ${name}: ${cmd} ${args.join(" ")} ... `);
+  const shown = args.length > 4 ? [...args.slice(0, 3), `(+${args.length - 3} more)`] : args;
+  process.stdout.write(`  ${name}: ${cmd} ${shown.join(" ")} ... `);
   const r = spawnSync(cmd, args, {
     cwd: ROOT_DIR,
     env: { ...process.env, ...env },
@@ -240,13 +241,24 @@ function regenerate(label: string, epoch: string): StepResult[] {
   if (gen.ok && /✗|Failed to generate/.test(log)) {
     gen.ok = false;
     console.log(`    a generator reported a failure; see ${gen.log}`);
+    if (log.includes("toolchain not available")) {
+      // e.g. libdns/route53's go.mod says "go 1.25", which go 1.22 cannot fetch.
+      console.log("    your Go is older than an upstream's go.mod: try GOTOOLCHAIN=go1.25.0+auto");
+    }
   }
+  // Format like the committed files are. tygo's comment-merging artifact can
+  // leave a file that does not parse; prettier then skips it (exit 2), which
+  // is expected here: the same file is unparseable in both runs and the
+  // committed hand-fix is merged on top later. typecheck in the gate judges.
   const changed = changedPaths([GENERATED]).filter((p) => existsSync(join(ROOT_DIR, p)));
-  const fmt =
-    changed.length > 0
-      ? step(`format-${label}`, "just", ["format-paths", ...changed])
-      : { name: `format-${label}`, ok: true, seconds: 0, log: "" };
-  return [gen, fmt];
+  if (changed.length > 0) {
+    const fmt = step(`format-${label}`, "just", ["format-paths", ...changed]);
+    if (!fmt.ok) {
+      const bad = [...readFileSync(fmt.log, "utf-8").matchAll(/\[error\] (\S+): SyntaxError/g)];
+      console.log(`    left unformatted (does not parse): ${bad.map((m) => m[1]).join(", ")}`);
+    }
+  }
+  return [gen];
 }
 
 interface CarryResult {

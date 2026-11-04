@@ -1,0 +1,161 @@
+name: Upstreams
+
+# The cyclical half of the update cycle (DEPENDENCIES.md, "The update cycle";
+# Redmine #4160). Weekly, it compares upstreams.json with the newest Caddy,
+# caddy-security, go-authcrunch, caddy-l4 and libdns/caddy-dns versions. When
+# one moved it regenerates, runs the gate and opens or updates ONE pull
+# request from the fixed branch bot/upstreams. A failing gate still opens the
+# PR, marked as failing, so the new syntax is visible. It never merges, tags
+# or publishes: that stays a human step.
+
+on:
+  schedule:
+    - cron: "23 5 * * 1" # Mondays 05:23 UTC
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Comma-separated upstream names (empty: all)"
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: upstreams
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Check and update upstreams
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write # push the bot/upstreams branch
+      pull-requests: write # open/update its pull request
+    env:
+      # bun install arms the husky pre-commit hook; the gate already ran, and
+      # a failing gate must still be committed to open the PR.
+      HUSKY: "0"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup just
+        uses: extractions/setup-just@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check upstreams
+        id: check
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          set +e
+          args=(--json check.json)
+          if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
+          just upstreams-check "${args[@]}"
+          code=$?
+          set -e
+          case "$code" in
+            0) echo "updates=false" >> "$GITHUB_OUTPUT" ;;
+            10) echo "updates=true" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$code" ;;
+          esac
+          echo "caddy=$(jq -r .caddyVersion check.json)" >> "$GITHUB_OUTPUT"
+
+      # Everything below runs only when an upstream moved.
+      - name: Setup Go
+        if: steps.check.outputs.updates == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Install tygo
+        if: steps.check.outputs.updates == 'true'
+        # The version the committed types were generated with.
+        run: go install github.com/gzuidhof/tygo@v0.2.21
+
+      # The unit and differential fuzz tests in `just check` run `caddy
+      # validate`/`caddy adapt`: give them the release being moved to.
+      - name: Install Caddy ${{ steps.check.outputs.caddy }}
+        if: steps.check.outputs.updates == 'true'
+        uses: ./.github/actions/install-caddy
+        with:
+          version: ${{ steps.check.outputs.caddy }}
+
+      - name: Setup Node.js (VS Code extension tests)
+        if: steps.check.outputs.updates == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Playwright browsers
+        if: steps.check.outputs.updates == 'true'
+        working-directory: vscode-extension
+        run: npm ci && npx playwright install chromium --with-deps
+
+      - name: Update, regenerate and run the gate
+        id: update
+        if: steps.check.outputs.updates == 'true'
+        env:
+          ONLY: ${{ inputs.only }}
+          CI: true
+        run: |
+          set +e
+          args=()
+          if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" \
+            just upstreams-update "${args[@]}"
+          code=$?
+          set -e
+          case "$code" in
+            0 | 20) ;;
+            *) exit "$code" ;;
+          esac
+          gate=$(jq -r .gate local/upstreams/result.json)
+          title=$(jq -r .title local/upstreams/result.json)
+          if [ "$gate" != "pass" ]; then title="[gate failing] $title"; fi
+          {
+            echo "gate=$gate"
+            echo "title=$title"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload logs
+        if: always() && steps.check.outputs.updates == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstreams-logs
+          path: local/upstreams/
+          retention-days: 30
+
+      # One PR, from a fixed branch: a later run force-updates it. Commits
+      # made with GITHUB_TOKEN do not start other workflows, so CI only runs
+      # on this PR when UPSTREAMS_TOKEN (a fine-grained PAT or GitHub App
+      # token with contents+pull-requests write) is set.
+      - name: Open or update the pull request
+        if: steps.update.outputs.title != ''
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.UPSTREAMS_TOKEN || github.token }}
+          branch: bot/upstreams
+          delete-branch: true
+          commit-message: ${{ steps.update.outputs.title }}
+          title: ${{ steps.update.outputs.title }}
+          body-path: local/upstreams/summary.md
+          labels: ${{ steps.update.outputs.gate == 'pass' && 'dependencies' || 'dependencies,gate-failing' }}
+          add-paths: |
+            upstreams.json
+            src/generated/**
+            DEPENDENCIES.md
+            README.md
+            vscode-extension/README.md
+            .github/actions/install-caddy/action.yml
