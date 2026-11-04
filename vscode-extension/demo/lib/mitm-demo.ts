@@ -26,11 +26,11 @@ export function demoUrl(path = "/"): string {
 
 /** Put the demo in its starting state: direct routes, empty flow lists. */
 export async function resetDemo(): Promise<void> {
-  for (const service of ["elasticsearch", "nodeapi"]) {
+  for (const service of ["elasticsearch", "nodeapi", "postgres"]) {
     const res = await fetch(demoUrl(`/api/monitoring/disable/${service}`), { method: "POST" });
     if (!res.ok) throw new Error(`disable ${service}: HTTP ${res.status}`);
   }
-  // The demo API clears both mitmweb flow lists from inside the compose network.
+  // The demo API clears every mitmweb flow list from inside the compose network.
   const res = await fetch(demoUrl("/api/monitoring/clear"), { method: "POST" });
   if (!res.ok) throw new Error(`clear flows: HTTP ${res.status}`);
 }
