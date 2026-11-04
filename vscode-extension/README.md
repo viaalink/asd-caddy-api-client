@@ -39,6 +39,7 @@ ext install Viaalink.vscode-caddy-tools
    | `caddy-security.json`, `security-config.json`, `*.caddy-security.json` | caddy-security `apps.security.config` |
    | `*.caddy-security-portal.json`                                         | Authentication portal                 |
    | `*.caddy-security-policy.json`                                         | Authorization policy                  |
+   | `layer4.json`, `caddy-layer4.json`, `*.layer4.json`                    | caddy-l4 `apps.layer4` (TCP/UDP)      |
 
    The status bar shows what the open file is validated as. Click it for every Caddy command.
 

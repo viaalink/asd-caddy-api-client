@@ -2,7 +2,7 @@
   "name": "vscode-caddy-tools",
   "displayName": "Caddy Configuration Tools",
   "description": "IntelliSense, validated snippets, quick fixes and live apply for Caddy JSON configs and the caddy-security (AuthCrunch) plugin",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "viaalink",
   "icon": "icon.png",
   "author": {
@@ -89,6 +89,15 @@
           "**/*.caddy-security-policy.json"
         ],
         "url": "./schemas/caddy-security-policy.json"
+      },
+      {
+        "fileMatch": [
+          "**/layer4.json",
+          "**/caddy-layer4.json",
+          "**/layer4-app.json",
+          "**/*.layer4.json"
+        ],
+        "url": "./schemas/caddy-layer4-app.json"
       }
     ],
     "snippets": [

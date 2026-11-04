@@ -146,6 +146,16 @@ function findPermissiveFields(): Map<
  * unlisted label, that's the point: go verify whether it's deliberate.
  */
 const PERMISSIVE_FIELDS: Record<string, { reason: string; verified: boolean }> = {
+  "apps.layer4.servers.*.routes.[].handle.[]": {
+    reason:
+      "caddy-l4 handlers are modules: another plugin can add one, so a handler whose name the library doesn't model stays open (name checked only). Every known handler (proxy, tls, subroute, throttle, …) gets its own strict schema through an if/then on `handler` (scripts/generate-json-schemas.ts strictLayer4), and a known name can't fall through to the open case -- generated-schemas.test.ts checks that a misspelled proxy field is rejected.",
+    verified: true,
+  },
+  "servers.*.routes.[].handle.[]": {
+    reason:
+      "Same as apps.layer4.servers.*.routes.[].handle.[], in the standalone caddy-layer4-app schema.",
+    verified: true,
+  },
   "handler:reverse_proxy.load_balancing.selection_policy": {
     reason:
       "Some policies need extra fields beyond `policy` (e.g. cookie needs name/secret/fallback, header needs a field name) -- passthrough avoids a full per-policy discriminated union here. Cross-referenced against the real cookieHashSelectionSchema fields this session.",

@@ -56,6 +56,15 @@ const KINDS: Array<{ names: string[]; suffix: string; kind: CaddyFileKind }> = [
     },
   },
   {
+    names: ["layer4.json", "caddy-layer4.json", "layer4-app.json"],
+    suffix: ".layer4.json",
+    kind: {
+      schemaFile: "caddy-layer4-app.json",
+      label: "Caddy Layer 4",
+      description: "caddy-l4 layer 4 app (apps.layer4)",
+    },
+  },
+  {
     names: [".caddy-security.json", "caddy-security.json", "security-config.json"],
     suffix: ".caddy-security.json",
     kind: {

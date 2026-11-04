@@ -53,6 +53,10 @@
       "url": "./src/generated/schemas/caddy-security-app.json"
     },
     {
+      "fileMatch": ["**/layer4-app.json"],
+      "url": "./src/generated/schemas/caddy-layer4-app.json"
+    },
+    {
       "fileMatch": ["**/caddy-server.json"],
       "url": "./src/generated/schemas/caddy-full-config.json"
     },
