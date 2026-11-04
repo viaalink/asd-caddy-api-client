@@ -20,6 +20,10 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Changed
 
+- caddy-l4 is built from Viaalink's fork (github.com/viaalink/caddy-l4, commit `009d9b00`) until
+  [mholt/caddy-l4#492](https://github.com/mholt/caddy-l4/pull/492) is merged: with upstream, a
+  config reload after one that used the `remote_ip_list` matcher hung Caddy's admin API. Same
+  module path and config; only the fix differs.
 - Docs and examples use mitmproxy 12.2.1, with `--set web_password=…` and the token for the UI and
   API (a new "Web UI or API Answers 403" section in docs/mitmproxy-troubleshooting.md).
 
