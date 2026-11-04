@@ -4,20 +4,17 @@
  * Films the repo-root demo (demo/, `just demo start`): a product search app,
  * its API and Elasticsearch behind a Caddy that @viaalink/caddy-api-client
  * reconfigures at runtime. Everything on screen is the running demo; the code
- * cards are cut from the real files when the film is made (lib/codecard.ts).
+ * cards are cut from the real files when the film is made.
  *
  * Same rules as ./storyboard.ts: every step does what a user would do and
  * checks that it worked, so a broken demo fails the recording.
  *
  * Render: `just demo-video promo` / `just demo-video qa`.
  *
- * Spoken text goes through the voice clone's pronounce(): every word in capitals
- * is said letter by letter (API, ID, CLI), mitmproxy as "MITM proxy", and
- * viaalink.com as "viaalink dot com"; the readback gate fails a take that gets
- * one wrong. Write the captions as they should read.
+ * Write the captions as they should read; words in capitals are spoken as
+ * abbreviations, letter by letter (API, ID, CLI).
  *
- * DRAFT SCRIPT — not yet approved by Kelvin. Drafts are narrated in his cloned
- * voice like every film (scripts/voice.ts); he approves the script by watching it.
+ * Script approved by Kelvin (2026-11-04), published: https://youtu.be/Jt4BY9unm9k
  */
 
 import { expect, type Locator, type Page } from "product-video/test";
@@ -357,8 +354,7 @@ export const storyboard: Storyboard = {
     "GitHub   github.com/viaalink/asd-caddy-api-client",
     "Viaalink CLI   viaalink.com",
   ],
-  // DRAFT — for Kelvin's approval, word for word. The intro and the agenda are
-  // the animated "Why" scene, not voice over a still card.
+  // The intro and the agenda are the animated "Why" scene, not voice over a still card.
   outro: ["Find the client library on npm and GitHub, and the Viaalink CLI at viaalink.com."],
   open: async (page) => {
     await assertDemoUp();
