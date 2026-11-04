@@ -334,7 +334,7 @@ export const storyboard: Storyboard = {
   ],
   // Spoken over the title card: why this matters, before the explanation starts.
   intro: [
-    "Your app talks to its database in SQL, but you rarely see what it actually sends. In this video, you will, live, without changing a line of code.",
+    "Your app talks to its database in SQL, but you rarely see what it actually sends. In this video, you will, in real time, without changing a line of code.",
   ],
   outro: ["Find the client library on npm and GitHub, and the Viaalink CLI at viaalink.com."],
   open: async (page) => {
