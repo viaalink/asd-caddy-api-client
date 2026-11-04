@@ -2,6 +2,7 @@
  * MITMweb integration for traffic inspection
  */
 import { spawn } from "child_process";
+import { randomBytes } from "crypto";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import type { MitmwebOptions, MitmwebStatus } from "../types.js";
@@ -52,6 +53,18 @@ export async function getMitmproxyVersion(): Promise<string | null> {
 }
 
 /**
+ * Whether this mitmproxy version needs a web password: 11.1 and later refuse
+ * the UI and API without one (HTTP 403). Unknown versions are taken as new.
+ */
+export function mitmwebNeedsPassword(version: string | null): boolean {
+  const match = version ? /^(\d+)\.(\d+)/.exec(version) : null;
+  if (!match) return true;
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  return major > 11 || (major === 11 && minor >= 1);
+}
+
+/**
  * Start mitmweb proxy
  * @param options - Mitmweb configuration
  * @returns Process information
@@ -61,6 +74,8 @@ export async function startMitmweb(options: MitmwebOptions = {}): Promise<{
   webUrl: string;
   proxyUrl: string;
   pidFile: string;
+  /** The web password (mitmproxy 11.1+); open the UI with `${webUrl}/?token=${webPassword}`. */
+  webPassword?: string;
 }> {
   const validated = MitmwebOptionsSchema.parse(options);
 
@@ -88,6 +103,12 @@ export async function startMitmweb(options: MitmwebOptions = {}): Promise<{
     "--no-web-open-browser", // We'll handle browser opening ourselves
   ];
 
+  // mitmproxy 11.1+ refuses its UI and API without a web password.
+  const webPassword = mitmwebNeedsPassword(await getMitmproxyVersion())
+    ? (validated.webPassword ?? randomBytes(18).toString("base64url"))
+    : undefined;
+  if (webPassword) args.push("--set", `web_password=${webPassword}`);
+
   // Add custom scripts
   if (validated.scripts && validated.scripts.length > 0) {
     for (const script of validated.scripts) {
@@ -112,10 +133,10 @@ export async function startMitmweb(options: MitmwebOptions = {}): Promise<{
   // Wait for mitmweb to be ready
   await waitForMitmweb(validated.webPort, 10000);
 
-  // Open browser if requested
+  // Open browser if requested (with the token, so the UI opens without a login)
   if (validated.openBrowser) {
     const webUrl = `http://${validated.listenAddress}:${validated.webPort}`;
-    openBrowser(webUrl);
+    openBrowser(webPassword ? `${webUrl}/?token=${encodeURIComponent(webPassword)}` : webUrl);
   }
 
   return {
@@ -123,6 +144,7 @@ export async function startMitmweb(options: MitmwebOptions = {}): Promise<{
     webUrl: `http://${validated.listenAddress}:${validated.webPort}`,
     proxyUrl: `http://${validated.listenAddress}:${validated.proxyPort}`,
     pidFile,
+    ...(webPassword ? { webPassword } : {}),
   };
 }
 
@@ -227,7 +249,8 @@ async function waitForMitmweb(port: number, timeout: number): Promise<void> {
   while (Date.now() - startTime < timeout) {
     try {
       const response = await fetch(url);
-      if (response.ok) {
+      // Any HTTP answer means it is up: mitmproxy 11.1+ answers 403 without a token.
+      if (response.status < 500) {
         return; // Mitmweb is ready
       }
     } catch {

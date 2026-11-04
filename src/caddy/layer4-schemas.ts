@@ -489,7 +489,8 @@ export const Layer4TeeHandlerSchema: z.ZodType<Layer4TeeHandler, z.ZodTypeDef, u
   })
   .passthrough();
 
-const KNOWN_HANDLER_SCHEMAS: Record<Layer4HandlerName, z.ZodTypeAny> = {
+/** The options schema of every handler this library models, by name (also used for the editor JSON schemas). */
+export const LAYER4_HANDLER_SCHEMAS: Record<Layer4HandlerName, z.ZodTypeAny> = {
   close: Layer4CloseHandlerSchema,
   echo: Layer4EchoHandlerSchema,
   postgres_tls: Layer4PostgresTlsHandlerSchema,
@@ -511,7 +512,7 @@ export const Layer4HandlerSchema: z.ZodType<Layer4Handler, z.ZodTypeDef, unknown
   .object({ handler: z.string().min(1) })
   .passthrough()
   .superRefine((value, ctx) => {
-    const schema = (KNOWN_HANDLER_SCHEMAS as Record<string, z.ZodTypeAny | undefined>)[
+    const schema = (LAYER4_HANDLER_SCHEMAS as Record<string, z.ZodTypeAny | undefined>)[
       value.handler
     ];
     if (!schema) return;
@@ -521,7 +522,7 @@ export const Layer4HandlerSchema: z.ZodType<Layer4Handler, z.ZodTypeDef, unknown
     }
   })
   .transform((value) => {
-    const schema = (KNOWN_HANDLER_SCHEMAS as Record<string, z.ZodTypeAny | undefined>)[
+    const schema = (LAYER4_HANDLER_SCHEMAS as Record<string, z.ZodTypeAny | undefined>)[
       value.handler
     ];
     return (schema ? schema.parse(value) : value) as Layer4Handler;

@@ -62,7 +62,10 @@ tygo + ts-to-zod), with hand-written builders on top. Pinned versions are in
 | [caddy-l4](https://github.com/mholt/caddy-l4) (`apps.layer4`) | commit `96e1a6b` | Every matcher (`postgres`, `tls` with `sni`/`alpn`, `http`, `ssh`, `rdp`, `openvpn`, `socks4/5`, `quic`, `dns`, `remote_ip`, `regexp`, `not`, …) and handler (`proxy` with load balancing and health checks, `tls`, `subroute`, `throttle`, `proxy_protocol`, `socks5`, `tee`, …) |
 
 Layer 4 needs a Caddy built with caddy-l4
-(`xcaddy build --with github.com/mholt/caddy-l4@96e1a6bf063c206c3bd09ca6dc4a0484a158d83f`):
+(`xcaddy build --with github.com/mholt/caddy-l4@96e1a6bf063c206c3bd09ca6dc4a0484a158d83f`).
+If you use the `remote_ip_list` matcher, build from our fork instead, which fixes a hang on the
+next config reload, until [mholt/caddy-l4#492](https://github.com/mholt/caddy-l4/pull/492) is merged
+(`xcaddy build --with github.com/mholt/caddy-l4=github.com/viaalink/caddy-l4@009d9b00abee87bed76b66ae1c44283ca494c3f9`):
 
 ```typescript
 import {
@@ -260,12 +263,13 @@ docker run -d \
   -p 8082:8080 \
   -p 8081:8081 \
   --name mitmproxy \
-  mitmproxy/mitmproxy:10.4.2 \
+  mitmproxy/mitmproxy:12.2.1 \
   mitmweb \
   --mode reverse:http://your-backend:3000 \
   --web-host 0.0.0.0 \
   --listen-host 0.0.0.0 \
   --no-web-open-browser \
+  --set web_password=change-me \
   --set keep_host_header=true
 ```
 
@@ -345,7 +349,7 @@ await client.addRoute("https_server", lbRoute);
 ```yaml
 services:
   mitmproxy:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     ports:
       - "8082:8080" # Proxy port
       - "8081:8081" # Web UI
@@ -357,6 +361,7 @@ services:
       --listen-host 0.0.0.0
       --listen-port 8080
       --no-web-open-browser
+      --set web_password=change-me
       --set keep_host_header=true
     restart: unless-stopped
 

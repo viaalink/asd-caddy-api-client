@@ -5,6 +5,23 @@ All notable changes to the Caddy Configuration Tools extension will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-11-04
+
+### Added
+
+- Layer 4 (caddy-l4): validation, completions and hover docs for `apps.layer4` (TCP/UDP routing:
+  Postgres, TLS by SNI, SSH, RDP, proxy with load balancing and health checks, subroutes, …).
+  Files named `layer4.json`, `caddy-layer4.json`, `layer4-app.json` or `*.layer4.json` are
+  validated against the layer4 app schema; a full Caddy config (`caddy-server.json`, …) accepts
+  `apps.layer4` instead of flagging it.
+- Snippets and completions for the new layer4 builders of `@viaalink/caddy-api-client` 0.11
+  (`buildLayer4Server`, `buildLayer4SniRoute`, `buildLayer4ProxyHandler`, …).
+
+### Fixed
+
+- Builder snippets whose first parameter is a value (a string, a list) listed a string's methods
+  (`toString`, `charAt`, …) as parameters; they now list the builder's real parameters.
+
 ## [0.4.0] - 2026-11-04
 
 ### Added

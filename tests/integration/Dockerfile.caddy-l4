@@ -1,9 +1,11 @@
 # Caddy with the caddy-l4 (layer4) plugin: TCP routing for the SQL inspection tests
-# caddy-l4 is pinned to the commit the library's types are generated from (DEPENDENCIES.md).
+# caddy-l4 is pinned to the commit the library's types are generated from (DEPENDENCIES.md):
+# our fork viaalink/caddy-l4, which adds the remote_ip_list reload fix on top of upstream
+# master, until https://github.com/mholt/caddy-l4/pull/492 is merged.
 FROM caddy:2.11-builder AS builder
 
 RUN xcaddy build \
-    --with github.com/mholt/caddy-l4@96e1a6bf063c206c3bd09ca6dc4a0484a158d83f
+    --with github.com/mholt/caddy-l4=github.com/viaalink/caddy-l4@009d9b00abee87bed76b66ae1c44283ca494c3f9
 
 FROM caddy:2.11-alpine
 

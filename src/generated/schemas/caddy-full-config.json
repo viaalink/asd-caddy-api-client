@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://viaalink.github.io/asd-caddy-api-client/schemas/caddy-full-config.json",
   "title": "Caddy Full Config",
-  "description": "Complete Caddy server configuration (admin, logging, apps: http/tls/security)",
+  "description": "Complete Caddy server configuration (admin, logging, apps: http/tls/security/layer4)",
   "$ref": "#/definitions/caddy-full-config",
   "definitions": {
     "caddy-full-config": {
@@ -2424,6 +2424,2017 @@
                 },
                 "@id": {
                   "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "layer4": {
+              "type": "object",
+              "properties": {
+                "servers": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "listen": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1
+                      },
+                      "routes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "@id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "match": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "clock": {
+                                    "type": "object",
+                                    "properties": {
+                                      "after": {
+                                        "type": "string",
+                                        "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
+                                      },
+                                      "before": {
+                                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/clock/properties/after"
+                                      },
+                                      "timezone": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "dns": {
+                                    "type": "object",
+                                    "properties": {
+                                      "allow": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "class": {
+                                              "type": "string"
+                                            },
+                                            "class_regexp": {
+                                              "type": "string"
+                                            },
+                                            "name": {
+                                              "type": "string"
+                                            },
+                                            "name_regexp": {
+                                              "type": "string"
+                                            },
+                                            "type": {
+                                              "type": "string"
+                                            },
+                                            "type_regexp": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        }
+                                      },
+                                      "deny": {
+                                        "type": "array",
+                                        "items": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/dns/properties/allow/items"
+                                        }
+                                      },
+                                      "default_deny": {
+                                        "type": "boolean"
+                                      },
+                                      "prefer_allow": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "http": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "host": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/host"
+                                        },
+                                        "path": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/path"
+                                        },
+                                        "path_regexp": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/path_regexp"
+                                        },
+                                        "method": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/method"
+                                        },
+                                        "header": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/header"
+                                        },
+                                        "header_regexp": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/header_regexp"
+                                        },
+                                        "query": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/query"
+                                        },
+                                        "client_ip": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/client_ip"
+                                        },
+                                        "remote_ip": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/remote_ip"
+                                        },
+                                        "protocol": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/protocol"
+                                        },
+                                        "tls": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/tls"
+                                        },
+                                        "file": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/file"
+                                        },
+                                        "not": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/not"
+                                        },
+                                        "expression": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/expression"
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "local_ip": {
+                                    "type": "object",
+                                    "properties": {
+                                      "ranges": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "openvpn": {
+                                    "type": "object",
+                                    "properties": {
+                                      "modes": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": ["plain", "auth", "crypt", "crypt2"]
+                                        }
+                                      },
+                                      "ignore_crypto": {
+                                        "type": "boolean"
+                                      },
+                                      "ignore_timestamp": {
+                                        "type": "boolean"
+                                      },
+                                      "group_key": {
+                                        "type": "string"
+                                      },
+                                      "group_key_file": {
+                                        "type": "string"
+                                      },
+                                      "auth_digest": {
+                                        "type": "string"
+                                      },
+                                      "group_key_direction": {
+                                        "type": "string",
+                                        "enum": ["normal", "inverse", "bidi", "bidirectional"]
+                                      },
+                                      "client_keys": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "client_key_files": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "server_key": {
+                                        "type": "string"
+                                      },
+                                      "server_key_file": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "postgres": {
+                                    "type": "object",
+                                    "properties": {
+                                      "user": {
+                                        "type": "object",
+                                        "additionalProperties": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "client": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "tls": {
+                                        "type": "string",
+                                        "enum": ["enabled", "disabled", ""]
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "proxy_protocol": {
+                                    "type": "object",
+                                    "properties": {},
+                                    "additionalProperties": false
+                                  },
+                                  "quic": {
+                                    "type": "object",
+                                    "properties": {
+                                      "sni": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "sni_regexp": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "pattern": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": ["pattern"],
+                                        "additionalProperties": false
+                                      },
+                                      "alpn": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "remote_ip": {
+                                        "type": "object",
+                                        "properties": {
+                                          "ranges": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "not_ranges": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      },
+                                      "local_ip": {
+                                        "type": "object",
+                                        "properties": {
+                                          "ranges": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "rdp": {
+                                    "type": "object",
+                                    "properties": {
+                                      "cookie_hash": {
+                                        "type": "string"
+                                      },
+                                      "cookie_hash_regexp": {
+                                        "type": "string"
+                                      },
+                                      "cookie_ips": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "cookie_ports": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "custom_info": {
+                                        "type": "string"
+                                      },
+                                      "custom_info_regexp": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "regexp": {
+                                    "type": "object",
+                                    "properties": {
+                                      "count": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 65535
+                                      },
+                                      "hex": {
+                                        "type": "boolean"
+                                      },
+                                      "pattern": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["pattern"],
+                                    "additionalProperties": false
+                                  },
+                                  "remote_ip": {
+                                    "type": "object",
+                                    "properties": {
+                                      "ranges": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "remote_ip_list": {
+                                    "type": "object",
+                                    "properties": {
+                                      "remote_ip_file": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["remote_ip_file"],
+                                    "additionalProperties": false
+                                  },
+                                  "socks4": {
+                                    "type": "object",
+                                    "properties": {
+                                      "commands": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": ["CONNECT", "BIND"]
+                                        }
+                                      },
+                                      "networks": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "ports": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 65535
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "socks5": {
+                                    "type": "object",
+                                    "properties": {
+                                      "auth_methods": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 255
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "ssh": {
+                                    "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/proxy_protocol"
+                                  },
+                                  "tls": {
+                                    "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic"
+                                  },
+                                  "vars": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "vars_regexp": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic/properties/sni_regexp/properties/name"
+                                        },
+                                        "pattern": {
+                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic/properties/sni_regexp/properties/pattern"
+                                        }
+                                      },
+                                      "required": ["pattern"],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "winbox": {
+                                    "type": "object",
+                                    "properties": {
+                                      "modes": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": ["standard", "romon"]
+                                        }
+                                      },
+                                      "username": {
+                                        "type": "string"
+                                      },
+                                      "username_regexp": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "wireguard": {
+                                    "type": "object",
+                                    "properties": {
+                                      "zero": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "xmpp": {
+                                    "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/proxy_protocol"
+                                  },
+                                  "not": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items"
+                                    }
+                                  }
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "handle": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "handler": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["handler"],
+                                "additionalProperties": true,
+                                "allOf": [
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "close"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "close"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "echo"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "echo"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "postgres_tls"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "postgres_tls"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "proxy"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "upstreams": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "dial": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "minItems": 1
+                                              },
+                                              "local_address": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "resolver_preference": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "ipv4_only",
+                                                  "ipv6_only",
+                                                  "ipv4_first",
+                                                  "ipv6_first"
+                                                ]
+                                              },
+                                              "tls": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "ca": {
+                                                    "type": "object",
+                                                    "additionalProperties": {}
+                                                  },
+                                                  "root_ca_pool": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "root_ca_pem_files": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "client_certificate_file": {
+                                                    "type": "string"
+                                                  },
+                                                  "client_certificate_key_file": {
+                                                    "type": "string"
+                                                  },
+                                                  "client_certificate_automate": {
+                                                    "type": "string"
+                                                  },
+                                                  "insecure_skip_verify": {
+                                                    "type": "boolean"
+                                                  },
+                                                  "handshake_timeout": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer"
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "0"
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "server_name": {
+                                                    "type": "string"
+                                                  },
+                                                  "renegotiation": {
+                                                    "type": "string"
+                                                  },
+                                                  "except_ports": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "curves": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "additionalProperties": false
+                                              },
+                                              "max_connections": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "weight": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              }
+                                            },
+                                            "required": ["dial"],
+                                            "additionalProperties": false
+                                          },
+                                          "minItems": 1
+                                        },
+                                        "health_checks": {
+                                          "type": "object",
+                                          "properties": {
+                                            "active": {
+                                              "type": "object",
+                                              "properties": {
+                                                "port": {
+                                                  "type": "number"
+                                                },
+                                                "interval": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "0"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                                    }
+                                                  ]
+                                                },
+                                                "timeout": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "0"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                                    }
+                                                  ]
+                                                },
+                                                "close_if_unhealthy": {
+                                                  "type": "boolean"
+                                                },
+                                                "fall": {
+                                                  "type": "number"
+                                                },
+                                                "rise": {
+                                                  "type": "number"
+                                                }
+                                              },
+                                              "additionalProperties": false
+                                            },
+                                            "passive": {
+                                              "type": "object",
+                                              "properties": {
+                                                "fail_duration": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "0"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                                    }
+                                                  ]
+                                                },
+                                                "max_fails": {
+                                                  "type": "number"
+                                                },
+                                                "unhealthy_connection_count": {
+                                                  "type": "number"
+                                                }
+                                              },
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        },
+                                        "load_balancing": {
+                                          "type": "object",
+                                          "properties": {
+                                            "selection": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "policy": {
+                                                      "type": "string",
+                                                      "const": "first"
+                                                    }
+                                                  },
+                                                  "required": ["policy"],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "policy": {
+                                                      "type": "string",
+                                                      "const": "ip_hash"
+                                                    }
+                                                  },
+                                                  "required": ["policy"],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "policy": {
+                                                      "type": "string",
+                                                      "const": "least_conn"
+                                                    }
+                                                  },
+                                                  "required": ["policy"],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "policy": {
+                                                      "type": "string",
+                                                      "const": "random"
+                                                    }
+                                                  },
+                                                  "required": ["policy"],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "choose": {
+                                                      "type": "integer",
+                                                      "minimum": 2
+                                                    },
+                                                    "policy": {
+                                                      "type": "string",
+                                                      "const": "random_choose"
+                                                    }
+                                                  },
+                                                  "required": ["policy"],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "policy": {
+                                                      "type": "string",
+                                                      "const": "round_robin"
+                                                    }
+                                                  },
+                                                  "required": ["policy"],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "policy": {
+                                                      "type": "string",
+                                                      "const": "weighted_round_robin"
+                                                    }
+                                                  },
+                                                  "required": ["policy"],
+                                                  "additionalProperties": false
+                                                }
+                                              ]
+                                            },
+                                            "try_duration": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "integer"
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "const": "0"
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                                }
+                                              ]
+                                            },
+                                            "try_interval": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "integer"
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "const": "0"
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        },
+                                        "proxy_protocol": {
+                                          "type": "string",
+                                          "enum": ["v1", "v2"]
+                                        },
+                                        "half_close_timeout": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "0"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                            }
+                                          ]
+                                        },
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "proxy"
+                                        }
+                                      },
+                                      "required": ["upstreams", "handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "proxy_protocol"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "timeout": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "0"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                            }
+                                          ]
+                                        },
+                                        "allow": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "deny": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "fallback_policy": {
+                                          "type": "string"
+                                        },
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "proxy_protocol"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "socks5"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "commands": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "enum": ["CONNECT", "ASSOCIATE", "BIND"]
+                                          }
+                                        },
+                                        "bind_ip": {
+                                          "type": "string"
+                                        },
+                                        "credentials": {
+                                          "type": "object",
+                                          "additionalProperties": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "socks5"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "subroute"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "routes": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "@id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "match": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "clock": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "after": {
+                                                          "type": "string",
+                                                          "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
+                                                        },
+                                                        "before": {
+                                                          "type": "string",
+                                                          "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
+                                                        },
+                                                        "timezone": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "dns": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "allow": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "class": {
+                                                                "type": "string"
+                                                              },
+                                                              "class_regexp": {
+                                                                "type": "string"
+                                                              },
+                                                              "name": {
+                                                                "type": "string"
+                                                              },
+                                                              "name_regexp": {
+                                                                "type": "string"
+                                                              },
+                                                              "type": {
+                                                                "type": "string"
+                                                              },
+                                                              "type_regexp": {
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "deny": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "class": {
+                                                                "type": "string"
+                                                              },
+                                                              "class_regexp": {
+                                                                "type": "string"
+                                                              },
+                                                              "name": {
+                                                                "type": "string"
+                                                              },
+                                                              "name_regexp": {
+                                                                "type": "string"
+                                                              },
+                                                              "type": {
+                                                                "type": "string"
+                                                              },
+                                                              "type_regexp": {
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "default_deny": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "prefer_allow": {
+                                                          "type": "boolean"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "http": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "host": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "path": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "path_regexp": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "name": {
+                                                                "type": "string"
+                                                              },
+                                                              "pattern": {
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "required": ["pattern"],
+                                                            "additionalProperties": false
+                                                          },
+                                                          "method": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "header": {
+                                                            "type": "object",
+                                                            "additionalProperties": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            }
+                                                          },
+                                                          "header_regexp": {
+                                                            "type": "object",
+                                                            "additionalProperties": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "name": {
+                                                                      "type": "string"
+                                                                    },
+                                                                    "pattern": {
+                                                                      "type": "string"
+                                                                    }
+                                                                  },
+                                                                  "required": ["pattern"],
+                                                                  "additionalProperties": false
+                                                                },
+                                                                {
+                                                                  "not": {}
+                                                                }
+                                                              ]
+                                                            }
+                                                          },
+                                                          "query": {
+                                                            "type": "object",
+                                                            "additionalProperties": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            }
+                                                          },
+                                                          "client_ip": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "ranges": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          },
+                                                          "remote_ip": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "ranges": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          },
+                                                          "protocol": {
+                                                            "type": "string"
+                                                          },
+                                                          "tls": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "handshake_complete": {
+                                                                "type": "boolean"
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          },
+                                                          "file": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "fs": {
+                                                                "type": "string"
+                                                              },
+                                                              "root": {
+                                                                "type": "string"
+                                                              },
+                                                              "try_files": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "string"
+                                                                }
+                                                              },
+                                                              "try_policy": {
+                                                                "type": "string"
+                                                              },
+                                                              "split_path": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "string"
+                                                                }
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          },
+                                                          "not": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "object",
+                                                              "additionalProperties": {}
+                                                            }
+                                                          },
+                                                          "expression": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "additionalProperties": false
+                                                      }
+                                                    },
+                                                    "local_ip": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "ranges": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "openvpn": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "modes": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "plain",
+                                                              "auth",
+                                                              "crypt",
+                                                              "crypt2"
+                                                            ]
+                                                          }
+                                                        },
+                                                        "ignore_crypto": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "ignore_timestamp": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "group_key": {
+                                                          "type": "string"
+                                                        },
+                                                        "group_key_file": {
+                                                          "type": "string"
+                                                        },
+                                                        "auth_digest": {
+                                                          "type": "string"
+                                                        },
+                                                        "group_key_direction": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "normal",
+                                                            "inverse",
+                                                            "bidi",
+                                                            "bidirectional"
+                                                          ]
+                                                        },
+                                                        "client_keys": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "client_key_files": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "server_key": {
+                                                          "type": "string"
+                                                        },
+                                                        "server_key_file": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "postgres": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "user": {
+                                                          "type": "object",
+                                                          "additionalProperties": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string"
+                                                            }
+                                                          }
+                                                        },
+                                                        "client": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "tls": {
+                                                          "type": "string",
+                                                          "enum": ["enabled", "disabled", ""]
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "proxy_protocol": {
+                                                      "type": "object",
+                                                      "properties": {},
+                                                      "additionalProperties": false
+                                                    },
+                                                    "quic": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "sni": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "sni_regexp": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "name": {
+                                                              "type": "string"
+                                                            },
+                                                            "pattern": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "required": ["pattern"],
+                                                          "additionalProperties": false
+                                                        },
+                                                        "alpn": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "remote_ip": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "ranges": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "not_ranges": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            }
+                                                          },
+                                                          "additionalProperties": false
+                                                        },
+                                                        "local_ip": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "ranges": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            }
+                                                          },
+                                                          "additionalProperties": false
+                                                        }
+                                                      },
+                                                      "additionalProperties": {}
+                                                    },
+                                                    "rdp": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "cookie_hash": {
+                                                          "type": "string"
+                                                        },
+                                                        "cookie_hash_regexp": {
+                                                          "type": "string"
+                                                        },
+                                                        "cookie_ips": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "cookie_ports": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "number"
+                                                          }
+                                                        },
+                                                        "custom_info": {
+                                                          "type": "string"
+                                                        },
+                                                        "custom_info_regexp": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "regexp": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "count": {
+                                                          "type": "integer",
+                                                          "minimum": 1,
+                                                          "maximum": 65535
+                                                        },
+                                                        "hex": {
+                                                          "type": "boolean"
+                                                        },
+                                                        "pattern": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        }
+                                                      },
+                                                      "required": ["pattern"],
+                                                      "additionalProperties": false
+                                                    },
+                                                    "remote_ip": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "ranges": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "remote_ip_list": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "remote_ip_file": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        }
+                                                      },
+                                                      "required": ["remote_ip_file"],
+                                                      "additionalProperties": false
+                                                    },
+                                                    "socks4": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "commands": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "enum": ["CONNECT", "BIND"]
+                                                          }
+                                                        },
+                                                        "networks": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "ports": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 65535
+                                                          }
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "socks5": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "auth_methods": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 255
+                                                          }
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "ssh": {
+                                                      "type": "object",
+                                                      "properties": {},
+                                                      "additionalProperties": false
+                                                    },
+                                                    "tls": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "sni": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "sni_regexp": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "name": {
+                                                              "type": "string"
+                                                            },
+                                                            "pattern": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "required": ["pattern"],
+                                                          "additionalProperties": false
+                                                        },
+                                                        "alpn": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "remote_ip": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "ranges": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "not_ranges": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            }
+                                                          },
+                                                          "additionalProperties": false
+                                                        },
+                                                        "local_ip": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "ranges": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string"
+                                                              }
+                                                            }
+                                                          },
+                                                          "additionalProperties": false
+                                                        }
+                                                      },
+                                                      "additionalProperties": {}
+                                                    },
+                                                    "vars": {
+                                                      "type": "object",
+                                                      "additionalProperties": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "string"
+                                                        }
+                                                      }
+                                                    },
+                                                    "vars_regexp": {
+                                                      "type": "object",
+                                                      "additionalProperties": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "name": {
+                                                            "type": "string"
+                                                          },
+                                                          "pattern": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "required": ["pattern"],
+                                                        "additionalProperties": false
+                                                      }
+                                                    },
+                                                    "winbox": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "modes": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "enum": ["standard", "romon"]
+                                                          }
+                                                        },
+                                                        "username": {
+                                                          "type": "string"
+                                                        },
+                                                        "username_regexp": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "wireguard": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "zero": {
+                                                          "type": "number"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "xmpp": {
+                                                      "type": "object",
+                                                      "properties": {},
+                                                      "additionalProperties": false
+                                                    },
+                                                    "not": {
+                                                      "type": "array",
+                                                      "items": {}
+                                                    }
+                                                  },
+                                                  "additionalProperties": {}
+                                                }
+                                              },
+                                              "handle": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "handler": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    }
+                                                  },
+                                                  "required": ["handler"],
+                                                  "additionalProperties": true
+                                                },
+                                                "minItems": 1
+                                              }
+                                            },
+                                            "required": ["handle"],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "matching_timeout": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "0"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                            }
+                                          ]
+                                        },
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "subroute"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "tee"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "tee"
+                                        },
+                                        "branch": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "handler": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": ["handler"],
+                                            "additionalProperties": true
+                                          }
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "throttle"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "read_bytes_per_second": {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        "read_burst_size": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "total_read_bytes_per_second": {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        "total_read_burst_size": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "latency": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "0"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                            }
+                                          ]
+                                        },
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "throttle"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "tls"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "connection_policies": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "match": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "sni": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    }
+                                                  },
+                                                  "sni_regexp": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "name": {
+                                                        "type": "string"
+                                                      },
+                                                      "pattern": {
+                                                        "type": "string"
+                                                      }
+                                                    },
+                                                    "required": ["pattern"],
+                                                    "additionalProperties": false
+                                                  },
+                                                  "alpn": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    }
+                                                  },
+                                                  "remote_ip": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "ranges": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "not_ranges": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "string"
+                                                        }
+                                                      }
+                                                    },
+                                                    "additionalProperties": false
+                                                  },
+                                                  "local_ip": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "ranges": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "string"
+                                                        }
+                                                      }
+                                                    },
+                                                    "additionalProperties": false
+                                                  }
+                                                },
+                                                "additionalProperties": {}
+                                              },
+                                              "certificate_selection": {
+                                                "type": "object",
+                                                "additionalProperties": {}
+                                              },
+                                              "cipher_suites": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "curves": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "alpn": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "protocol_min": {
+                                                "type": "string"
+                                              },
+                                              "protocol_max": {
+                                                "type": "string"
+                                              },
+                                              "drop": {
+                                                "type": "boolean"
+                                              },
+                                              "client_authentication": {
+                                                "type": "object",
+                                                "additionalProperties": {}
+                                              },
+                                              "default_sni": {
+                                                "type": "string"
+                                              },
+                                              "fallback_sni": {
+                                                "type": "string"
+                                              },
+                                              "insecure_secrets_log": {
+                                                "type": "string"
+                                              },
+                                              "handshake_context": {}
+                                            },
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "handshake_timeout": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "0"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                                            }
+                                          ]
+                                        },
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "tls"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": false,
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": {
+                                        "handler": {
+                                          "const": "vars"
+                                        }
+                                      },
+                                      "required": ["handler"]
+                                    },
+                                    "then": {
+                                      "type": "object",
+                                      "properties": {
+                                        "handler": {
+                                          "type": "string",
+                                          "const": "vars"
+                                        }
+                                      },
+                                      "required": ["handler"],
+                                      "additionalProperties": {},
+                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                    }
+                                  }
+                                ]
+                              },
+                              "minItems": 1
+                            }
+                          },
+                          "required": ["handle"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "idle_timeout": {
+                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
+                      },
+                      "matching_timeout": {
+                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
+                      }
+                    },
+                    "required": ["listen", "routes"],
+                    "additionalProperties": false
+                  }
                 }
               },
               "additionalProperties": false

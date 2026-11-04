@@ -43,7 +43,7 @@ by hand before trusting the output.
 | -------------- | ----------------- | -------------------- | ---------- |
 | caddy-security | v1.1.64           | local/caddy-security | 2026-08-11 |
 | go-authcrunch  | v1.1.41           | local/go-authcrunch  | 2026-08-11 |
-| caddy-l4       | commit `96e1a6bf` | local/caddy-l4       | 2026-11-04 |
+| caddy-l4       | commit `009d9b00` | local/caddy-l4       | 2026-11-04 |
 
 **v1.1.59 → v1.1.64 notes:** caddy-security's own exported struct shape is unchanged
 (zero `json:"..."` tag diffs) — `caddy-security.ts`/`.zod.ts` regenerate byte-identical.
@@ -60,14 +60,27 @@ only.
 
 ## caddy-l4 (Layer 4)
 
-| Component | Upstream                    | Pinned                                                         | Updated    |
-| --------- | --------------------------- | -------------------------------------------------------------- | ---------- |
-| caddy-l4  | `github.com/mholt/caddy-l4` | commit `96e1a6bf063c206c3bd09ca6dc4a0484a158d83f` (2026-11-02) | 2026-11-04 |
+| Component | Upstream                                                                         | Pinned                                                                                               | Updated    |
+| --------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------- |
+| caddy-l4  | `github.com/mholt/caddy-l4` (built from the fork `github.com/viaalink/caddy-l4`) | commit `009d9b00abee87bed76b66ae1c44283ca494c3f9` (2026-11-04; upstream master `96e1a6bf` + one fix) | 2026-11-04 |
 
 Pinned to a commit, not a tag: the latest tag (`v0.1.2`, 2026-07-15) is months behind what
 everyone builds (`xcaddy build --with github.com/mholt/caddy-l4` takes the default branch). The
 same commit is pinned in `tests/integration/Dockerfile.caddy-l4` and `demo/Dockerfile.caddy`
-(`xcaddy build --with github.com/mholt/caddy-l4@<commit>`). caddy-l4's `go.mod` asks for Go
+(`xcaddy build --with github.com/mholt/caddy-l4=github.com/viaalink/caddy-l4@<commit>`).
+
+**On our fork until upstream merges the fix:** the pin is
+[`viaalink/caddy-l4@009d9b00`](https://github.com/viaalink/caddy-l4/commit/009d9b00abee87bed76b66ae1c44283ca494c3f9) (branch `fix/remoteiplist-reload-hang`), which is upstream
+master `96e1a6bf` plus the `remote_ip_list` reload fix below, submitted upstream as
+[mholt/caddy-l4#492](https://github.com/mholt/caddy-l4/pull/492). The Go module path is unchanged, so xcaddy builds it with a replace
+(`github.com/mholt/caddy-l4=github.com/viaalink/caddy-l4@<commit>`), and the generated types
+are identical to `96e1a6bf` (the fix only touches `iplist.go`, which tygo skips, and a test).
+`upstreams.json` tracks the fork's branch for now. Once #492 is merged: set `repo` back to
+`https://github.com/mholt/caddy-l4`, track `master`, pin the merged commit, and drop the
+`=github.com/viaalink/caddy-l4` replace from both Dockerfiles. `local/caddy-l4` is still a
+clone of `mholt/caddy-l4` at `96e1a6bf`; `just upstreams-sync`/`upstreams-update` check that a
+clone's `origin` matches `repo`, so point it at the fork first
+(`git -C local/caddy-l4 remote set-url origin https://github.com/viaalink/caddy-l4`). caddy-l4's `go.mod` asks for Go
 1.26.9; tygo parses through `go list`, and with `GOTOOLCHAIN=auto` (the default) a Go 1.22
 install fetches that toolchain on its own.
 
@@ -100,10 +113,13 @@ sets checked at provision time (e.g. `clock` times must be `HH:MM:SS`); cross-pa
 ts-to-zod leaves as `z.any()` (`caddy.Duration`, `reverseproxy.TLSConfig`,
 `caddytls.ConnectionPolicies`).
 
-**Known upstream issue at this commit:** `remote_ip_list`'s `Cleanup` can deadlock the next
-config reload (`IPList.StopMonitoring` sends on an unbuffered channel the monitor goroutine no
-longer reads once Caddy cancelled its context), which hangs the admin API. The integration test
-leaves it out of its live loads.
+**Upstream bug, fixed in our fork:** at upstream `96e1a6bf`, the config reload after a config
+with `remote_ip_list` hangs, and the admin API with it. Caddy cancels a config's context before
+it calls `Cleanup`; the monitor goroutine returns on `ctx.Done()`, and `IPList.StopMonitoring`
+then sends on an unbuffered channel nobody reads any more. The fork's commit
+[`009d9b00`](https://github.com/viaalink/caddy-l4/commit/009d9b00abee87bed76b66ae1c44283ca494c3f9) closes the channel (once) instead, with a regression test
+(`TestCleanupAfterContextCancel`); upstream PR [mholt/caddy-l4#492](https://github.com/mholt/caddy-l4/pull/492). The integration test
+loads `remote_ip_list` live again.
 
 **Integration test:** `src/__tests__/integration/layer4-modules.integration.test.ts` against
 `tests/integration/docker-compose.layer4-modules.yml` (own compose project, admin

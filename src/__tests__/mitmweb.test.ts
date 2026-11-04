@@ -304,3 +304,14 @@ describe("autoInstallMitmproxy() - Edge Cases", () => {
  * - Traffic interception
  * - Caddy integration
  */
+
+describe("mitmwebNeedsPassword()", () => {
+  test("11.1 and later need a web password, older versions have none", async () => {
+    const { mitmwebNeedsPassword } = await import("../mitm/mitmweb.js");
+    expect(mitmwebNeedsPassword("10.4.2")).toBe(false);
+    expect(mitmwebNeedsPassword("11.0.2")).toBe(false);
+    expect(mitmwebNeedsPassword("11.1.3")).toBe(true);
+    expect(mitmwebNeedsPassword("12.2.1")).toBe(true);
+    expect(mitmwebNeedsPassword(null)).toBe(true);
+  });
+});

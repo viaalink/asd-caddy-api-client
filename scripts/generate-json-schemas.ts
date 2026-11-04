@@ -70,6 +70,11 @@ import {
 import { adminConfigSchema, loggingSchema } from "../src/generated/caddy-core.zod.js";
 import { appSchema as HttpAppSchema, serverSchema } from "../src/generated/caddy-http.zod.js";
 import { tlsSchema as TlsAppSchema } from "../src/generated/caddy-tls.zod.js";
+import {
+  Layer4AppSchema,
+  LAYER4_HANDLERS,
+  LAYER4_HANDLER_SCHEMAS,
+} from "../src/caddy/layer4-schemas.js";
 
 // `@id` is a Caddy-wide JSON convention (admin API object addressing,
 // stripped before Go struct decoding) -- it isn't a real Go struct field,
@@ -278,6 +283,12 @@ const schemas: SchemaDefinition[] = [
     fileMatch: ["**/security-app.json"],
   },
   {
+    name: "caddy-layer4-app",
+    schema: Layer4AppSchema,
+    description: "caddy-l4 layer 4 (TCP/UDP) app configuration for /config/apps/layer4",
+    fileMatch: ["**/layer4-app.json"],
+  },
+  {
     name: "caddy-full-config",
     // Composed entirely from already-generated/already-correct schemas —
     // admin/logging from the tygo-generated Caddy core types, http/tls from
@@ -295,10 +306,12 @@ const schemas: SchemaDefinition[] = [
           http: FullConfigHttpAppSchema.optional(),
           tls: TlsAppSchema.optional(),
           security: SecurityAppSchema.optional(),
+          layer4: Layer4AppSchema.optional(),
         })
         .optional(),
     }),
-    description: "Complete Caddy server configuration (admin, logging, apps: http/tls/security)",
+    description:
+      "Complete Caddy server configuration (admin, logging, apps: http/tls/security/layer4)",
     fileMatch: ["**/caddy-server.json", "**/caddy-full.json", "**/*.caddy-server.json"],
   },
 ];
@@ -368,6 +381,79 @@ function injectUniversalId(node: unknown): void {
   }
 }
 
+/**
+ * caddy-l4 for the editor: strict where the runtime schemas are lenient.
+ *
+ * The library's layer4 Zod schemas pass unknown fields through on purpose, so
+ * a config read back from a newer caddy-l4 still parses. In the editor that
+ * would let a typo ("upstream" for "upstreams") pass, which is what the
+ * strictness audit guards against. So in the JSON schema, every layer4 object
+ * with known fields is closed (additionalProperties: false), and the handler
+ * of a module the library doesn't model may not carry a known handler's name:
+ * otherwise a misspelled `proxy` handler would validate as an unknown one.
+ * Matcher sets stay open (catchall): other plugins add matcher modules.
+ */
+function strictLayer4(node: unknown, expandHandlers = true): void {
+  if (Array.isArray(node)) {
+    node.forEach((item) => strictLayer4(item, expandHandlers));
+    return;
+  }
+  if (!node || typeof node !== "object") return;
+  const obj = node as Record<string, unknown>;
+  const props = obj.properties as Record<string, Record<string, unknown>> | undefined;
+  if (props && (obj.additionalProperties === true || obj.additionalProperties === undefined)) {
+    const keys = Object.keys(props).filter((key) => key !== "@id");
+    const handler = props.handler;
+    const otherHandler =
+      keys.length === 1 &&
+      handler?.type === "string" &&
+      !("const" in handler) &&
+      !("enum" in handler);
+    if (otherHandler && expandHandlers) {
+      // The runtime schema dispatches on `handler` in a superRefine, which JSON
+      // Schema can't see. Spell it out: a known handler name brings its own
+      // (strict) schema; any other name is a module of another plugin.
+      obj.allOf = LAYER4_HANDLERS.map((name) => ({
+        if: { properties: { handler: { const: name } }, required: ["handler"] },
+        then: zodToJsonSchema(
+          LAYER4_HANDLER_SCHEMAS[name] as Parameters<typeof zodToJsonSchema>[0],
+          {
+            // Inline: these are embedded in another document. Recursion (subroute,
+            // tee) ends in `{}` one level down rather than a dangling $ref.
+            $refStrategy: "none",
+            target: "jsonSchema7",
+          }
+        ),
+      }));
+      // Close the embedded handler schemas, but don't expand the handlers nested
+      // in them (subroute → handlers → subroute … would never end): one level
+      // of handlers is checked in full, deeper ones by name.
+      // Only the `then` parts: an `if` must stay open, or it never matches.
+      for (const rule of obj.allOf as { then: unknown }[]) strictLayer4(rule.then, false);
+      return;
+    } else if (!otherHandler) {
+      obj.additionalProperties = false;
+    }
+  }
+  for (const value of Object.values(obj)) strictLayer4(value, expandHandlers);
+}
+
+/** The layer4 app inside a schema: the whole schema, or `apps.layer4` of a full config. */
+function applyStrictLayer4(definition: SchemaDefinition, jsonSchema: object): void {
+  if (definition.name === "caddy-layer4-app") {
+    strictLayer4(jsonSchema);
+    return;
+  }
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    const obj = node as Record<string, unknown>;
+    const apps = (obj.properties as Record<string, { properties?: Record<string, unknown> }>)?.apps;
+    if (apps?.properties?.layer4) strictLayer4(apps.properties.layer4);
+    for (const value of Object.values(obj)) visit(value);
+  };
+  visit(jsonSchema);
+}
+
 function generateJsonSchema(definition: SchemaDefinition): object {
   const jsonSchema = zodToJsonSchema(definition.schema as Parameters<typeof zodToJsonSchema>[0], {
     name: definition.name,
@@ -378,6 +464,7 @@ function generateJsonSchema(definition: SchemaDefinition): object {
   });
 
   injectUniversalId(jsonSchema);
+  applyStrictLayer4(definition, jsonSchema);
 
   // Enrich with metadata
   return {

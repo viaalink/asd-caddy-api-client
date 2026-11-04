@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.11.1](https://github.com/viaalink/asd-caddy-api-client/compare/v0.11.0...v0.11.1) (2026-11-04)
+
+### Fixed
+
+- `startMitmweb()` works with mitmproxy 11.1 and later (what `pip install mitmproxy` installs
+  today). Those versions refuse mitmweb's UI and API without a web password (HTTP 403), so the
+  readiness check never passed and `startMitmweb()` timed out. It now sets a password on 11.1+
+  (yours via the new `webPassword` option, or a random one), returns it as `webPassword`, opens
+  the browser with the token, and counts any HTTP answer as "up". New helper:
+  `mitmwebNeedsPassword(version)`.
+- Editor JSON schemas: a full Caddy config (`caddy-full-config.json`) accepts `apps.layer4`
+  instead of rejecting it, and there is a `caddy-layer4-app.json` schema. Both are strict where
+  the runtime schemas are lenient: unknown fields are flagged, and every known layer4 handler is
+  checked against its own schema (a `proxy` handler with `upstream` instead of `upstreams` is an
+  error); handlers of other plugins stay allowed. `LAYER4_HANDLER_SCHEMAS` is exported.
+
+### Changed
+
+- caddy-l4 is built from Viaalink's fork (github.com/viaalink/caddy-l4, commit `009d9b00`) until
+  [mholt/caddy-l4#492](https://github.com/mholt/caddy-l4/pull/492) is merged: with upstream, a
+  config reload after one that used the `remote_ip_list` matcher hung Caddy's admin API. Same
+  module path and config; only the fix differs.
+- Docs and examples use mitmproxy 12.2.1, with `--set web_password=…` and the token for the UI and
+  API (a new "Web UI or API Answers 403" section in docs/mitmproxy-troubleshooting.md).
+
 ## [0.11.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.10.2...v0.11.0) (2026-11-04)
 
 ### Added

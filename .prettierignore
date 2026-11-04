@@ -9,6 +9,8 @@ coverage/
 local/
 # Agent worktrees (git worktrees of this repo, checked by their own runs)
 .claude/worktrees/
+# The Viaalink CLI's runtime folder (gitignored)
+workspace/
 
 # ASD submodule
 

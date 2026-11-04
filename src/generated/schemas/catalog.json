@@ -119,8 +119,14 @@
       "fileMatch": ["**/security-app.json"]
     },
     {
+      "name": "caddy-layer4-app",
+      "description": "caddy-l4 layer 4 (TCP/UDP) app configuration for /config/apps/layer4",
+      "url": "./caddy-layer4-app.json",
+      "fileMatch": ["**/layer4-app.json"]
+    },
+    {
       "name": "caddy-full-config",
-      "description": "Complete Caddy server configuration (admin, logging, apps: http/tls/security)",
+      "description": "Complete Caddy server configuration (admin, logging, apps: http/tls/security/layer4)",
       "url": "./caddy-full-config.json",
       "fileMatch": ["**/caddy-server.json", "**/caddy-full.json", "**/*.caddy-server.json"]
     }

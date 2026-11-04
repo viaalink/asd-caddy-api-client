@@ -707,3 +707,58 @@ describe("JSON Schema Validation", () => {
     });
   });
 });
+
+describe("JSON schemas: caddy-l4 (apps.layer4)", () => {
+  const dir = join(__dirname, "../generated/schemas");
+  const load = (name: string): object =>
+    JSON.parse(readFileSync(join(dir, `${name}.json`), "utf8")) as object;
+  const layer4 = {
+    servers: {
+      edge: {
+        listen: [":443"],
+        routes: [
+          {
+            "@id": "db",
+            match: [{ tls: { sni: ["db.example.com"] } }],
+            handle: [{ handler: "proxy", upstreams: [{ dial: ["postgres:5432"] }] }],
+          },
+          {
+            match: [{ postgres: {} }],
+            handle: [
+              {
+                handler: "subroute",
+                routes: [{ handle: [{ handler: "proxy", upstreams: [{ dial: ["pg:5432"] }] }] }],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+
+  test("a full Caddy config with apps.layer4 validates (the editor no longer flags it)", () => {
+    const validate = new Ajv({ strict: false, allErrors: true }).compile(load("caddy-full-config"));
+    expect(validate({ apps: { layer4 } }), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  test("the layer4 app schema catches a mistake", () => {
+    const validate = new Ajv({ strict: false, allErrors: true }).compile(load("caddy-layer4-app"));
+    expect(validate(layer4), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate({ servers: { edge: { listen: ":443", routes: [] } } })).toBe(false);
+  });
+
+  test("a typo in a known handler is caught, another plugin's handler is allowed", () => {
+    const validate = new Ajv({ strict: false, allErrors: true }).compile(load("caddy-layer4-app"));
+    const withHandler = (handler: object) => ({
+      servers: { edge: { listen: [":5432"], routes: [{ handle: [handler] }] } },
+    });
+    // "upstream" for "upstreams": the mistake the strictness audit exists for.
+    expect(validate(withHandler({ handler: "proxy", upstream: [{ dial: ["pg:5432"] }] }))).toBe(
+      false
+    );
+    expect(validate(withHandler({ handler: "throttle", read_bytes_per_second: "fast" }))).toBe(
+      false
+    );
+    expect(validate(withHandler({ handler: "some_plugin", anything: 1 }))).toBe(true);
+  });
+});
