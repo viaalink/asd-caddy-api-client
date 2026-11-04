@@ -44,7 +44,8 @@ const ADMIN = process.env.LAYER4_MODULES_ADMIN_URL ?? "http://127.0.0.1:2022";
 const TCP = { host: "127.0.0.1", port: Number(process.env.LAYER4_MODULES_TCP_PORT ?? 17000) };
 const PREFIX = "l4mod_";
 
-const enabled = process.env.INTEGRATION_TEST === "true";
+// Needs its own caddy-l4 stack (tests/integration/docker-compose.layer4-modules.yml): `just test-layer4`.
+const enabled = process.env.LAYER4_TEST === "true";
 
 /** Raw admin API call (Origin as CaddyClient sends it, for Caddy 2.11+). */
 async function admin(path: string, init: RequestInit = {}): Promise<Response> {

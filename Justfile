@@ -65,10 +65,19 @@ test-layer4:
         sleep 1
     done
     LAYER4_TEST=true bun test src/__tests__/integration/layer4-postgres.integration.test.ts --no-coverage
+    # Every caddy-l4 module, on its own stack (admin 127.0.0.1:2022)
+    modules="docker compose -p caddy-layer4-modules-test -f tests/integration/docker-compose.layer4-modules.yml"
+    $modules up -d --build --wait
+    for i in $(seq 1 60); do
+        curl -sf -H "Origin: http://127.0.0.1:2022" http://127.0.0.1:2022/config/ > /dev/null && break
+        sleep 1
+    done
+    LAYER4_TEST=true bun test src/__tests__/integration/layer4-modules.integration.test.ts --no-coverage
 
 # Stop the layer4 test stack
 test-layer4-down:
     docker compose -p caddy-layer4-test -f tests/integration/docker-compose.layer4.yml down -v
+    docker compose -p caddy-layer4-modules-test -f tests/integration/docker-compose.layer4-modules.yml down -v
 
 # Update integration test snapshots (Caddy config fixtures)
 test-integration-update-snapshots:
