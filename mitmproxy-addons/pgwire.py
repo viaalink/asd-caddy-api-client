@@ -12,6 +12,10 @@ shows decoded (the "Postgres" content view, picked automatically), the
 Comment tab holds the whole session as one transcript, and every line is
 logged too.
 
+Passwords: the transcript never shows them, and each login message itself is
+blanked in the stored flow once it has been forwarded, so mitmweb's Raw view
+does not show it either.
+
 Plain connections only: a client that gets TLS ("sslmode=require") encrypts
 everything after the SSL request, and the transcript says so.
 
@@ -203,8 +207,24 @@ class PgWire:
     def __init__(self) -> None:
         self.streams: dict[tuple[str, bool], PgStream] = {}
 
+    @staticmethod
+    def _hide_logins(flow: tcp.TCPFlow, keep_last: bool) -> None:
+        """
+        Blank login messages that have been forwarded already, so mitmweb's Raw
+        and Auto views never show a password. A message is sent when its
+        tcp_message hook returns; only the stored copy is changed here.
+        """
+        pending = flow.metadata.get("pgwire_hide", [])
+        last = len(flow.messages) - 1
+        for index in [i for i in pending if not (keep_last and i == last)]:
+            message = flow.messages[index]
+            message.content = f"(pgwire: login message hidden, {len(message.content)} bytes)".encode()
+            pending.remove(index)
+
     def tcp_message(self, flow: tcp.TCPFlow) -> None:
         msg = flow.messages[-1]
+        # Earlier messages have been forwarded by now: hide their login data.
+        self._hide_logins(flow, keep_last=True)
         key = (flow.id, msg.from_client)
         stream = self.streams.setdefault(key, PgStream(frontend=msg.from_client))
         try:
@@ -220,6 +240,8 @@ class PgWire:
         # Per message, for the content view: index in flow.messages → its lines.
         by_message = flow.metadata.setdefault("pgwire_messages", {})
         by_message[len(flow.messages) - 1] = [f"{arrow} {line}" for line in lines]
+        if msg.from_client and any(line.startswith("LOGIN") for line in lines):
+            flow.metadata.setdefault("pgwire_hide", []).append(len(flow.messages) - 1)
         if lines:
             log = flow.metadata.setdefault("pgwire", [])
             for line in lines:
@@ -228,36 +250,60 @@ class PgWire:
             flow.comment = "\n".join(log[-60:])
 
     def tcp_end(self, flow: tcp.TCPFlow) -> None:
+        self._hide_logins(flow, keep_last=False)
         self.streams.pop((flow.id, True), None)
         self.streams.pop((flow.id, False), None)
 
 
-class PostgresView(contentviews.View):
-    """Stream Data in mitmweb: each TCP message of a Postgres flow, decoded."""
+def _decoded_lines(flow, tcp_message) -> list[str] | None:
+    """The pgwire lines of one TCP message, or None when it is not a decoded Postgres flow."""
+    if not isinstance(flow, tcp.TCPFlow) or tcp_message is None:
+        return None
+    decoded = flow.metadata.get("pgwire_messages")
+    if decoded is None:
+        return None
+    index = next((i for i, m in enumerate(flow.messages) if m is tcp_message), None)
+    return decoded.get(index) if index is not None else None
 
-    name = "Postgres"
 
-    @staticmethod
-    def _lines(flow, tcp_message) -> list[str] | None:
-        if not isinstance(flow, tcp.TCPFlow) or tcp_message is None:
-            return None
-        decoded = flow.metadata.get("pgwire_messages")
-        if decoded is None:
-            return None
-        index = next((i for i, m in enumerate(flow.messages) if m is tcp_message), None)
-        return decoded.get(index) if index is not None else None
+BOOKKEEPING = "(protocol bookkeeping: sync, execute, ready; no SQL here)"
 
-    def __call__(self, data, *, flow=None, tcp_message=None, **metadata):
-        lines = self._lines(flow, tcp_message)
-        if lines is None:
-            return "Postgres", contentviews.format_text("(not decoded)")
-        if not lines:
-            # A message that only completes in the next chunk, or one we skip (Sync, Execute, …).
-            return "Postgres", iter([[("text", "(protocol bookkeeping: sync, execute, ready; no SQL here)")]])
-        return "Postgres", iter([[("text", line)] for line in lines])
 
-    def render_priority(self, data, *, flow=None, tcp_message=None, **metadata) -> float:
-        return 2.0 if self._lines(flow, tcp_message) is not None else 0.0
+if hasattr(contentviews, "Contentview"):
+    # mitmproxy 12 and later: prettify() returns text, Metadata carries the flow.
+
+    class PostgresView(contentviews.Contentview):
+        """Stream Data in mitmweb: each TCP message of a Postgres flow, decoded."""
+
+        @property
+        def name(self) -> str:
+            return "Postgres"
+
+        def prettify(self, data: bytes, metadata) -> str:
+            lines = _decoded_lines(metadata.flow, metadata.tcp_message)
+            if lines is None:
+                return "(not decoded)"
+            return "\n".join(lines) if lines else BOOKKEEPING
+
+        def render_priority(self, data: bytes, metadata) -> float:
+            return 2.0 if _decoded_lines(metadata.flow, metadata.tcp_message) is not None else -1.0
+
+else:
+    # mitmproxy 10 and 11: the older View API.
+
+    class PostgresView(contentviews.View):  # type: ignore[no-redef]
+        """Stream Data in mitmweb: each TCP message of a Postgres flow, decoded."""
+
+        name = "Postgres"
+
+        def __call__(self, data, *, flow=None, tcp_message=None, **metadata):
+            lines = _decoded_lines(flow, tcp_message)
+            if lines is None:
+                return "Postgres", contentviews.format_text("(not decoded)")
+            return "Postgres", iter([[("text", line)] for line in (lines or [BOOKKEEPING])])
+
+        def render_priority(self, data, *, flow=None, tcp_message=None, **metadata) -> float:
+            return 2.0 if _decoded_lines(flow, tcp_message) is not None else 0.0
 
 
 view = PostgresView()
