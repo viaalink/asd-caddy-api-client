@@ -1,0 +1,111 @@
+# tygo configuration for the caddy-l4 (layer4) plugin: github.com/mholt/caddy-l4
+#
+# Tracked in the repo (local/ is gitignored); scripts/generate-plugin-types.ts runs
+#   tygo --config <this file> generate
+# from local/caddy-l4, so output paths are relative to that directory.
+# Pinned commit: see DEPENDENCIES.md.
+#
+# One package per output file: the modules reuse names (Handler, MatchRegexp, ...).
+# Cross-package references (caddy.Duration, layer4.RouteList, caddytls.ConnectionPolicies,
+# reverseproxy.TLSConfig) are resolved to imports by scripts/resolve-cross-refs.ts.
+# Files that only hold wire-protocol parsing or runtime state are excluded, and the
+# generator strips runtime `export const` lines (byte sizes, opcodes) for this plugin.
+
+x-mappings: &mappings
+  "json.RawMessage": "unknown"
+  "time.Duration": "number | string"
+  "error": "Error"
+  "*zap.Logger": "unknown"
+
+packages:
+  - path: "github.com/mholt/caddy-l4/layer4"
+    output_path: "../../src/generated/plugins/caddy-l4-core.ts"
+    type_mappings: *mappings
+    # wire-protocol / runtime internals, no JSON config
+    exclude_files:
+      - "connection.go"
+      - "handlers.go"
+      - "caddyfile.go"
+  - path: "github.com/mholt/caddy-l4/modules/l4clock"
+    output_path: "../../src/generated/plugins/caddy-l4-clock.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4close"
+    output_path: "../../src/generated/plugins/caddy-l4-close.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4dns"
+    output_path: "../../src/generated/plugins/caddy-l4-dns.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4echo"
+    output_path: "../../src/generated/plugins/caddy-l4-echo.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4http"
+    output_path: "../../src/generated/plugins/caddy-l4-http.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4openvpn"
+    output_path: "../../src/generated/plugins/caddy-l4-openvpn.ts"
+    type_mappings: *mappings
+    # wire-protocol / runtime internals, no JSON config
+    exclude_files:
+      - "crypto.go"
+      - "messages.go"
+  - path: "github.com/mholt/caddy-l4/modules/l4postgres"
+    output_path: "../../src/generated/plugins/caddy-l4-postgres.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4proxy"
+    output_path: "../../src/generated/plugins/caddy-l4-proxy.ts"
+    type_mappings: *mappings
+    # wire-protocol / runtime internals, no JSON config
+    exclude_files:
+      - "metrics.go"
+  - path: "github.com/mholt/caddy-l4/modules/l4proxyprotocol"
+    output_path: "../../src/generated/plugins/caddy-l4-proxyprotocol.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4quic"
+    output_path: "../../src/generated/plugins/caddy-l4-quic.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4rdp"
+    output_path: "../../src/generated/plugins/caddy-l4-rdp.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4regexp"
+    output_path: "../../src/generated/plugins/caddy-l4-regexp.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4remoteiplist"
+    output_path: "../../src/generated/plugins/caddy-l4-remoteiplist.ts"
+    type_mappings: *mappings
+    # wire-protocol / runtime internals, no JSON config
+    exclude_files:
+      - "iplist.go"
+  - path: "github.com/mholt/caddy-l4/modules/l4socks"
+    output_path: "../../src/generated/plugins/caddy-l4-socks.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4ssh"
+    output_path: "../../src/generated/plugins/caddy-l4-ssh.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4subroute"
+    output_path: "../../src/generated/plugins/caddy-l4-subroute.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4tee"
+    output_path: "../../src/generated/plugins/caddy-l4-tee.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4throttle"
+    output_path: "../../src/generated/plugins/caddy-l4-throttle.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4tls"
+    output_path: "../../src/generated/plugins/caddy-l4-tls.ts"
+    type_mappings: *mappings
+    # wire-protocol / runtime internals, no JSON config
+    exclude_files:
+      - "clienthello.go"
+      - "parsehello.go"
+  - path: "github.com/mholt/caddy-l4/modules/l4vars"
+    output_path: "../../src/generated/plugins/caddy-l4-vars.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4winbox"
+    output_path: "../../src/generated/plugins/caddy-l4-winbox.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4wireguard"
+    output_path: "../../src/generated/plugins/caddy-l4-wireguard.ts"
+    type_mappings: *mappings
+  - path: "github.com/mholt/caddy-l4/modules/l4xmpp"
+    output_path: "../../src/generated/plugins/caddy-l4-xmpp.ts"
+    type_mappings: *mappings

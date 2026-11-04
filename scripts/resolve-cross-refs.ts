@@ -16,6 +16,9 @@ import { join, basename } from "path";
 const GENERATED_DIR = join(import.meta.dirname, "../src/generated");
 const PLUGINS_DIR = join(GENERATED_DIR, "plugins");
 
+/** File names under src/generated/plugins/, filled in by main(). */
+const PLUGIN_FILES = new Set<string>();
+
 interface TypeMapping {
   file: string;
   exportName: string;
@@ -191,6 +194,8 @@ function buildTypeIndex(analyses: FileAnalysis[]): Map<string, TypeMapping> {
     headers: "caddy-headers.ts",
     rewrite: "caddy-rewrite.ts",
     templates: "caddy-templates.ts",
+    // caddy-l4 (layer4) packages
+    layer4: "caddy-l4-core.ts",
   };
 
   for (const analysis of analyses) {
@@ -380,7 +385,7 @@ function resolveFile(
 
       const isPluginFile =
         analysis.filePath.includes("/plugins/") || analysis.filePath.includes("\\plugins\\");
-      const targetIsPlugin = file.startsWith("authcrunch-") || file.startsWith("caddy-security");
+      const targetIsPlugin = PLUGIN_FILES.has(file);
 
       let relativePath: string;
       if (isPluginFile && targetIsPlugin) {
@@ -429,9 +434,11 @@ function main() {
   allFiles.push(...coreFiles);
 
   try {
-    const pluginFiles = readdirSync(PLUGINS_DIR)
-      .filter((f) => f.endsWith(".ts") && !f.endsWith(".zod.ts"))
-      .map((f) => join(PLUGINS_DIR, f));
+    const pluginNames = readdirSync(PLUGINS_DIR).filter(
+      (f) => f.endsWith(".ts") && !f.endsWith(".zod.ts")
+    );
+    for (const name of pluginNames) PLUGIN_FILES.add(name);
+    const pluginFiles = pluginNames.map((f) => join(PLUGINS_DIR, f));
     allFiles.push(...pluginFiles);
   } catch {
     // No plugins directory yet
