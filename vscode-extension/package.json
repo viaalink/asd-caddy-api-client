@@ -2,7 +2,7 @@
   "name": "vscode-caddy-tools",
   "displayName": "Caddy Configuration Tools",
   "description": "IntelliSense, validated snippets, quick fixes and live apply for Caddy JSON configs and the caddy-security (AuthCrunch) plugin",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "publisher": "viaalink",
   "icon": "icon.png",
   "author": {
@@ -144,6 +144,11 @@
         "icon": "$(cloud-upload)"
       },
       {
+        "command": "caddy.selectTarget",
+        "title": "Choose Running Caddy",
+        "category": "Caddy"
+      },
+      {
         "command": "caddy.showRunningConfig",
         "title": "Show Running Config",
         "category": "Caddy",
@@ -185,9 +190,43 @@
         },
         "caddy.adminUrl": {
           "type": "string",
-          "default": "http://localhost:2019",
+          "default": "",
           "format": "uri",
-          "markdownDescription": "Caddy admin API URL used by **Caddy: Apply File to Running Caddy** and **Caddy: Show Running Config**. Caddy 2.11+ checks the `Origin` header; the extension sends this URL's origin."
+          "markdownDescription": "Use this Caddy admin API, always (for example `http://localhost:2019`): it overrides finding Caddy automatically and the choice made with **Caddy: Choose Running Caddy**. Leave it empty to let the extension find the Caddys running on this machine. Caddy 2.11+ checks the `Origin` header; the extension sends the origin of this URL."
+        },
+        "caddy.targets": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Your own list of Caddy admin APIs, offered first in **Caddy: Choose Running Caddy** (for example a dev and a staging Caddy). With one entry it is used without asking. Each entry: `{ \"name\": \"staging\", \"adminUrl\": \"http://localhost:2020\" }`.",
+          "items": {
+            "type": "object",
+            "required": [
+              "adminUrl"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name shown in the picker and the status bar"
+              },
+              "adminUrl": {
+                "type": "string",
+                "pattern": "^https?://",
+                "description": "Admin API URL, e.g. http://localhost:2019"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "caddy.autoDetect": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Find the Caddys running on this machine: `caddy run`/`caddy start` processes (their config names the admin address, including the Caddys the Viaalink CLI starts), Docker containers publishing port 2019, `CADDY_ADMIN` and `localhost:2019`. Only local addresses are found."
+        },
+        "caddy.allowRemoteAdmin": {
+          "type": "boolean",
+          "default": false,
+          "scope": "machine",
+          "markdownDescription": "Allow an admin URL that is not on this machine. Off by default: Caddy's admin API has no login, so anyone who can reach it can replace your server's config. The safe way to a remote Caddy is an SSH tunnel (`ssh -L 2019:localhost:2019 your-server`, then `http://localhost:2019`)."
         }
       }
     },

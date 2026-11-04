@@ -12,6 +12,7 @@ import { CaddyStatusBar } from "./providers/status-bar";
 import { SimpleSchemaValidator } from "./providers/schema-validator";
 import { registerCommands } from "./providers/commands";
 import { liveCaddy, securityWizard, RUNNING_CONFIG_SCHEME } from "./providers/lazy";
+import { CaddyTargets } from "./providers/targets";
 import { newConfigFile } from "./providers/new-file";
 import { runRouteWizard } from "./wizards/route-wizard";
 
@@ -45,6 +46,11 @@ const MENU: Array<{ label: string; detail: string; command: string }> = [
     label: "$(cloud-upload) Apply File to Running Caddy",
     detail: "POST /load, or add/replace routes via the admin API",
     command: "caddy.applyToCaddy",
+  },
+  {
+    label: "$(server-process) Choose Running Caddy",
+    detail: "Which Caddy Apply and Show Running Config talk to",
+    command: "caddy.selectTarget",
   },
   {
     label: "$(eye) Show Running Config",
@@ -121,16 +127,27 @@ export function activate(context: vscode.ExtensionContext): void {
   registerCommands(context);
 
   const runningConfigChanged = new vscode.EventEmitter<vscode.Uri>();
+  const targets = new CaddyTargets(context.workspaceState);
   context.subscriptions.push(
     runningConfigChanged,
+    targets,
     vscode.workspace.registerTextDocumentContentProvider(RUNNING_CONFIG_SCHEME, {
       onDidChange: runningConfigChanged.event,
-      provideTextDocumentContent: () => liveCaddy().runningConfigText(),
+      provideTextDocumentContent: async () => {
+        const adminUrl = targets.last() ?? (await targets.resolve());
+        return adminUrl ? liveCaddy().runningConfigText(adminUrl) : "";
+      },
     }),
-    vscode.commands.registerCommand("caddy.showRunningConfig", () =>
-      liveCaddy().showRunningConfig((uri) => runningConfigChanged.fire(uri))
-    ),
-    vscode.commands.registerCommand("caddy.applyToCaddy", () => liveCaddy().applyActiveFile())
+    vscode.commands.registerCommand("caddy.selectTarget", () => targets.pick()),
+    vscode.commands.registerCommand("caddy.showRunningConfig", async () => {
+      const adminUrl = await targets.resolve();
+      if (adminUrl)
+        await liveCaddy().showRunningConfig(adminUrl, (uri) => runningConfigChanged.fire(uri));
+    }),
+    vscode.commands.registerCommand("caddy.applyToCaddy", async () => {
+      const adminUrl = await targets.resolve();
+      if (adminUrl) await liveCaddy().applyActiveFile(adminUrl);
+    })
   );
 
   const totalTime = performance.now() - startTime;

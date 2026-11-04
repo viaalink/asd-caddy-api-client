@@ -300,6 +300,14 @@ vscode-test-headed:
 vscode-test-debug:
     cd vscode-extension && npx playwright test --debug
 
+# VSCode Extension: install its dependencies, as CI does (library build, then npm ci)
+vscode-deps: build
+    cd vscode-extension && npm ci
+
+# VSCode Extension: type check (esbuild bundles without one), as CI does
+vscode-typecheck:
+    cd vscode-extension && npm run typecheck
+
 # VSCode Extension: build and package
 vscode-build:
     cd vscode-extension && npm run package

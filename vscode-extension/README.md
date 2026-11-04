@@ -24,7 +24,7 @@ ext install Viaalink.vscode-caddy-tools
 | **Quick fixes**  | `Ctrl+.` on a squiggle.                                                                                                                                                                                                                                                                                             |
 | **Snippets**     | 21 JSON snippets (`caddy-…`) and 59 TypeScript snippets (42 builders + 17 caddy-security templates). Each one is validated against the schema or type-checked against the library before it ships.                                                                                                                  |
 | **Wizards**      | A route wizard, and a caddy-security wizard for local/LDAP/OAuth2/OIDC logins, portals and policies.                                                                                                                                                                                                                |
-| **Live Caddy**   | _Apply File to Running Caddy_ (`POST /load`, or add or replace routes by `@id`) and a read-only _Show Running Config_.                                                                                                                                                                                              |
+| **Live Caddy**   | Finds the Caddys running on your machine (processes, Docker, Viaalink CLI projects) and lets you pick one. _Apply File to Running Caddy_ (`POST /load`, or add or replace routes by `@id`) and a read-only _Show Running Config_.                                                                                   |
 | **Docs at hand** | Hover any handler for its documentation and an example; a CodeLens above each handler links to caddyserver.com and authcrunch.com.                                                                                                                                                                                  |
 
 ## Getting started
@@ -104,26 +104,46 @@ All commands are under **Caddy:** in the Command Palette (`Ctrl+Shift+P` / `Cmd+
 | Route Configuration Wizard                                 | Matching, handler, security headers, compression: step by step                                         |
 | Security Configuration Wizard                              | Local / LDAP / OAuth2 / OIDC, portal, policies                                                         |
 | Insert Route Configuration / Insert Security Configuration | Pick from the validated snippets                                                                       |
+| Choose Running Caddy                                       | Pick which running Caddy Apply and Show Running Config use (also: click it in the status bar)          |
 | Apply File to Running Caddy                                | `caddy-server.json` → `POST /load`; `*.caddy.json` → add the route(s) to a server, or replace by `@id` |
 | Show Running Config                                        | The live config, read-only, with hover and CodeLens                                                    |
 | Show Handler Documentation                                 | Every handler, linked to caddyserver.com                                                               |
 | Get Started                                                | The walkthrough                                                                                        |
 
-### Apply to a running Caddy
+### Which Caddy?
 
-The admin URL defaults to `http://localhost:2019`; change it with `caddy.adminUrl`. Every write asks for confirmation first. A full config is loaded atomically, so if Caddy rejects it, the previous config stays active.
+You don't have to tell the extension where Caddy runs. The first time you apply or show the running config, it looks on your machine:
 
-Caddy 2.11+ checks the `Origin` header on admin requests. The extension sends the origin of `caddy.adminUrl`. If you map the admin port in Docker (for example `2020:2019`), list both ports in the Caddyfile `admin { origins … }` block.
+- `caddy run` / `caddy start` processes: their config file names the admin address (`admin.listen` in JSON, the `admin` global option in a Caddyfile); without one, Caddy listens on `localhost:2019`. This also finds the Caddys the [Viaalink CLI](https://viaalink.com) starts per project.
+- Docker containers that publish Caddy's admin port 2019.
+- `CADDY_ADMIN` and `localhost:2019`.
+
+Each one is asked whether it answers. One running Caddy is used straight away; with several you pick one, and the workspace remembers it. The status bar shows which Caddy you're on (_Caddy: name_); click it to switch.
+
+**Override it** with `caddy.adminUrl`: when set, that Caddy is always used and nothing is looked up. Keep your own list (for example a dev and a staging Caddy) in `caddy.targets`; turn the lookup off with `caddy.autoDetect`.
+
+**Only local Caddys, by default.** Caddy's admin API has no login: anyone who can reach it can replace your server's config. An address that isn't on this machine is refused unless you turn on `caddy.allowRemoteAdmin`. The safe way to a remote Caddy is an SSH tunnel: `ssh -L 2019:localhost:2019 your-server`, then use `http://localhost:2019`.
+
+Every write asks for confirmation first. A full config is loaded atomically, so if Caddy rejects it, the previous config stays active. Changes made through the admin API are not written back to your config file: if Caddy is started from a file, a restart loads that file again.
+
+Caddy 2.11+ checks the `Origin` header on admin requests; the extension sends the admin URL's own origin. If you map the admin port in Docker (for example `2020:2019`), list both ports in the Caddyfile `admin { origins … }` block.
+
+### Caddyfile or JSON?
+
+This extension works with Caddy's JSON config: the format Caddy itself runs, and the one its admin API takes. A Caddyfile is turned into exactly that JSON; _Show Running Config_ shows it. For writing Caddyfiles, use a Caddyfile extension such as [Caddyfile Support](https://marketplace.visualstudio.com/items?itemName=matthewpi.caddyfile-support) next to this one: it covers Caddyfile highlighting and formatting, this one covers JSON, the caddy-security plugin and the running server.
 
 ## Settings
 
-| Setting                    | Default                 |                                                                         |
-| -------------------------- | ----------------------- | ----------------------------------------------------------------------- |
-| `caddy.adminUrl`           | `http://localhost:2019` | Admin API used by Apply / Show Running Config                           |
-| `caddy.enableDiagnostics`  | `true`                  | Caddy-specific checks (schema validation is VS Code's own and stays on) |
-| `caddy.enableHoverDocs`    | `true`                  | Handler documentation on hover                                          |
-| `caddy.showCaddyDocsLinks` | `true`                  | Links to caddyserver.com in hovers                                      |
-| `caddy.showCodeLens`       | `true`                  | Documentation CodeLens above handlers                                   |
+| Setting                    | Default            |                                                                                      |
+| -------------------------- | ------------------ | ------------------------------------------------------------------------------------ |
+| `caddy.adminUrl`           | _(empty: find it)_ | Always use this admin API; overrides finding and choosing                            |
+| `caddy.targets`            | `[]`               | Your own Caddys, e.g. `[{ "name": "staging", "adminUrl": "http://localhost:2020" }]` |
+| `caddy.autoDetect`         | `true`             | Find the Caddys running on this machine                                              |
+| `caddy.allowRemoteAdmin`   | `false`            | Allow an admin URL that isn't on this machine (see above)                            |
+| `caddy.enableDiagnostics`  | `true`             | Caddy-specific checks (schema validation is VS Code's own and stays on)              |
+| `caddy.enableHoverDocs`    | `true`             | Handler documentation on hover                                                       |
+| `caddy.showCaddyDocsLinks` | `true`             | Links to caddyserver.com in hovers                                                   |
+| `caddy.showCodeLens`       | `true`             | Documentation CodeLens above handlers                                                |
 
 ## Works in
 

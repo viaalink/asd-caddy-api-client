@@ -82,6 +82,7 @@ describe("activation", () => {
       "caddy.openWalkthrough",
       "caddy.runRouteWizard",
       "caddy.runSecurityWizard",
+      "caddy.selectTarget",
       "caddy.showHandlerDocs",
       "caddy.showMenu",
       "caddy.showRunningConfig",
@@ -89,6 +90,15 @@ describe("activation", () => {
     const registered = new Set(await vscode.commands.getCommands(true));
     const missing = contributed.filter((c) => !registered.has(c));
     assert.deepStrictEqual(missing, [], "contributed but not registered");
+  });
+  it("finds Caddy by itself, local only, unless the user says otherwise", () => {
+    const caddy = vscode.workspace.getConfiguration("caddy");
+    assert.strictEqual(caddy.get("autoDetect"), true);
+    assert.strictEqual(caddy.get("allowRemoteAdmin"), false);
+    assert.deepStrictEqual(caddy.get("targets"), []);
+    // The override: unset by default, so discovery decides.
+    const adminUrl = caddy.inspect<string>("adminUrl");
+    assert.strictEqual(adminUrl?.globalValue ?? adminUrl?.workspaceValue, undefined);
   });
 });
 
