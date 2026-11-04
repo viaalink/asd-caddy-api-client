@@ -162,7 +162,11 @@ describe.skipIf(!enabled)("SQL over TCP: Caddy layer4 + mitmproxy + pgwire", () 
     expect(t).toContain("BIND  $1='electronics', $2='200'");
     expect(t).toContain("DONE  SELECT 0");
     expect(t).toContain("BIND  $1='Electronics', $2='200'");
+    expect(t).toContain("ROW  'Wireless Mouse', '29.99'");
+    expect(t).toContain("ROW  'Mechanical Keyboard', '149.99'");
     expect(t).toContain("DONE  SELECT 2  (2 rows returned)");
+    expect(t).toContain("LOGIN  credentials sent (not shown)");
+    expect(t).not.toMatch(/password=|demo:demo/);
     expect(t).toContain('ERROR  42703 column "nonexistent" does not exist');
     expect(t).not.toContain("opened before inspection");
   });
