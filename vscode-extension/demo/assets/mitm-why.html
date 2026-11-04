@@ -1,0 +1,477 @@
+<!doctype html>
+<!--
+  The MITM film's opening diagram (storyboard-mitm.ts, scene "Why").
+  One stage per spoken line; the recorder calls window.stage(n) at the start of
+  each step and the animation runs while the line is said. Layout is 1280×720
+  with the bottom 130px left free for the burned-in captions.
+    stage(1)  the user's choices become pieces of backend code, which build one query
+    stage(2)  reading the code shows the pieces; the wire shows the query itself
+    stage(3)  Caddy on the wire; mitmproxy is swapped in, keeps a copy, swapped out
+    stage(4)  what the film will show
+  window.stageDone is true once the current stage's animation has finished.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --line: #334155;
+        --text: #f1f5f9;
+        --muted: #94a3b8;
+        --accent: #00add8;
+        --red: #f73f3f;
+        --green: #22c55e;
+        --mono: "JetBrains Mono", ui-monospace, monospace;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.4 system-ui,
+          sans-serif;
+      }
+      .abs {
+        position: absolute;
+      }
+      .fade {
+        transition:
+          opacity 0.5s,
+          transform 0.5s;
+      }
+      .hidden {
+        opacity: 0;
+      }
+      .label {
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      /* The front end: what the user picked. */
+      #ui {
+        left: 40px;
+        top: 90px;
+        width: 230px;
+        height: 400px;
+        padding: 18px;
+        box-sizing: border-box;
+      }
+      .search {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 10px 0 16px;
+        font-family: var(--mono);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 8px 0 16px;
+      }
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 12px;
+        font-size: 14px;
+        color: var(--muted);
+        transition: all 0.3s;
+      }
+      .chip.on,
+      .opt.on {
+        border-color: var(--accent);
+        color: var(--text);
+        background: rgba(0, 173, 216, 0.18);
+      }
+      .opt {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 12px;
+        margin: 8px 0;
+        font-size: 14px;
+        color: var(--muted);
+        transition: all 0.3s;
+      }
+
+      /* The backend: pieces of code, one per choice. */
+      #code {
+        left: 290px;
+        top: 90px;
+        width: 380px;
+        height: 400px;
+        padding: 18px;
+        box-sizing: border-box;
+      }
+      .ln {
+        font: 13px/1.5 var(--mono);
+        padding: 6px 10px;
+        margin: 6px 0;
+        border-radius: 6px;
+        border-left: 3px solid transparent;
+        color: var(--muted);
+        opacity: 0.25;
+        transition: all 0.35s;
+      }
+      .ln.on {
+        opacity: 1;
+        color: var(--text);
+        border-left-color: var(--accent);
+        background: rgba(0, 173, 216, 0.1);
+      }
+      #code.read .ln.on {
+        border-left-color: var(--muted);
+        background: transparent;
+        color: var(--muted);
+      }
+      .bracket {
+        left: 280px;
+        top: 70px;
+        width: 400px;
+        height: 430px;
+        border: 2px dashed var(--muted);
+        border-radius: 16px;
+      }
+      .tag {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+
+      /* The wire and the services on it. */
+      svg {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      .wire {
+        stroke: var(--line);
+        stroke-width: 3;
+        fill: none;
+        transition: opacity 0.4s;
+      }
+      .wire.live {
+        stroke: var(--accent);
+      }
+      .box {
+        width: 150px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 18px;
+        border-radius: 12px;
+        transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      #es {
+        left: 1100px;
+        top: 250px;
+        width: 140px;
+        height: 90px;
+        background: #1e3a2f;
+        border: 2px solid var(--green);
+        border-radius: 50% / 18%;
+        flex-direction: column;
+        font-size: 16px;
+      }
+      #caddy {
+        left: 700px;
+        top: 263px;
+        background: var(--surface);
+        border: 2px solid var(--text);
+        width: 120px;
+      }
+      #mitm {
+        left: 890px;
+        top: 263px;
+        width: 140px;
+        background: rgba(247, 63, 63, 0.15);
+        border: 2px solid var(--red);
+        color: var(--text);
+        font-size: 16px;
+      }
+      #mitm.out {
+        transform: translateY(-170px);
+        opacity: 0;
+      }
+      #packet {
+        left: 760px;
+        top: 283px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #00222b;
+        font: 700 13px var(--mono);
+        transition:
+          left 1.1s ease-in-out,
+          top 0.6s,
+          opacity 0.3s;
+      }
+      #query {
+        margin: 0;
+        left: 700px;
+        top: 380px;
+        width: 540px;
+        padding: 10px 14px;
+        box-sizing: border-box;
+        font: 12px/1.4 var(--mono);
+        white-space: pre;
+        border: 2px solid var(--accent);
+        background: #0b2530;
+      }
+      #query .hl {
+        color: var(--red);
+        font-weight: 700;
+      }
+      #copy {
+        left: 890px;
+        top: 345px;
+        padding: 6px 10px;
+        font: 12px var(--mono);
+        border: 1px solid var(--red);
+        border-radius: 6px;
+        background: rgba(247, 63, 63, 0.12);
+      }
+
+      /* Stage 4: the agenda. */
+      #agenda {
+        left: 0;
+        top: 0;
+        width: 1280px;
+        height: 590px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-left: 260px;
+        box-sizing: border-box;
+        background: var(--bg);
+      }
+      #agenda h1 {
+        font-size: 38px;
+        margin: 0 0 24px;
+      }
+      #agenda li {
+        font-size: 26px;
+        margin: 10px 0;
+        list-style: none;
+        transition:
+          opacity 0.4s,
+          transform 0.4s;
+      }
+      #agenda li::before {
+        content: "";
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-right: 18px;
+        vertical-align: middle;
+      }
+      #agenda li.hidden {
+        transform: translateX(-20px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="abs label" style="left: 40px; top: 40px">What the user picked</div>
+    <div class="abs label" style="left: 290px; top: 40px">The backend builds a query</div>
+    <div class="abs label" style="left: 700px; top: 225px" id="wirelabel">On the wire</div>
+
+    <div class="abs panel" id="ui">
+      <div class="label">Product search</div>
+      <div class="search" id="search">&nbsp;</div>
+      <div class="label">Category</div>
+      <div class="chips">
+        <span class="chip" id="c-books">Books</span>
+        <span class="chip" id="c-elec">Electronics</span>
+        <span class="chip" id="c-home">Home</span>
+      </div>
+      <div class="opt" id="o-stock">☐ In stock only</div>
+      <div class="opt" id="o-sort">Sort: price, low to high</div>
+    </div>
+
+    <div class="abs panel" id="code">
+      <div class="ln" id="l0">const must = [], filter = []</div>
+      <div class="ln" id="l1">if (text) must.push(match("name", text))</div>
+      <div class="ln" id="l2">if (category) must.push(term(category))</div>
+      <div class="ln" id="l3">if (inStock) filter.push(inStockRange())</div>
+      <div class="ln" id="l4">if (sort) body.sort = sortBy(sort)</div>
+      <div class="ln" id="l5">es.search({ query: { bool: { must, filter } }, ...body })</div>
+    </div>
+
+    <div class="abs bracket fade hidden" id="bracket"></div>
+    <div
+      class="abs tag fade hidden"
+      id="tag-read"
+      style="left: 370px; top: 510px; background: var(--surface); color: var(--muted)"
+    >
+      Reading the code: the pieces
+    </div>
+
+    <svg width="1280" height="720">
+      <path class="wire" id="w-direct" d="M670 295 L1100 295" />
+    </svg>
+
+    <div class="abs box fade hidden" id="caddy">Caddy</div>
+    <div class="abs box out" id="mitm">mitmproxy</div>
+    <div class="abs box" id="es"><span>Elastic</span><span>search</span></div>
+    <div class="abs fade hidden" id="packet">query</div>
+    <div class="abs fade hidden" id="copy">copy: POST /_search</div>
+
+    <pre class="abs panel fade hidden" id="query">{
+  "query": { "bool": {
+    "must": [
+      { "match": { "name": "keyboard" } },
+      { "term": { "category": "<span class="hl">Electronics</span>" } }
+    ],
+    "filter": [ { "range": { "stock": { "gt": 0 } } } ]
+  } },
+  "sort": [ { "price": "asc" } ]
+}</pre>
+    <div
+      class="abs tag fade hidden"
+      id="tag-wire"
+      style="left: 700px; top: 335px; background: var(--accent); color: #00222b"
+    >
+      On the wire: the query itself
+    </div>
+    <div
+      class="abs tag fade hidden"
+      id="tag-swap"
+      style="left: 860px; top: 400px; background: var(--red); color: #fff"
+    >
+      Route swapped, nothing restarts
+    </div>
+
+    <div class="abs fade hidden" id="agenda">
+      <h1>In this video</h1>
+      <ul style="margin: 0; padding: 0">
+        <li class="hidden">The demo</li>
+        <li class="hidden">Inspect with one click</li>
+        <li class="hidden">Two bugs, found on the wire</li>
+        <li class="hidden">How the code does it</li>
+        <li class="hidden">On demand, in the Viaalink CLI</li>
+      </ul>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const show = (id, on = true) => $(id).classList.toggle("hidden", !on);
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      async function typeInto(el, text) {
+        el.textContent = "";
+        for (const c of text) {
+          el.textContent += c;
+          await sleep(70);
+        }
+      }
+      /** Move the packet along x positions, one hop per entry. */
+      async function travel(xs, y = 283) {
+        const p = $("packet");
+        p.style.transition = "none";
+        p.style.left = xs[0] + "px";
+        p.style.top = y + "px";
+        void p.offsetWidth;
+        p.style.transition = "";
+        show("packet");
+        for (const x of xs.slice(1)) {
+          await sleep(60);
+          p.style.left = x + "px";
+          await sleep(1150);
+        }
+      }
+
+      const stages = {
+        async 1() {
+          $("l0").classList.add("on");
+          await sleep(400);
+          await typeInto($("search"), "keyboard");
+          $("l1").classList.add("on");
+          await sleep(500);
+          $("c-elec").classList.add("on");
+          $("l2").classList.add("on");
+          await sleep(700);
+          $("o-stock").classList.add("on");
+          $("o-stock").textContent = "☑ In stock only";
+          $("l3").classList.add("on");
+          await sleep(700);
+          $("o-sort").classList.add("on");
+          $("l4").classList.add("on");
+          await sleep(700);
+          $("l5").classList.add("on");
+          $("w-direct").classList.add("live");
+          await travel([672, 1040]);
+          show("packet", false);
+        },
+        async 2() {
+          $("code").classList.add("read");
+          show("bracket");
+          show("tag-read");
+          await sleep(1600);
+          await travel([672, 860]);
+          await sleep(300);
+          show("query");
+          show("tag-wire");
+          await sleep(2500);
+        },
+        async 3() {
+          show("query", false);
+          show("tag-wire", false);
+          show("tag-read", false);
+          show("bracket", false);
+          show("packet", false);
+          $("code").classList.remove("read");
+          show("caddy");
+          $("wirelabel").textContent = "Caddy on the wire";
+          await sleep(1200);
+          // The swap: mitmproxy drops into the route between Caddy and Elasticsearch.
+          $("w-direct").setAttribute("d", "M670 295 L700 295 M820 295 L1100 295");
+          $("mitm").classList.remove("out");
+          show("tag-swap");
+          await sleep(900);
+          await travel([672, 825, 1035, 1100]);
+          show("packet", false);
+          show("copy");
+          await sleep(1800);
+          // And out again.
+          $("mitm").classList.add("out");
+          show("tag-swap", false);
+          show("copy", false);
+          await sleep(600);
+          await travel([672, 825, 1100]);
+          show("packet", false);
+        },
+        async 4() {
+          show("agenda");
+          await sleep(500);
+          for (const li of document.querySelectorAll("#agenda li")) {
+            li.classList.remove("hidden");
+            await sleep(900);
+          }
+        },
+      };
+
+      window.stageDone = true;
+      window.stage = (n) => {
+        window.stageDone = false;
+        stages[n]().then(() => (window.stageDone = true));
+      };
+    </script>
+  </body>
+</html>

@@ -1,16 +1,22 @@
 # MITMproxy Traffic Inspection Demo
-# Shows dynamic route switching via Caddy Admin API
+# Shows dynamic route switching via Caddy Admin API.
+# Ports and names come from tpl.env (via env init), so clones never collide:
+#   docker compose --env-file .env -f demo/docker-compose.yml up -d
+
+name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}
 
 services:
   # Caddy reverse proxy with Admin API
   caddy:
-    image: caddy:2.7-alpine
-    container_name: demo-caddy
+    image: caddy:2.11-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-caddy
     ports:
-      - "9080:80" # HTTP (external 9080 -> internal 80)
-      - "9019:2019" # Admin API (external 9019 -> internal 2019)
+      - "127.0.0.1:${DEMO_HTTP_PORT:-9080}:80" # HTTP
+      - "127.0.0.1:${DEMO_ADMIN_PORT:-9019}:2019" # Admin API
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      - DEMO_ADMIN_PORT=${DEMO_ADMIN_PORT:-9019}
     networks:
       - demo-net
     healthcheck:
@@ -22,13 +28,15 @@ services:
   # Elasticsearch backend
   elasticsearch:
     image: elasticsearch:8.11.0
-    container_name: demo-elasticsearch
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      # Single-node demo: don't refuse the index when the host disk is >90% full
+      - cluster.routing.allocation.disk.threshold_enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
-      - "9200:9200"
+      - "127.0.0.1:${DEMO_ES_PORT:-9200}:9200"
     networks:
       - demo-net
     healthcheck:
@@ -40,7 +48,7 @@ services:
   # MITMproxy for Elasticsearch (reverse mode)
   mitmproxy:
     image: mitmproxy/mitmproxy:10.4.2
-    container_name: demo-mitmproxy
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy
     command: >
       mitmweb
       --mode reverse:http://elasticsearch:9200
@@ -52,8 +60,8 @@ services:
       --set keep_host_header=true
       --set block_global=false
     ports:
-      - "9082:8080" # Proxy port (external 9082 -> internal 8080)
-      - "9081:8081" # Web UI (external 9081 -> internal 8081)
+      - "127.0.0.1:${DEMO_MITM_PROXY_PORT:-9082}:8080" # Proxy port
+      - "127.0.0.1:${DEMO_MITM_WEB_PORT:-9081}:8081" # Web UI
     networks:
       - demo-net
     depends_on:
@@ -73,7 +81,7 @@ services:
   # MITMproxy for Node API (reverse mode)
   mitmproxy-node:
     image: mitmproxy/mitmproxy:10.4.2
-    container_name: demo-mitmproxy-node
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-node
     command: >
       mitmweb
       --mode reverse:http://demo-api:3000
@@ -85,8 +93,8 @@ services:
       --set keep_host_header=true
       --set block_global=false
     ports:
-      - "9084:8080" # Proxy port
-      - "9083:8081" # Web UI
+      - "127.0.0.1:${DEMO_MITM_NODE_PROXY_PORT:-9084}:8080" # Proxy port
+      - "127.0.0.1:${DEMO_MITM_NODE_WEB_PORT:-9083}:8081" # Web UI
     networks:
       - demo-net
     depends_on:
@@ -107,9 +115,9 @@ services:
     build:
       context: ..
       dockerfile: demo/Dockerfile.api
-    container_name: demo-api
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-api
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${DEMO_API_PORT:-9085}:3000" # Demo API (direct, for debugging)
     environment:
       - CADDY_ADMIN_URL=http://caddy:2019
       - ELASTICSEARCH_URL=http://elasticsearch:9200
@@ -129,7 +137,7 @@ services:
   # Seed sample data into Elasticsearch
   seed:
     image: alpine:latest
-    container_name: demo-seed
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-seed
     volumes:
       - ./data:/data:ro
       - ./seed/seed.sh:/seed.sh:ro

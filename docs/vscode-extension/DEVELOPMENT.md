@@ -24,7 +24,7 @@ vscode-extension (thin UI layer)
 
 - Node.js 18+
 - npm 9+
-- code-server (for testing) - installed via `.asd`
+- code-server (for testing) - downloaded automatically by the test setup into `local/code/`
 
 ### Initial Setup
 
@@ -212,11 +212,6 @@ npm run package        # Create .vsix file
 ### Install in code-server
 
 ```bash
-# Via .asd
-just asd codeserver-install-linux
-just asd code start
-
-# Manual install
 code-server --install-extension vscode-caddy-tools-0.1.0.vsix
 ```
 
@@ -224,10 +219,8 @@ code-server --install-extension vscode-caddy-tools-0.1.0.vsix
 
 ### code-server not found
 
-```bash
-# Install via .asd
-just asd codeserver-install-linux
-```
+`just vscode-test` downloads code-server into `local/code/code-server` on first run.
+Delete that folder to force a fresh download.
 
 ### Extension not loading
 

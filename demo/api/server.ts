@@ -707,25 +707,27 @@ const server = Bun.serve({
 
       // Clear MITMproxy flows
       if (path === "/api/monitoring/clear" && req.method === "POST") {
-        const results: Record<string, boolean> = {};
-
-        // Clear flows from both MITMproxy instances
-        try {
-          await fetch("http://mitmproxy:8081/flows", { method: "DELETE" });
-          results.elasticsearch = true;
-        } catch {
-          results.elasticsearch = false;
-        }
-
-        try {
-          await fetch("http://mitmproxy-node:8081/flows", { method: "DELETE" });
-          results.nodeapi = true;
-        } catch {
-          results.nodeapi = false;
-        }
+        // mitmweb clears with POST /clear. Like every write it wants a matching
+        // XSRF cookie and header (any value works, they only have to agree), and
+        // its DNS-rebinding guard only accepts a localhost/IP Host header.
+        const clear = async (host: string): Promise<boolean> => {
+          const res = await fetch(`http://${host}:8081/clear`, {
+            method: "POST",
+            headers: { Host: "127.0.0.1:8081", Cookie: "_xsrf=demo", "X-XSRFToken": "demo" },
+          }).catch(() => null);
+          return res?.ok === true;
+        };
+        const results: Record<string, boolean> = {
+          elasticsearch: await clear("mitmproxy"),
+          nodeapi: await clear("mitmproxy-node"),
+        };
 
         return Response.json(
-          { success: true, cleared: results, message: "MITMproxy flows cleared" },
+          {
+            success: results.elasticsearch && results.nodeapi,
+            cleared: results,
+            message: "MITMproxy flows cleared",
+          },
           { headers: corsHeaders }
         );
       }

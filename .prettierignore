@@ -9,7 +9,6 @@ coverage/
 local/
 
 # ASD submodule
-.asd/
 
 # Generated files
 *.tsbuildinfo
@@ -26,3 +25,4 @@ bun.lockb
 # Demo film seed files: the storyboard addresses them by line number, so
 # they must stay exactly as written (prettier would collapse the empty objects).
 vscode-extension/demo/seed/
+.asd/

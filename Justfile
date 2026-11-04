@@ -1,36 +1,10 @@
 # Justfile for @viaalink/caddy-api-client
 
-# ASD@latest
-import? ".asd/cli.just"
-
-export DOTENV_SOURCES := ".env.example .asd/workspace/.env.asd"
 set dotenv-load
-
-ASD_INIT := `if [ -d ".asd/.git" ] || [ -f ".asd/cli.just" ]; then echo 1; else echo 0; fi`
 
 # Default recipe - show available commands
 default:
     @just --list
-
-# Initialize ASD submodule
-all:
-	@echo "→ Checking ASD submodule..."
-	@if [ {{ASD_INIT}} -eq 0 ]; then \
-		echo "⚙️  Initializing .asd submodule..."; \
-		rm -rf .asd; \
-		git submodule update --init --recursive .asd || exit 1; \
-		echo "✅  Submodule initialized. Please rerun your last command."; \
-	else \
-		echo "✅  ASD submodule already initialized."; \
-		if [ ! -f ".asd/cli.just" ]; then \
-			echo "⚠️  Missing .asd content. Re-initializing..."; \
-			rm -rf .asd; \
-			git submodule update --init --recursive .asd || exit 1; \
-			echo "✅  Submodule re-initialized. Please rerun your last command."; \
-		else \
-			just asd init env-merge; \
-		fi \
-	fi
 
 # Install dependencies
 install:
@@ -335,50 +309,48 @@ vscode-install:
     cd vscode-extension && code --install-extension vscode-caddy-tools-*.vsix --force
 
 # variant: promo (title/end cards, captions, voice) · qa (numbered captions, slower, no cards).
-# Storyboard: vscode-extension/demo/storyboard.ts. Output: vscode-extension/local/video/ (gitignored).
+# Demo films. The storyboards are in vscode-extension/demo/ (film.config.ts); the film
+# engine itself is Viaalink's own tooling and not part of this repository, so these
+# recipes only run where it is installed (PRODUCT_VIDEO, default ../../packages/product-video).
+# Curious how we make them? Mail info@viaalink.com. Output: vscode-extension/local/video/ (gitignored).
+_film board variant:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    PV="${PRODUCT_VIDEO:-../../packages/product-video}"
+    if [[ ! -x "$PV/bin/film.sh" ]]; then
+      echo "The film engine is not on this machine (looked in $PV)." >&2
+      echo "It is Viaalink's own tooling; ask info@viaalink.com if you want to know how the films are made." >&2
+      exit 1
+    fi
+    bash "$PV/bin/film.sh" vscode-extension/demo/film.config.ts {{board}} {{variant}}
+
 # VSCode Extension: record the demo film (voice → record → render → contact sheet)
 vscode-demo-video variant="promo":
-    bash vscode-extension/demo/scripts/video.sh {{variant}}
+    just _film caddy-tools {{variant}}
 
 # VSCode Extension: both demo films, one after the other
 vscode-demo-video-all:
-    bash vscode-extension/demo/scripts/video.sh promo
-    CADDY_DEMO_REUSE_VSIX=1 bash vscode-extension/demo/scripts/video.sh qa
+    just _film caddy-tools promo
+    CADDY_DEMO_REUSE_VSIX=1 just _film caddy-tools qa
 
-# VSCode Extension: typecheck the demo pipeline (demo/tsconfig.json)
+# VSCode Extension: typecheck the storyboards (needs the film engine for its types)
 vscode-demo-typecheck:
     cd vscode-extension && npx tsc -p demo/tsconfig.json
 
-# VSCode Extension: install the English piper voice for the demo narration (once, ~110 MB, gitignored)
-vscode-demo-voice-install voice="en_US-lessac-high":
-    bash vscode-extension/demo/scripts/voice-install.sh {{voice}}
+# MITMproxy demo film (needs `just demo start`): voice → record → render → contact sheet
+demo-video variant="promo":
+    just _film caddy-mitm {{variant}}
 
-# VSCode Extension: 3×3 contact sheet of any film, to review it without watching
-vscode-demo-contact-sheet film:
-    bash vscode-extension/demo/scripts/contact-sheet.sh {{film}}
-
-# MITMproxy demo: just demo start|stop|url
-[no-cd]
+# MITMproxy demo (via.yaml + tpl.env, own ports per checkout): just demo start|share|stop|url
 demo action:
     #!/usr/bin/env bash
-    cd demo
+    set -euo pipefail
+    # via checks .env before its before-hooks run, so a fresh clone resolves tpl.env first
+    grep -q '^DEMO_HTTP_PORT=' .env 2>/dev/null || via env init
     case "{{action}}" in
-        start)
-            docker compose up -d --build
-            echo 'Waiting for services...'
-            sleep 30
-            echo ''
-            echo '======================================================================'
-            echo 'MITMproxy Traffic Inspection Demo'
-            echo '======================================================================'
-            echo ''
-            echo 'Open this URL in your browser:'
-            echo ''
-            echo '   http://localhost:9080/dashboard'
-            echo ''
-            echo '======================================================================'
-            ;;
-        stop)  docker compose down -v ;;
-        url)   echo 'http://localhost:9080/dashboard' ;;
-        *)     echo "Usage: just demo [start|stop|url]" ;;
+        start) via run up ;;
+        share) via run share ;;
+        stop)  via run stop ;;
+        url)   echo "https://$(grep '^COMPOSE_PROJECT_NAME=' .env | cut -d= -f2).localhost/dashboard" ;;
+        *)     echo "Usage: just demo [start|share|stop|url]"; exit 1 ;;
     esac

@@ -148,3 +148,6 @@ workspace/
 # Playwright
 playwright-report/
 test-results/
+
+# via runtime state (env snapshot, logs)
+.asd/

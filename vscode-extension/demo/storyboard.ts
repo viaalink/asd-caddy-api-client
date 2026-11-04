@@ -19,10 +19,12 @@
  * Render: `just vscode-demo-video promo` / `just vscode-demo-video qa`.
  */
 
-import { expect, type Locator, type Page } from "@playwright/test";
-import { beat, click, hover, key, park, press, type } from "./lib/actions";
+import { expect, type Locator, type Page } from "product-video/test";
+import { beat, click, hover, key, park, press, type } from "product-video/actions";
+import { readFileSync } from "fs";
+import { PORT_FILE } from "./global-setup";
 import { liveCaddy } from "./lib/live";
-import type { Scene, Storyboard } from "./lib/types";
+import type { Scene, Storyboard } from "product-video/types";
 import {
   acceptSuggestionWithDetail,
   activeEditor,
@@ -32,6 +34,7 @@ import {
   explorerItem,
   hoverWidget,
   openFile,
+  openWorkbench,
   pickSuggestion,
   quickInput,
   quickInputRow,
@@ -589,6 +592,13 @@ export const storyboard: Storyboard = {
     say: "In the next two minutes: completions, quick fixes, docs on hover, templates, live apply to a running Caddy, TypeScript builders, and caddy security.",
   },
   outro: ["Install it from the VS Code Marketplace, and find the code on GitHub and npm."],
+  open: async (page) => {
+    // code-server, started by global-setup.ts on a free port.
+    const port = readFileSync(PORT_FILE, "utf8").trim();
+    await openWorkbench(page, `http://127.0.0.1:${port}/`);
+    // Let the extension host start and the first paint settle before filming.
+    await page.waitForTimeout(2500);
+  },
   prepare: async (page) => {
     await expect(explorerItem(page, "routes.ts")).toBeVisible();
     await park(page);

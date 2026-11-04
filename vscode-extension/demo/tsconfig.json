@@ -11,5 +11,5 @@
     "esModuleInterop": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["*.ts", "lib/**/*.ts", "scripts/**/*.ts"]
+  "include": ["*.ts", "lib/**/*.ts"]
 }

@@ -1,3 +1,0 @@
-[submodule ".asd"]
-	path = .asd
-	url = git@github.com:viaalink/cli-src.git

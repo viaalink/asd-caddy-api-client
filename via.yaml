@@ -1,0 +1,85 @@
+# via.yaml — the MITMproxy traffic-inspection demo (demo/).
+#   via run up      start this checkout's demo on its own ports, route it in Caddy
+#   via run share   the same, plus a public URL on your relay
+#   via run stop    tear it down
+# Ports and names are per checkout (tpl.env), so clones and worktrees run side
+# by side. Validate after editing: via config validate
+version: 1
+project:
+  name: caddy-mitm-demo
+  domain: localhost
+  description: Hot-swap Caddy routes through mitmproxy with @viaalink/caddy-api-client
+  env_template: tpl.env
+  project_root: demo
+
+features:
+  auto_detect_services: false
+
+network:
+  services:
+    demo:
+      name: MITMproxy demo
+      description: Search app + live mitmweb, routed by the demo's own Caddy
+      dial: "127.0.0.1:${{ env.DEMO_HTTP_PORT }}"
+      host: "${{ env.COMPOSE_PROJECT_NAME }}.localhost"
+      publishPreferred: host
+      public: true
+      subdomain: "${{ env.DEMO_SUBDOMAIN }}"
+      # true: via routes this service through its own mitmproxy, on demand
+      # (same as `via net apply --inspect`)
+      inspect: false
+
+automation:
+  before:
+    - on: [up, share]
+      steps:
+        - uses: _sync-env
+
+  # ─── internal steps (not invocable with `via run`) ───
+  _sync-env:
+    - name: "Pick this checkout's ports (first run only)"
+      run: "via env init"
+      skipWhen:
+        command: "grep -q '^DEMO_HTTP_PORT=' .env"
+    - name: "Merge tpl.env changes into .env"
+      run: "via env sync"
+      skipWhen:
+        command: "! grep -q '^DEMO_HTTP_PORT=' .env"
+
+  _stack-up:
+    - name: "Start the demo containers"
+      run: "docker compose --env-file .env -f demo/docker-compose.yml up -d --build"
+      skipWhen:
+        http:
+          url: "http://127.0.0.1:${{ env.DEMO_API_PORT }}/api/health"
+          status: 200
+      onDown: "docker compose --env-file .env -f demo/docker-compose.yml down -v"
+    # Ask the demo API itself: a bare Caddy answers 200 on every path.
+    - name: "Wait for the demo API"
+      httpWaitFor:
+        url: "http://127.0.0.1:${{ env.DEMO_API_PORT }}/api/health"
+        expectStatus: 200
+        expectBody: '"status":"ok"'
+        timeoutMs: 180000
+    - name: "Wait until the demo Caddy routes to it"
+      httpWaitFor:
+        url: "http://127.0.0.1:${{ env.DEMO_HTTP_PORT }}/api/health"
+        expectStatus: 200
+        expectBody: '"status":"ok"'
+        timeoutMs: 30000
+
+  # ─── tasks ───
+  up:
+    - uses: _stack-up
+    - name: "Route it in Caddy"
+      run: "via net apply --caddy --ids demo --yes"
+    - run: "via urls"
+
+  share:
+    - uses: _stack-up
+    - name: "Route it in Caddy and publish it on the relay"
+      run: "via net apply --caddy --tunnel --ids demo --yes"
+    - run: "via urls"
+
+  stop:
+    - run: "docker compose --env-file .env -f demo/docker-compose.yml down -v"
