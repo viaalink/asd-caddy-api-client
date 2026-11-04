@@ -83,7 +83,7 @@ const why: Scene = {
   steps: [
     {
       caption:
-        "Here the backend builds the SQL from what the user picked: a category, a price, a sort order.",
+        "Take a shop. Its backend builds the SQL from what the user picked: a category, a price, a sort order.",
       act: async (page) => stage(page, 1),
       hold: 3000,
     },
@@ -175,7 +175,7 @@ const oneClick: Scene = {
     },
     {
       caption:
-        "mitmproxy reads the Postgres protocol: the SQL, its parameter, and the result. The shop asked for electronics, in lower case, and got zero rows.",
+        "mitmproxy captures the bytes; our Postgres decoder, part of the client library, turns them into the SQL, its parameter, and the result. The shop asked for electronics, in lower case, and got zero rows.",
       act: async (page) => {
         // Make room first, as a user would: the dashboard divider to the left,
         // then mitmweb's own splitter, so the SQL is not cut off.
@@ -303,7 +303,7 @@ const theCode: Scene = {
     },
     {
       caption:
-        "mitmproxy runs in reverse TCP mode, with the Postgres decoder that ships with the library.",
+        "mitmproxy runs in reverse TCP mode and loads our Postgres decoder, which ships with the client library.",
       act: async (page) => {
         await showCode(
           page,
@@ -331,6 +331,10 @@ export const storyboard: Storyboard = {
     "npm   npmjs.com/package/@viaalink/caddy-api-client",
     "GitHub   github.com/viaalink/asd-caddy-api-client",
     "Viaalink CLI   viaalink.com",
+  ],
+  // Spoken over the title card: why this matters, before the explanation starts.
+  intro: [
+    "Your app talks to its database in SQL, but you rarely see what it actually sends. In this video, you will, live, without changing a line of code.",
   ],
   outro: ["Find the client library on npm and GitHub, and the Viaalink CLI at viaalink.com."],
   open: async (page) => {
