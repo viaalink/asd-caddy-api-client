@@ -45,15 +45,32 @@ interface RenderedMessage {
   from_client?: boolean;
 }
 
+/**
+ * mitmweb 12 answers `{ text, view_name }` per message; 10 and 11 answer
+ * `{ lines: [[[style, text], …], …], description }`. Both, as one shape.
+ */
+interface RawRenderedMessage {
+  text?: string;
+  view_name?: string | null;
+  lines?: [string, string][][];
+  description?: string;
+  from_client?: boolean;
+}
+
+function normalise(m: RawRenderedMessage): RenderedMessage {
+  return {
+    text: m.text ?? (m.lines ?? []).map((line) => line.map(([, t]) => t).join("")).join("\n"),
+    view_name: m.view_name !== undefined ? m.view_name : (m.description ?? null),
+    from_client: m.from_client,
+  };
+}
+
 function mitmweb(path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`${MITMWEB}${path}`, {
-    ...init,
-    headers: {
-      Host: new URL(MITMWEB).host,
-      Authorization: `Bearer ${MITMWEB_TOKEN}`,
-      ...init.headers,
-    },
-  });
+  // ?token= works on every mitmweb with a password (11.1+); 12 also takes
+  // `Authorization: Bearer`, 11.1 does not. Earlier versions ignore both.
+  const url = new URL(`${MITMWEB}${path}`);
+  url.searchParams.set("token", MITMWEB_TOKEN);
+  return fetch(url, { ...init, headers: { Host: url.host, ...init.headers } });
 }
 
 async function flows(): Promise<Flow[]> {
@@ -66,7 +83,7 @@ async function flows(): Promise<Flow[]> {
 async function renderedMessages(flowId: string, view: string): Promise<RenderedMessage[]> {
   const res = await mitmweb(`/flows/${flowId}/messages/content/${encodeURIComponent(view)}.json`);
   expect(res.status).toBe(200);
-  return (await res.json()) as RenderedMessage[];
+  return ((await res.json()) as RawRenderedMessage[]).map(normalise);
 }
 
 /** The TCP flow whose transcript contains `marker`. */
