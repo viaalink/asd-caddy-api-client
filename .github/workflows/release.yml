@@ -3,7 +3,9 @@ name: Release & Publish to npm
 on:
   push:
     tags:
-      - "v*.*.*"
+      # Library tags only (v1.2.3). "v*.*.*" also matched the extension's
+      # vscode-v0.5.0 and started an npm publish of the library (2026-11-04).
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: write
