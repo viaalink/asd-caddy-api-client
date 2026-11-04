@@ -724,7 +724,12 @@ function generateExtensionAssets(): ExtensionAssets {
 
   return {
     version: pkgJson.version,
-    generatedAt: new Date().toISOString(),
+    // SOURCE_DATE_EPOCH (reproducible-builds convention) pins the timestamp:
+    // the upstream update cycle regenerates twice and diffs the results.
+    generatedAt: (process.env.SOURCE_DATE_EPOCH
+      ? new Date(Number(process.env.SOURCE_DATE_EPOCH) * 1000)
+      : new Date()
+    ).toISOString(),
     builders: allBuilders,
     handlers: allHandlers,
   };

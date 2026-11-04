@@ -88,6 +88,11 @@ lint:
 format:
     bun run format
 
+# Format only the given paths (prettier, honouring .prettierignore)
+[positional-arguments]
+format-paths +paths:
+    bunx prettier --write --log-level warn "$@"
+
 # Check formatting without fixing
 format-check:
     bun run format:check
@@ -271,6 +276,20 @@ info:
 # Run all checks and build (CI mode)
 ci: check build
     @echo "✅ CI checks completed successfully"
+
+# Upstreams: compare upstreams.json pins with the newest Caddy/plugin/libdns versions (exit 10 = updates). E.g. `just upstreams-check --only caddy`
+[positional-arguments]
+upstreams-check *args:
+    bun scripts/check-upstreams.ts "$@"
+
+# Upstreams: put every local/ clone on its pin (clones what is missing, installs the versioned tygo.yaml)
+upstreams-sync:
+    bun scripts/update-upstreams.ts --sync-only
+
+# Upstreams: bump behind pins, regenerate, run the gate, write local/upstreams/summary.md (PR body). E.g. `just upstreams-update --only caddy-security --skip-vscode`
+[positional-arguments]
+upstreams-update *args:
+    bun scripts/update-upstreams.ts "$@"
 
 # Utility: git diff to log file
 glog:

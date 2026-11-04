@@ -1,0 +1,8 @@
+# tygo configuration for generating TypeScript from the real Provider struct
+# behind caddy-dns/porkbun (github.com/caddy-dns/porkbun embeds *libdns.Provider,
+# contributing zero fields of its own — the real JSON-tagged struct lives here).
+# Run from local/libdns-porkbun directory: tygo generate
+
+packages:
+  - path: "github.com/libdns/porkbun"
+    output_path: "../../src/generated/plugins/caddy-dns-porkbun.ts"
