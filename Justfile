@@ -46,6 +46,30 @@ test-integration:
     echo ""
     echo "✅ Integration tests completed!"
 
+# SQL over TCP: Caddy (caddy-l4) + Postgres + mitmweb with the pgwire addon.
+# Brings tests/integration/docker-compose.layer4.yml up (admin :2021, pg :15432,
+# mitmweb :18081) and runs the layer4 integration test against it.
+# The project name is pinned with -p: dotenv-load can bring in a
+# COMPOSE_PROJECT_NAME (the demo's), and compose would then replace the
+# demo's containers of the same service names.
+test-layer4:
+    #!/usr/bin/env bash
+    set -e
+    compose="docker compose -p caddy-layer4-test -f tests/integration/docker-compose.layer4.yml"
+    # -V: a fresh Postgres every run, so its init script (the cleartext user) runs.
+    $compose up -d --build --wait --renew-anon-volumes
+    echo "⏳ Waiting for the Caddy admin API and mitmweb..."
+    for i in $(seq 1 60); do
+        curl -sf -H "Origin: http://127.0.0.1:2021" http://127.0.0.1:2021/config/ > /dev/null \
+            && curl -s -o /dev/null http://127.0.0.1:18081/ && break
+        sleep 1
+    done
+    LAYER4_TEST=true bun test src/__tests__/integration/layer4-postgres.integration.test.ts --no-coverage
+
+# Stop the layer4 test stack
+test-layer4-down:
+    docker compose -p caddy-layer4-test -f tests/integration/docker-compose.layer4.yml down -v
+
 # Update integration test snapshots (Caddy config fixtures)
 test-integration-update-snapshots:
     #!/usr/bin/env bash

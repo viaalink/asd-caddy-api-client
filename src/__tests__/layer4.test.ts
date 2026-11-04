@@ -93,7 +93,7 @@ describe("CaddyClient layer4", () => {
     mockFetch.mockResolvedValueOnce(ok());
     expect(await new CaddyClient().putLayer4Route("db", route)).toBe("added");
     const [url, init] = mockFetch.mock.calls[1] as [string, RequestInit];
-    expect(url).toBe("http://127.0.0.1:2019/config/apps/layer4/servers/db/routes");
+    expect(url).toBe("http://127.0.0.1:2019/config/apps/layer4/servers/db/routes/...");
     expect(init.method).toBe("POST");
   });
 
@@ -107,27 +107,93 @@ describe("CaddyClient layer4", () => {
     ).rejects.toThrow(ValidationError);
   });
 
-  test("setLayer4Server creates apps.layer4 when it is missing, else sets the server", async () => {
-    const server = buildLayer4Server({ listen: ":5432", routes: [route] });
-    mockFetch.mockResolvedValueOnce(ok({ apps: { http: {} } }));
+  test("putLayer4Route appends with routes/... so a server without a routes key works too", async () => {
+    mockFetch.mockResolvedValueOnce(status(404, '{"error":"unknown object ID \'pg\'"}'));
     mockFetch.mockResolvedValueOnce(ok());
-    await new CaddyClient().setLayer4Server("db", server);
-    let [url, init] = mockFetch.mock.calls[1] as [string, RequestInit];
-    expect(url).toBe("http://127.0.0.1:2019/config/apps/layer4");
-    expect(JSON.parse(init.body as string)).toEqual({ servers: { db: server } });
-
-    mockFetch.mockReset();
-    mockFetch.mockResolvedValueOnce(ok({ apps: { layer4: { servers: {} } } }));
-    mockFetch.mockResolvedValueOnce(ok());
-    await new CaddyClient().setLayer4Server("db", server);
-    [url, init] = mockFetch.mock.calls[1] as [string, RequestInit];
-    expect(url).toBe("http://127.0.0.1:2019/config/apps/layer4/servers/db");
-    expect(init.method).toBe("POST");
+    await new CaddyClient().putLayer4Route("db", route);
+    const [url, init] = mockFetch.mock.calls[1] as [string, RequestInit];
+    expect(url).toBe("http://127.0.0.1:2019/config/apps/layer4/servers/db/routes/...");
+    expect(JSON.parse(init.body as string)).toEqual([route]);
   });
 
-  test("getLayer4Servers: none is an empty object", async () => {
+  test("putLayer4Route on a server that does not exist says so", async () => {
+    // What Caddy answers a write below a missing key: 500 + "invalid traversal path".
+    mockFetch.mockResolvedValueOnce(status(404, '{"error":"unknown object ID \'pg\'"}'));
+    mockFetch.mockResolvedValueOnce(
+      status(500, '{"error":"invalid traversal path at: config/apps/layer4/servers/ghost/routes"}')
+    );
+    await expect(new CaddyClient().putLayer4Route("ghost", route)).rejects.toThrow(
+      /no layer4 server "ghost"/
+    );
+  });
+
+  describe("setLayer4Server writes at the deepest key that exists", () => {
+    const server = buildLayer4Server({ listen: ":5432", routes: [route] });
+    const cases: [string, unknown, string, unknown][] = [
+      [
+        "apps.layer4.servers exists",
+        { apps: { layer4: { servers: {} } } },
+        "/config/apps/layer4/servers/db",
+        server,
+      ],
+      [
+        "apps.layer4 without servers",
+        { apps: { layer4: {} } },
+        "/config/apps/layer4/servers",
+        { db: server },
+      ],
+      [
+        "apps without layer4",
+        { apps: { http: {} } },
+        "/config/apps/layer4",
+        { servers: { db: server } },
+      ],
+      [
+        "a config without apps",
+        { admin: { listen: ":2019" } },
+        "/config/apps",
+        { layer4: { servers: { db: server } } },
+      ],
+      [
+        "no config at all (null)",
+        null,
+        "/config/",
+        { apps: { layer4: { servers: { db: server } } } },
+      ],
+    ];
+    test.each(cases)("%s", async (_name, config, path, body) => {
+      mockFetch.mockResolvedValueOnce(ok(config));
+      mockFetch.mockResolvedValueOnce(ok());
+      await new CaddyClient().setLayer4Server("db", server);
+      const [url, init] = mockFetch.mock.calls[1] as [string, RequestInit];
+      expect(url).toBe(`http://127.0.0.1:2019${path}`);
+      expect(init.method).toBe("POST");
+      expect(JSON.parse(init.body as string)).toEqual(body);
+    });
+  });
+
+  test("getLayer4Servers: apps.layer4 missing (Caddy's 400 invalid traversal path) is {}", async () => {
+    // This is what Caddy really answers: not a null body, an HTTP 400.
+    mockFetch.mockResolvedValueOnce(
+      status(400, '{"error":"invalid traversal path at: config/apps/layer4/servers"}')
+    );
+    expect(await new CaddyClient().getLayer4Servers()).toEqual({});
+  });
+
+  test("getLayer4Servers: apps.layer4 without servers (200 null) is {}", async () => {
     mockFetch.mockResolvedValueOnce(ok(null));
     expect(await new CaddyClient().getLayer4Servers()).toEqual({});
+  });
+
+  test("getLayer4Servers: other errors are still thrown", async () => {
+    mockFetch.mockResolvedValueOnce(status(400, '{"error":"something else"}'));
+    await expect(new CaddyClient().getLayer4Servers()).rejects.toThrow(/400/);
+    mockFetch.mockResolvedValueOnce(status(500, "boom"));
+    await expect(new CaddyClient().getLayer4Servers()).rejects.toThrow(/500/);
+    mockFetch.mockResolvedValueOnce(
+      status(403, '{"error":"client is not allowed to access from origin"}')
+    );
+    await expect(new CaddyClient().getLayer4Servers()).rejects.toThrow(/403/);
   });
 });
 

@@ -25,6 +25,36 @@ import type { CaddyRoute } from "../dist/index.js";
 const CADDY_ADMIN_URL = process.env.CADDY_ADMIN_URL || "http://localhost:2019";
 const SERVER_NAME = "srv0";
 
+// mitmweb 11.1+ will not serve its UI or API without a password. The three
+// mitmwebs run with this one (docker-compose.yml, DEMO_MITMWEB_PASSWORD), and
+// Caddy hands it to them on every proxied request: the dashboard frames them
+// all from one origin, where their auth cookies (same name, different
+// secrets) would knock each other out.
+const MITMWEB_PASSWORD = process.env.MITMWEB_PASSWORD ?? "demo";
+
+/** Add `Authorization: Bearer <password>` to a route's reverse_proxy handlers that dial a mitmweb UI. */
+function withMitmwebAuth(route: CaddyRoute): CaddyRoute {
+  const handle = (route.handle ?? []).map((h) => {
+    const handler = h as Record<string, unknown>;
+    const upstreams = (handler.upstreams ?? []) as { dial?: string }[];
+    if (handler.handler !== "reverse_proxy" || !upstreams.some((u) => u.dial?.endsWith(":8081"))) {
+      return h;
+    }
+    const headers = (handler.headers ?? {}) as { request?: { set?: Record<string, string[]> } };
+    return {
+      ...handler,
+      headers: {
+        ...headers,
+        request: {
+          ...headers.request,
+          set: { ...headers.request?.set, Authorization: [`Bearer ${MITMWEB_PASSWORD}`] },
+        },
+      },
+    } as typeof h;
+  });
+  return { ...route, handle };
+}
+
 // Initialize Caddy client from the library
 const caddy = new CaddyClient({ adminUrl: CADDY_ADMIN_URL });
 
@@ -245,7 +275,7 @@ async function setupRoutes() {
   // Apply routes using the library's addRoute method
   for (const route of routes) {
     const routeId = route["@id"] as string;
-    const added = await caddy.addRoute(SERVER_NAME, route);
+    const added = await caddy.addRoute(SERVER_NAME, withMitmwebAuth(route));
     if (added) {
       console.log(`  ✓ Added route: ${routeId}`);
     } else {
@@ -814,13 +844,18 @@ const server = Bun.serve({
 
       // Clear MITMproxy flows
       if (path === "/api/monitoring/clear" && req.method === "POST") {
-        // mitmweb clears with POST /clear. Like every write it wants a matching
+        // mitmweb clears with POST /clear, with the password. Like every write it wants a matching
         // XSRF cookie and header (any value works, they only have to agree), and
         // its DNS-rebinding guard only accepts a localhost/IP Host header.
         const clear = async (host: string): Promise<boolean> => {
           const res = await fetch(`http://${host}:8081/clear`, {
             method: "POST",
-            headers: { Host: "127.0.0.1:8081", Cookie: "_xsrf=demo", "X-XSRFToken": "demo" },
+            headers: {
+              Host: "127.0.0.1:8081",
+              Authorization: `Bearer ${MITMWEB_PASSWORD}`,
+              Cookie: "_xsrf=demo",
+              "X-XSRFToken": "demo",
+            },
           }).catch(() => null);
           return res?.ok === true;
         };
