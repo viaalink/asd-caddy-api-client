@@ -239,19 +239,17 @@ describe.skipIf(!enabled)("caddy-l4 modules accept the library's configs", () =>
       vars_regexp: { "{l4.conn.remote_addr}": { pattern: "^10\\." } },
       winbox: { modes: ["standard"], username: "admin" },
       xmpp: {},
+      // the IP file may be missing (an empty list), its directory must exist. Every
+      // later load replaces this config, which hung Caddy before the caddy-l4 fork's
+      // fix (DEPENDENCIES.md, caddy-l4).
+      remote_ip_list: { remote_ip_file: "/tmp/l4mod-remote-ips.txt" },
     };
     const udp: Partial<Record<(typeof LAYER4_MATCHERS)[number], unknown>> = {
       dns: { allow: [{ name: "example.com.", type: "A" }], default_deny: true },
       quic: { sni: ["example.com"], alpn: ["h3"] },
       wireguard: {},
     };
-    // remote_ip_list is left out: at the pinned commit its Cleanup deadlocks the
-    // next config reload (IPList.StopMonitoring sends on an unbuffered channel the
-    // monitor goroutine no longer reads once Caddy cancelled its context), which
-    // hangs the admin API. Its schema is covered by the unit tests.
-    expect(Object.keys({ ...tcp, ...udp, remote_ip_list: {} }).sort()).toEqual(
-      [...LAYER4_MATCHERS].sort()
-    );
+    expect(Object.keys({ ...tcp, ...udp }).sort()).toEqual([...LAYER4_MATCHERS].sort());
 
     const routesFor = (sets: Partial<Record<string, unknown>>) =>
       Object.entries(sets).map(([name, options]) =>
