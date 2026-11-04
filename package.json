@@ -1,6 +1,6 @@
 {
   "name": "@viaalink/caddy-api-client",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "description": "TypeScript client for Caddy Admin API with MITMproxy integration",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,6 +42,7 @@
   },
   "files": [
     "dist",
+    "mitmproxy-addons",
     "README.md",
     "LICENSE"
   ],
@@ -103,7 +104,8 @@
     "generate:plugin-types": "npx tsx scripts/generate-plugin-types.ts",
     "generate:extension": "npx tsx scripts/extract-metadata.ts",
     "generate:json-schemas": "npx tsx scripts/generate-json-schemas.ts",
-    "generate:all": "npm run generate:types && npm run generate:plugin-types && npm run generate:extension && npm run generate:json-schemas",
+    "generate:mitmproxy-addons": "npx tsx scripts/generate-mitmproxy-addons.ts",
+    "generate:all": "npm run generate:types && npm run generate:plugin-types && npm run generate:extension && npm run generate:json-schemas && npm run generate:mitmproxy-addons",
     "sync:caddy": "git -C local/caddy pull && npm run generate:types",
     "sync:plugins": "git -C local/caddy-security pull && npm run generate:plugin-types",
     "sync:all": "npm run sync:caddy && npm run sync:plugins"
@@ -143,6 +145,7 @@
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.57.0",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.23.1",
     "@vitest/coverage-v8": "^5.0.3",
     "ajv": "^8.17.1",
     "bcryptjs": "^3.0.3",
@@ -150,6 +153,7 @@
     "globals": "^15.12.0",
     "husky": "^9.1.6",
     "jsonc-parser": "^3.3.1",
+    "pg": "^8.23.1",
     "prettier": "^3.6.2",
     "standard-version": "^9.5.0",
     "ts-to-zod": "^5.1.0",

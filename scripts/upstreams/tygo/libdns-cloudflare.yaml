@@ -1,0 +1,9 @@
+# tygo configuration for generating TypeScript from the real Provider struct
+# behind caddy-dns/cloudflare (github.com/caddy-dns/cloudflare embeds
+# *libdns.Provider, contributing zero fields of its own — the real
+# JSON-tagged struct, including the optional zone_token field, lives here).
+# Run from local/libdns-cloudflare directory: tygo generate
+
+packages:
+  - path: "github.com/libdns/cloudflare"
+    output_path: "../../src/generated/plugins/caddy-dns-cloudflare.ts"

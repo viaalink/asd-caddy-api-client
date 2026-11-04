@@ -1,0 +1,198 @@
+packages:
+  # Root package - Config struct
+  - path: "github.com/greenpau/go-authcrunch"
+    output_path: "../../src/generated/plugins/authcrunch-core.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Authentication portal config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authn"
+    output_path: "../../src/generated/plugins/authcrunch-authn.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Authorization policy config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authz"
+    output_path: "../../src/generated/plugins/authcrunch-authz.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # ACL rules
+  - path: "github.com/greenpau/go-authcrunch/pkg/acl"
+    output_path: "../../src/generated/plugins/authcrunch-acl.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Identity stores (local, LDAP)
+  - path: "github.com/greenpau/go-authcrunch/pkg/ids"
+    output_path: "../../src/generated/plugins/authcrunch-ids.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Identity providers (OAuth, SAML)
+  - path: "github.com/greenpau/go-authcrunch/pkg/idp"
+    output_path: "../../src/generated/plugins/authcrunch-idp.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # SSO providers
+  - path: "github.com/greenpau/go-authcrunch/pkg/sso"
+    output_path: "../../src/generated/plugins/authcrunch-sso.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Credentials
+  - path: "github.com/greenpau/go-authcrunch/pkg/credentials"
+    output_path: "../../src/generated/plugins/authcrunch-credentials.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Cookie config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authn/cookie"
+    output_path: "../../src/generated/plugins/authcrunch-cookie.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # UI config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authn/ui"
+    output_path: "../../src/generated/plugins/authcrunch-ui.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # OAuth identity provider config (detailed)
+  - path: "github.com/greenpau/go-authcrunch/pkg/idp/oauth"
+    output_path: "../../src/generated/plugins/authcrunch-oauth.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # SAML identity provider config
+  - path: "github.com/greenpau/go-authcrunch/pkg/idp/saml"
+    output_path: "../../src/generated/plugins/authcrunch-saml.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Login icons
+  - path: "github.com/greenpau/go-authcrunch/pkg/authn/icons"
+    output_path: "../../src/generated/plugins/authcrunch-icons.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # KMS (crypto key config)
+  - path: "github.com/greenpau/go-authcrunch/pkg/kms"
+    output_path: "../../src/generated/plugins/authcrunch-kms.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Authz options (TokenValidatorOptions, TokenGrantorOptions)
+  - path: "github.com/greenpau/go-authcrunch/pkg/authz/options"
+    output_path: "../../src/generated/plugins/authcrunch-options.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Authz bypass config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authz/bypass"
+    output_path: "../../src/generated/plugins/authcrunch-bypass.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Authz injector config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authz/injector"
+    output_path: "../../src/generated/plugins/authcrunch-injector.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Authn transformer config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authn/transformer"
+    output_path: "../../src/generated/plugins/authcrunch-transformer.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Auth proxy config
+  - path: "github.com/greenpau/go-authcrunch/pkg/authproxy"
+    output_path: "../../src/generated/plugins/authcrunch-authproxy.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Redirects config
+  - path: "github.com/greenpau/go-authcrunch/pkg/redirects"
+    output_path: "../../src/generated/plugins/authcrunch-redirects.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # Messaging config
+  - path: "github.com/greenpau/go-authcrunch/pkg/messaging"
+    output_path: "../../src/generated/plugins/authcrunch-messaging.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"
+
+  # User registry config
+  - path: "github.com/greenpau/go-authcrunch/pkg/registry"
+    output_path: "../../src/generated/plugins/authcrunch-registry.ts"
+    type_mappings:
+      "json.RawMessage": "unknown"
+      "time.Duration": "Duration"
+      "time.Time": "string"
+      "*regexp.Regexp": "string"

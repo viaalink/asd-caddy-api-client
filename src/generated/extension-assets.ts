@@ -6,8 +6,8 @@
  * Run: npm run generate:extension
  *
  * @generated
- * @version 0.10.1
- * @generatedAt 2026-10-31T23:06:36.575Z
+ * @version 0.10.2
+ * @generatedAt 2026-11-04T16:59:09.062Z
  */
 
 // ============================================================================
@@ -54,12 +54,12 @@ export interface HandlerMetadata {
 /**
  * Library version this metadata was generated from
  */
-export const METADATA_VERSION = "0.10.1";
+export const METADATA_VERSION = "0.10.2";
 
 /**
  * Timestamp when this metadata was generated
  */
-export const GENERATED_AT = "2026-10-31T23:06:36.575Z";
+export const GENERATED_AT = "2026-11-04T16:59:09.062Z";
 
 /**
  * Builder function metadata extracted from JSDoc and type definitions
@@ -1087,328 +1087,16 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     description: "Build a reverse proxy handler",
     params: [
       {
-        name: "toString",
-        type: "() => string",
+        name: "dial",
+        type: "string",
         required: true,
-        description: "Returns a string representation of a string.",
+        description: "Dial address (host:port or https://host:port)",
       },
       {
-        name: "charAt",
-        type: "(pos: number) => string",
-        required: true,
-        description: "Returns the character at the specified index.",
-      },
-      {
-        name: "charCodeAt",
-        type: "(index: number) => number",
-        required: true,
-        description: "Returns the Unicode value of the character at the specified location.",
-      },
-      {
-        name: "concat",
-        type: "(...strings: string[]) => string",
-        required: true,
-        description: "Returns a string that contains the concatenation of two or more strings.",
-      },
-      {
-        name: "indexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the position of the first occurrence of a substring.",
-      },
-      {
-        name: "lastIndexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the last occurrence of a substring in the string.",
-      },
-      {
-        name: "localeCompare",
-        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
-        required: true,
-        description:
-          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
-      },
-      {
-        name: "match",
-        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
-      },
-      {
-        name: "replace",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
-      },
-      {
-        name: "search",
-        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
-        required: true,
-        description: "Finds the first substring match in a regular expression search.",
-      },
-      {
-        name: "slice",
-        type: "(start?: number | undefined, end?: number | undefined) => string",
-        required: true,
-        description: "Returns a section of a string.",
-      },
-      {
-        name: "split",
-        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
-        required: true,
-        description:
-          "Split a string into substrings using the specified separator and return them as an array.",
-      },
-      {
-        name: "substring",
-        type: "(start: number, end?: number | undefined) => string",
-        required: true,
-        description: "Returns the substring at the specified location within a String object.",
-      },
-      {
-        name: "toLowerCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to lowercase.",
-      },
-      {
-        name: "toLocaleLowerCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "toUpperCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to uppercase.",
-      },
-      {
-        name: "toLocaleUpperCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "trim",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading and trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "length",
-        type: "number",
-        required: true,
-        description: "Returns the length of a String object.",
-      },
-      {
-        name: "substr",
-        type: "(from: number, length?: number | undefined) => string",
-        required: true,
-        description:
-          "Gets a substring beginning at the specified location and having the specified length.",
-      },
-      {
-        name: "valueOf",
-        type: "() => string",
-        required: true,
-        description: "Returns the primitive value of the specified object.",
-      },
-      {
-        name: "codePointAt",
-        type: "(pos: number) => number | undefined",
-        required: true,
-        description:
-          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
-      },
-      {
-        name: "includes",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
-      },
-      {
-        name: "endsWith",
-        type: "(searchString: string, endPosition?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
-      },
-      {
-        name: "normalize",
-        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
-        required: true,
-        description:
-          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
-      },
-      {
-        name: "repeat",
-        type: "(count: number) => string",
-        required: true,
-        description:
-          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
-      },
-      {
-        name: "startsWith",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
-      },
-      {
-        name: "anchor",
-        type: "(name: string) => string",
-        required: true,
-        description:
-          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
-      },
-      {
-        name: "big",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<big>` HTML element",
-      },
-      {
-        name: "blink",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<blink>` HTML element",
-      },
-      {
-        name: "bold",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<b>` HTML element",
-      },
-      {
-        name: "fixed",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<tt>` HTML element",
-      },
-      {
-        name: "fontcolor",
-        type: "(color: string) => string",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the color attribute value",
-      },
-      {
-        name: "fontsize",
-        type: "{ (size: number): string; (size: string): string; }",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the size attribute value",
-      },
-      {
-        name: "italics",
-        type: "() => string",
-        required: true,
-        description: "Returns an `<i>` HTML element",
-      },
-      {
-        name: "link",
-        type: "(url: string) => string",
-        required: true,
-        description: "Returns an `<a>` HTML element and sets the href attribute value",
-      },
-      {
-        name: "small",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<small>` HTML element",
-      },
-      {
-        name: "strike",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<strike>` HTML element",
-      },
-      {
-        name: "sub",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sub>` HTML element",
-      },
-      {
-        name: "sup",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sup>` HTML element",
-      },
-      {
-        name: "padStart",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
-      },
-      {
-        name: "padEnd",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
-      },
-      {
-        name: "trimEnd",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimStart",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimLeft",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimRight",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "matchAll",
-        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
-      },
-      {
-        name: "replaceAll",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replace all instances of a substring in a string, using a regular expression or search string.",
-      },
-      {
-        name: "at",
-        type: "(index: number) => string | undefined",
-        required: true,
-        description:
-          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
-      },
-      {
-        name: "__@iterator@16",
-        type: "() => StringIterator<string>",
-        required: true,
-        description: "Iterator",
+        name: "options",
+        type: "{ tls?: boolean | undefined; tlsServerName?: string | undefined; tlsInsecureSkipVerify?: boolean | undefined; tlsTrustedCACerts?: string | undefined; deleteResponseHeaders?: string[] | undefined; flushInterval?: number | undefined; } | undefined",
+        required: false,
+        description: "Optional transport configuration",
       },
     ],
     returnType: "CaddyRouteHandler",
@@ -1533,328 +1221,10 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     description: "Build a rewrite handler (strip path prefix)",
     params: [
       {
-        name: "toString",
-        type: "() => string",
+        name: "prefix",
+        type: "string",
         required: true,
-        description: "Returns a string representation of a string.",
-      },
-      {
-        name: "charAt",
-        type: "(pos: number) => string",
-        required: true,
-        description: "Returns the character at the specified index.",
-      },
-      {
-        name: "charCodeAt",
-        type: "(index: number) => number",
-        required: true,
-        description: "Returns the Unicode value of the character at the specified location.",
-      },
-      {
-        name: "concat",
-        type: "(...strings: string[]) => string",
-        required: true,
-        description: "Returns a string that contains the concatenation of two or more strings.",
-      },
-      {
-        name: "indexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the position of the first occurrence of a substring.",
-      },
-      {
-        name: "lastIndexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the last occurrence of a substring in the string.",
-      },
-      {
-        name: "localeCompare",
-        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
-        required: true,
-        description:
-          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
-      },
-      {
-        name: "match",
-        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
-      },
-      {
-        name: "replace",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
-      },
-      {
-        name: "search",
-        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
-        required: true,
-        description: "Finds the first substring match in a regular expression search.",
-      },
-      {
-        name: "slice",
-        type: "(start?: number | undefined, end?: number | undefined) => string",
-        required: true,
-        description: "Returns a section of a string.",
-      },
-      {
-        name: "split",
-        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
-        required: true,
-        description:
-          "Split a string into substrings using the specified separator and return them as an array.",
-      },
-      {
-        name: "substring",
-        type: "(start: number, end?: number | undefined) => string",
-        required: true,
-        description: "Returns the substring at the specified location within a String object.",
-      },
-      {
-        name: "toLowerCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to lowercase.",
-      },
-      {
-        name: "toLocaleLowerCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "toUpperCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to uppercase.",
-      },
-      {
-        name: "toLocaleUpperCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "trim",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading and trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "length",
-        type: "number",
-        required: true,
-        description: "Returns the length of a String object.",
-      },
-      {
-        name: "substr",
-        type: "(from: number, length?: number | undefined) => string",
-        required: true,
-        description:
-          "Gets a substring beginning at the specified location and having the specified length.",
-      },
-      {
-        name: "valueOf",
-        type: "() => string",
-        required: true,
-        description: "Returns the primitive value of the specified object.",
-      },
-      {
-        name: "codePointAt",
-        type: "(pos: number) => number | undefined",
-        required: true,
-        description:
-          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
-      },
-      {
-        name: "includes",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
-      },
-      {
-        name: "endsWith",
-        type: "(searchString: string, endPosition?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
-      },
-      {
-        name: "normalize",
-        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
-        required: true,
-        description:
-          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
-      },
-      {
-        name: "repeat",
-        type: "(count: number) => string",
-        required: true,
-        description:
-          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
-      },
-      {
-        name: "startsWith",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
-      },
-      {
-        name: "anchor",
-        type: "(name: string) => string",
-        required: true,
-        description:
-          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
-      },
-      {
-        name: "big",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<big>` HTML element",
-      },
-      {
-        name: "blink",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<blink>` HTML element",
-      },
-      {
-        name: "bold",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<b>` HTML element",
-      },
-      {
-        name: "fixed",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<tt>` HTML element",
-      },
-      {
-        name: "fontcolor",
-        type: "(color: string) => string",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the color attribute value",
-      },
-      {
-        name: "fontsize",
-        type: "{ (size: number): string; (size: string): string; }",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the size attribute value",
-      },
-      {
-        name: "italics",
-        type: "() => string",
-        required: true,
-        description: "Returns an `<i>` HTML element",
-      },
-      {
-        name: "link",
-        type: "(url: string) => string",
-        required: true,
-        description: "Returns an `<a>` HTML element and sets the href attribute value",
-      },
-      {
-        name: "small",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<small>` HTML element",
-      },
-      {
-        name: "strike",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<strike>` HTML element",
-      },
-      {
-        name: "sub",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sub>` HTML element",
-      },
-      {
-        name: "sup",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sup>` HTML element",
-      },
-      {
-        name: "padStart",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
-      },
-      {
-        name: "padEnd",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
-      },
-      {
-        name: "trimEnd",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimStart",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimLeft",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimRight",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "matchAll",
-        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
-      },
-      {
-        name: "replaceAll",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replace all instances of a substring in a string, using a regular expression or search string.",
-      },
-      {
-        name: "at",
-        type: "(index: number) => string | undefined",
-        required: true,
-        description:
-          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
-      },
-      {
-        name: "__@iterator@16",
-        type: "() => StringIterator<string>",
-        required: true,
-        description: "Iterator",
+        description: "Path prefix to strip",
       },
     ],
     returnType: "CaddyRouteHandler",
@@ -1869,328 +1239,10 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     description: "Build an ingress tag header handler",
     params: [
       {
-        name: "toString",
-        type: "() => string",
+        name: "tag",
+        type: "string",
         required: true,
-        description: "Returns a string representation of a string.",
-      },
-      {
-        name: "charAt",
-        type: "(pos: number) => string",
-        required: true,
-        description: "Returns the character at the specified index.",
-      },
-      {
-        name: "charCodeAt",
-        type: "(index: number) => number",
-        required: true,
-        description: "Returns the Unicode value of the character at the specified location.",
-      },
-      {
-        name: "concat",
-        type: "(...strings: string[]) => string",
-        required: true,
-        description: "Returns a string that contains the concatenation of two or more strings.",
-      },
-      {
-        name: "indexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the position of the first occurrence of a substring.",
-      },
-      {
-        name: "lastIndexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the last occurrence of a substring in the string.",
-      },
-      {
-        name: "localeCompare",
-        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
-        required: true,
-        description:
-          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
-      },
-      {
-        name: "match",
-        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
-      },
-      {
-        name: "replace",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
-      },
-      {
-        name: "search",
-        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
-        required: true,
-        description: "Finds the first substring match in a regular expression search.",
-      },
-      {
-        name: "slice",
-        type: "(start?: number | undefined, end?: number | undefined) => string",
-        required: true,
-        description: "Returns a section of a string.",
-      },
-      {
-        name: "split",
-        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
-        required: true,
-        description:
-          "Split a string into substrings using the specified separator and return them as an array.",
-      },
-      {
-        name: "substring",
-        type: "(start: number, end?: number | undefined) => string",
-        required: true,
-        description: "Returns the substring at the specified location within a String object.",
-      },
-      {
-        name: "toLowerCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to lowercase.",
-      },
-      {
-        name: "toLocaleLowerCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "toUpperCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to uppercase.",
-      },
-      {
-        name: "toLocaleUpperCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "trim",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading and trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "length",
-        type: "number",
-        required: true,
-        description: "Returns the length of a String object.",
-      },
-      {
-        name: "substr",
-        type: "(from: number, length?: number | undefined) => string",
-        required: true,
-        description:
-          "Gets a substring beginning at the specified location and having the specified length.",
-      },
-      {
-        name: "valueOf",
-        type: "() => string",
-        required: true,
-        description: "Returns the primitive value of the specified object.",
-      },
-      {
-        name: "codePointAt",
-        type: "(pos: number) => number | undefined",
-        required: true,
-        description:
-          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
-      },
-      {
-        name: "includes",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
-      },
-      {
-        name: "endsWith",
-        type: "(searchString: string, endPosition?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
-      },
-      {
-        name: "normalize",
-        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
-        required: true,
-        description:
-          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
-      },
-      {
-        name: "repeat",
-        type: "(count: number) => string",
-        required: true,
-        description:
-          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
-      },
-      {
-        name: "startsWith",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
-      },
-      {
-        name: "anchor",
-        type: "(name: string) => string",
-        required: true,
-        description:
-          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
-      },
-      {
-        name: "big",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<big>` HTML element",
-      },
-      {
-        name: "blink",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<blink>` HTML element",
-      },
-      {
-        name: "bold",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<b>` HTML element",
-      },
-      {
-        name: "fixed",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<tt>` HTML element",
-      },
-      {
-        name: "fontcolor",
-        type: "(color: string) => string",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the color attribute value",
-      },
-      {
-        name: "fontsize",
-        type: "{ (size: number): string; (size: string): string; }",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the size attribute value",
-      },
-      {
-        name: "italics",
-        type: "() => string",
-        required: true,
-        description: "Returns an `<i>` HTML element",
-      },
-      {
-        name: "link",
-        type: "(url: string) => string",
-        required: true,
-        description: "Returns an `<a>` HTML element and sets the href attribute value",
-      },
-      {
-        name: "small",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<small>` HTML element",
-      },
-      {
-        name: "strike",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<strike>` HTML element",
-      },
-      {
-        name: "sub",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sub>` HTML element",
-      },
-      {
-        name: "sup",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sup>` HTML element",
-      },
-      {
-        name: "padStart",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
-      },
-      {
-        name: "padEnd",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
-      },
-      {
-        name: "trimEnd",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimStart",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimLeft",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimRight",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "matchAll",
-        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
-      },
-      {
-        name: "replaceAll",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replace all instances of a substring in a string, using a regular expression or search string.",
-      },
-      {
-        name: "at",
-        type: "(index: number) => string | undefined",
-        required: true,
-        description:
-          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
-      },
-      {
-        name: "__@iterator@16",
-        type: "() => StringIterator<string>",
-        required: true,
-        description: "Iterator",
+        description: "Ingress tag value",
       },
     ],
     returnType: "CaddyRouteHandler",
@@ -2205,328 +1257,10 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     description: "Build a project identity header handler",
     params: [
       {
-        name: "toString",
-        type: "() => string",
+        name: "projectId",
+        type: "string",
         required: true,
-        description: "Returns a string representation of a string.",
-      },
-      {
-        name: "charAt",
-        type: "(pos: number) => string",
-        required: true,
-        description: "Returns the character at the specified index.",
-      },
-      {
-        name: "charCodeAt",
-        type: "(index: number) => number",
-        required: true,
-        description: "Returns the Unicode value of the character at the specified location.",
-      },
-      {
-        name: "concat",
-        type: "(...strings: string[]) => string",
-        required: true,
-        description: "Returns a string that contains the concatenation of two or more strings.",
-      },
-      {
-        name: "indexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the position of the first occurrence of a substring.",
-      },
-      {
-        name: "lastIndexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the last occurrence of a substring in the string.",
-      },
-      {
-        name: "localeCompare",
-        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
-        required: true,
-        description:
-          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
-      },
-      {
-        name: "match",
-        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
-      },
-      {
-        name: "replace",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
-      },
-      {
-        name: "search",
-        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
-        required: true,
-        description: "Finds the first substring match in a regular expression search.",
-      },
-      {
-        name: "slice",
-        type: "(start?: number | undefined, end?: number | undefined) => string",
-        required: true,
-        description: "Returns a section of a string.",
-      },
-      {
-        name: "split",
-        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
-        required: true,
-        description:
-          "Split a string into substrings using the specified separator and return them as an array.",
-      },
-      {
-        name: "substring",
-        type: "(start: number, end?: number | undefined) => string",
-        required: true,
-        description: "Returns the substring at the specified location within a String object.",
-      },
-      {
-        name: "toLowerCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to lowercase.",
-      },
-      {
-        name: "toLocaleLowerCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "toUpperCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to uppercase.",
-      },
-      {
-        name: "toLocaleUpperCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "trim",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading and trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "length",
-        type: "number",
-        required: true,
-        description: "Returns the length of a String object.",
-      },
-      {
-        name: "substr",
-        type: "(from: number, length?: number | undefined) => string",
-        required: true,
-        description:
-          "Gets a substring beginning at the specified location and having the specified length.",
-      },
-      {
-        name: "valueOf",
-        type: "() => string",
-        required: true,
-        description: "Returns the primitive value of the specified object.",
-      },
-      {
-        name: "codePointAt",
-        type: "(pos: number) => number | undefined",
-        required: true,
-        description:
-          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
-      },
-      {
-        name: "includes",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
-      },
-      {
-        name: "endsWith",
-        type: "(searchString: string, endPosition?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
-      },
-      {
-        name: "normalize",
-        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
-        required: true,
-        description:
-          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
-      },
-      {
-        name: "repeat",
-        type: "(count: number) => string",
-        required: true,
-        description:
-          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
-      },
-      {
-        name: "startsWith",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
-      },
-      {
-        name: "anchor",
-        type: "(name: string) => string",
-        required: true,
-        description:
-          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
-      },
-      {
-        name: "big",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<big>` HTML element",
-      },
-      {
-        name: "blink",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<blink>` HTML element",
-      },
-      {
-        name: "bold",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<b>` HTML element",
-      },
-      {
-        name: "fixed",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<tt>` HTML element",
-      },
-      {
-        name: "fontcolor",
-        type: "(color: string) => string",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the color attribute value",
-      },
-      {
-        name: "fontsize",
-        type: "{ (size: number): string; (size: string): string; }",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the size attribute value",
-      },
-      {
-        name: "italics",
-        type: "() => string",
-        required: true,
-        description: "Returns an `<i>` HTML element",
-      },
-      {
-        name: "link",
-        type: "(url: string) => string",
-        required: true,
-        description: "Returns an `<a>` HTML element and sets the href attribute value",
-      },
-      {
-        name: "small",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<small>` HTML element",
-      },
-      {
-        name: "strike",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<strike>` HTML element",
-      },
-      {
-        name: "sub",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sub>` HTML element",
-      },
-      {
-        name: "sup",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sup>` HTML element",
-      },
-      {
-        name: "padStart",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
-      },
-      {
-        name: "padEnd",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
-      },
-      {
-        name: "trimEnd",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimStart",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimLeft",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimRight",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "matchAll",
-        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
-      },
-      {
-        name: "replaceAll",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replace all instances of a substring in a string, using a regular expression or search string.",
-      },
-      {
-        name: "at",
-        type: "(index: number) => string | undefined",
-        required: true,
-        description:
-          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
-      },
-      {
-        name: "__@iterator@16",
-        type: "() => StringIterator<string>",
-        required: true,
-        description: "Iterator",
+        description: "Project identifier value",
       },
     ],
     returnType: "CaddyRouteHandler",
@@ -2542,328 +1276,10 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       "Build CORS/CSP headers for iframe embedding\n\n`allowedOrigin` is a CSP `frame-ancestors` source list: one source or\nseveral, space-separated, wildcards allowed. CORS headers are added only\nwhen it is `*` or one exact origin, because `Access-Control-Allow-Origin`\ntakes nothing else; a list there is invalid, and a browser rejects it.",
     params: [
       {
-        name: "toString",
-        type: "() => string",
-        required: true,
-        description: "Returns a string representation of a string.",
-      },
-      {
-        name: "charAt",
-        type: "(pos: number) => string",
-        required: true,
-        description: "Returns the character at the specified index.",
-      },
-      {
-        name: "charCodeAt",
-        type: "(index: number) => number",
-        required: true,
-        description: "Returns the Unicode value of the character at the specified location.",
-      },
-      {
-        name: "concat",
-        type: "(...strings: string[]) => string",
-        required: true,
-        description: "Returns a string that contains the concatenation of two or more strings.",
-      },
-      {
-        name: "indexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the position of the first occurrence of a substring.",
-      },
-      {
-        name: "lastIndexOf",
-        type: "(searchString: string, position?: number | undefined) => number",
-        required: true,
-        description: "Returns the last occurrence of a substring in the string.",
-      },
-      {
-        name: "localeCompare",
-        type: "{ (that: string): number; (that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number; (that: string, locales?: LocalesArgument, options?: CollatorOptions | undefined): number; }",
-        required: true,
-        description:
-          "Determines whether two strings are equivalent in the current locale.\nDetermines whether two strings are equivalent in the current or specified locale.",
-      },
-      {
-        name: "match",
-        type: "{ (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an array containing the results of that search.\nMatches a string or an object that supports being matched against, and returns an array\ncontaining the results of that search, or null if no matches are found.",
-      },
-      {
-        name: "replace",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { ...; }, replaceValue: string): string; (searchValue: { ...; }, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replaces text in a string, using a regular expression or search string.\nPasses a string and {@linkcode replaceValue} to the `[Symbol.replace]` method on {@linkcode searchValue}. This method is expected to implement its own replacement algorithm.\nReplaces text in a string, using an object that supports replacement within a string.",
-      },
-      {
-        name: "search",
-        type: "{ (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }",
-        required: true,
-        description: "Finds the first substring match in a regular expression search.",
-      },
-      {
-        name: "slice",
-        type: "(start?: number | undefined, end?: number | undefined) => string",
-        required: true,
-        description: "Returns a section of a string.",
-      },
-      {
-        name: "split",
-        type: "{ (separator: string | RegExp, limit?: number | undefined): string[]; (splitter: { [Symbol.split](string: string, limit?: number | undefined): string[]; }, limit?: number | undefined): string[]; }",
-        required: true,
-        description:
-          "Split a string into substrings using the specified separator and return them as an array.",
-      },
-      {
-        name: "substring",
-        type: "(start: number, end?: number | undefined) => string",
-        required: true,
-        description: "Returns the substring at the specified location within a String object.",
-      },
-      {
-        name: "toLowerCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to lowercase.",
-      },
-      {
-        name: "toLocaleLowerCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Converts all alphabetic characters to lowercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "toUpperCase",
-        type: "() => string",
-        required: true,
-        description: "Converts all the alphabetic characters in a string to uppercase.",
-      },
-      {
-        name: "toLocaleUpperCase",
-        type: "{ (locales?: string | string[] | undefined): string; (locales?: LocalesArgument): string; }",
-        required: true,
-        description:
-          "Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.",
-      },
-      {
-        name: "trim",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading and trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "length",
-        type: "number",
-        required: true,
-        description: "Returns the length of a String object.",
-      },
-      {
-        name: "substr",
-        type: "(from: number, length?: number | undefined) => string",
-        required: true,
-        description:
-          "Gets a substring beginning at the specified location and having the specified length.",
-      },
-      {
-        name: "valueOf",
-        type: "() => string",
-        required: true,
-        description: "Returns the primitive value of the specified object.",
-      },
-      {
-        name: "codePointAt",
-        type: "(pos: number) => number | undefined",
-        required: true,
-        description:
-          "Returns a nonnegative integer Number less than 1114112 (0x110000) that is the code point\nvalue of the UTF-16 encoded code point starting at the string element at position pos in\nthe String resulting from converting this object to a String.\nIf there is no element at that position, the result is undefined.\nIf a valid UTF-16 surrogate pair does not begin at pos, the result is the code unit at pos.",
-      },
-      {
-        name: "includes",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if searchString appears as a substring of the result of converting this\nobject to a String, at one or more positions that are\ngreater than or equal to position; otherwise, returns false.",
-      },
-      {
-        name: "endsWith",
-        type: "(searchString: string, endPosition?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nendPosition – length(this). Otherwise returns false.",
-      },
-      {
-        name: "normalize",
-        type: '{ (form: "NFC" | "NFD" | "NFKC" | "NFKD"): string; (form?: string | undefined): string; }',
-        required: true,
-        description:
-          "Returns the String value result of normalizing the string into the normalization form\nnamed by form as specified in Unicode Standard Annex #15, Unicode Normalization Forms.",
-      },
-      {
-        name: "repeat",
-        type: "(count: number) => string",
-        required: true,
-        description:
-          "Returns a String value that is made from count copies appended together. If count is 0,\nthe empty string is returned.",
-      },
-      {
-        name: "startsWith",
-        type: "(searchString: string, position?: number | undefined) => boolean",
-        required: true,
-        description:
-          "Returns true if the sequence of elements of searchString converted to a String is the\nsame as the corresponding elements of this object (converted to a String) starting at\nposition. Otherwise returns false.",
-      },
-      {
-        name: "anchor",
-        type: "(name: string) => string",
-        required: true,
-        description:
-          "Returns an `<a>` HTML anchor element and sets the name attribute to the text value",
-      },
-      {
-        name: "big",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<big>` HTML element",
-      },
-      {
-        name: "blink",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<blink>` HTML element",
-      },
-      {
-        name: "bold",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<b>` HTML element",
-      },
-      {
-        name: "fixed",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<tt>` HTML element",
-      },
-      {
-        name: "fontcolor",
-        type: "(color: string) => string",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the color attribute value",
-      },
-      {
-        name: "fontsize",
-        type: "{ (size: number): string; (size: string): string; }",
-        required: true,
-        description: "Returns a `<font>` HTML element and sets the size attribute value",
-      },
-      {
-        name: "italics",
-        type: "() => string",
-        required: true,
-        description: "Returns an `<i>` HTML element",
-      },
-      {
-        name: "link",
-        type: "(url: string) => string",
-        required: true,
-        description: "Returns an `<a>` HTML element and sets the href attribute value",
-      },
-      {
-        name: "small",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<small>` HTML element",
-      },
-      {
-        name: "strike",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<strike>` HTML element",
-      },
-      {
-        name: "sub",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sub>` HTML element",
-      },
-      {
-        name: "sup",
-        type: "() => string",
-        required: true,
-        description: "Returns a `<sup>` HTML element",
-      },
-      {
-        name: "padStart",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the start (left) of the current string.",
-      },
-      {
-        name: "padEnd",
-        type: "(maxLength: number, fillString?: string | undefined) => string",
-        required: true,
-        description:
-          "Pads the current string with a given string (possibly repeated) so that the resulting string reaches a given length.\nThe padding is applied from the end (right) of the current string.",
-      },
-      {
-        name: "trimEnd",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimStart",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimLeft",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the leading white space and line terminator characters from a string.",
-      },
-      {
-        name: "trimRight",
-        type: "() => string",
-        required: true,
-        description:
-          "Removes the trailing white space and line terminator characters from a string.",
-      },
-      {
-        name: "matchAll",
-        type: "(regexp: RegExp) => RegExpStringIterator<RegExpExecArray>",
-        required: true,
-        description:
-          "Matches a string with a regular expression, and returns an iterable of matches\ncontaining the results of that search.",
-      },
-      {
-        name: "replaceAll",
-        type: "{ (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }",
-        required: true,
-        description:
-          "Replace all instances of a substring in a string, using a regular expression or search string.",
-      },
-      {
-        name: "at",
-        type: "(index: number) => string | undefined",
-        required: true,
-        description:
-          "Returns a new String consisting of the single UTF-16 code unit located at the specified index.",
-      },
-      {
-        name: "__@iterator@16",
-        type: "() => StringIterator<string>",
-        required: true,
-        description: "Iterator",
+        name: "allowedOrigin",
+        type: "string",
+        required: false,
+        description: 'Allowed origin or frame-ancestors source list (optional, defaults to "*")',
       },
     ],
     returnType: "CaddyRouteHandler",
@@ -3672,6 +2088,624 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
         "})$0",
       ],
       description: "Build Map Handler",
+    },
+  },
+  buildLayer4ProxyHandler: {
+    name: "buildLayer4ProxyHandler",
+    description: "A `proxy` handler for one or more upstreams.",
+    params: [
+      {
+        name: "upstreams",
+        type: "string | string[]",
+        required: true,
+        description: "`host:port`, or a list of them (one upstream each)",
+      },
+      {
+        name: "options",
+        type: "Layer4ProxyHandlerOptions",
+        required: false,
+        description: "load balancing, health checks, upstream TLS, PROXY protocol",
+      },
+    ],
+    returnType: "Layer4ProxyHandler",
+    example: 'buildLayer4ProxyHandler("postgres:5432")',
+    snippet: {
+      prefix: "caddy-layer4-proxy-handler",
+      body: ['buildLayer4ProxyHandler("${1:localhost:3000}")$0'],
+      description: "Build Layer4 Proxy Handler",
+    },
+  },
+  buildLayer4TlsHandler: {
+    name: "buildLayer4TlsHandler",
+    description: "A `tls` handler: terminates TLS, so the handlers after it see plaintext.",
+    params: [
+      {
+        name: "connectionPolicies",
+        type: "Layer4TlsConnectionPolicy[]",
+        required: false,
+        description:
+          "TLS connection policies; none means Caddy's defaults (certificates from the TLS app).",
+      },
+      {
+        name: "handshakeTimeout",
+        type: "Duration",
+        required: false,
+        description: "Fail the handshake after this long. Default: 60s.",
+      },
+    ],
+    returnType: "Layer4TlsHandler",
+    example: "buildLayer4TlsHandler()",
+    snippet: {
+      prefix: "caddy-layer4-tls-handler",
+      body: [
+        "buildLayer4TlsHandler({",
+        "  connectionPolicies: [{}],",
+        '  handshakeTimeout: "${1:handshakeTimeout}",',
+        "})$0",
+      ],
+      description: "Build Layer4 Tls Handler",
+    },
+  },
+  buildLayer4SubrouteHandler: {
+    name: "buildLayer4SubrouteHandler",
+    description:
+      "A `subroute` handler: a nested list of routes, e.g. after `tls` terminated\nTLS, route the decrypted stream by its protocol.",
+    params: [
+      {
+        name: "routes",
+        type: "Layer4Route[]",
+        required: true,
+        description: "Routes tried in order; the first that matches handles the connection.",
+      },
+      {
+        name: "matchingTimeout",
+        type: "Duration",
+        required: false,
+        description: "How long the subroute's matchers may wait for data. Default: 3s.",
+      },
+    ],
+    returnType: "Layer4SubrouteHandler",
+    example:
+      'buildLayer4SubrouteHandler({ routes: [buildLayer4ProxyRoute({ upstream: "localhost:8080", match: "http" })] })',
+    snippet: {
+      prefix: "caddy-layer4-subroute-handler",
+      body: [
+        "buildLayer4SubrouteHandler({",
+        '  routes: [{ handle: [{ handler: "subroute" }] }],',
+        "  // optional: matchingTimeout",
+        "})$0",
+      ],
+      description: "Build Layer4 Subroute Handler",
+    },
+  },
+  buildLayer4ThrottleHandler: {
+    name: "buildLayer4ThrottleHandler",
+    description:
+      "A `throttle` handler: limit how fast a connection is read, or add latency\n(to test how a client copes with a slow link).",
+    params: [
+      {
+        name: "readBytesPerSecond",
+        type: "number",
+        required: false,
+        description: "Read limit per connection, in bytes per second.",
+      },
+      {
+        name: "readBurstSize",
+        type: "number",
+        required: false,
+        description: "Burst size per connection, in bytes. Default: same as the limit.",
+      },
+      {
+        name: "totalReadBytesPerSecond",
+        type: "number",
+        required: false,
+        description: "Read limit across all connections, in bytes per second.",
+      },
+      {
+        name: "totalReadBurstSize",
+        type: "number",
+        required: false,
+        description: "Burst size across all connections, in bytes.",
+      },
+      {
+        name: "latency",
+        type: "Duration",
+        required: false,
+        description: "Delay added to every read.",
+        example: "100ms",
+      },
+    ],
+    returnType: "Layer4ThrottleHandler",
+    example: "buildLayer4ThrottleHandler({ readBytesPerSecond: 1048576 })",
+    snippet: {
+      prefix: "caddy-layer4-throttle-handler",
+      body: [
+        "buildLayer4ThrottleHandler({",
+        "  readBytesPerSecond: ${1:1},",
+        "  readBurstSize: ${2:1},",
+        "  totalReadBytesPerSecond: ${3:1},",
+        "  // optional: totalReadBurstSize, latency",
+        "})$0",
+      ],
+      description: "Build Layer4 Throttle Handler",
+    },
+  },
+  buildLayer4ProxyProtocolHandler: {
+    name: "buildLayer4ProxyProtocolHandler",
+    description:
+      "A `proxy_protocol` handler: read the PROXY protocol header a load balancer\nputs in front of the connection, so later handlers see the real client.",
+    params: [
+      {
+        name: "timeout",
+        type: "Duration",
+        required: false,
+        description: "How long to wait for the PROXY header. Default: 5s.",
+      },
+      {
+        name: "allow",
+        type: "string[]",
+        required: false,
+        description: "Only accept PROXY headers from these IPs/CIDR ranges.",
+      },
+      {
+        name: "deny",
+        type: "string[]",
+        required: false,
+        description: "Never accept PROXY headers from these IPs/CIDR ranges.",
+      },
+      {
+        name: "fallbackPolicy",
+        type: '"IGNORE" | "USE" | "REJECT" | "REQUIRE" | "SKIP"',
+        required: false,
+        description: "What to do with connections from addresses not in `allow`. Default: IGNORE.",
+      },
+    ],
+    returnType: "Layer4ProxyProtocolHandler",
+    example: 'buildLayer4ProxyProtocolHandler({ allow: ["10.0.0.0/8"] })',
+    snippet: {
+      prefix: "caddy-layer4-proxy-protocol-handler",
+      body: [
+        "buildLayer4ProxyProtocolHandler({",
+        '  timeout: "${1:timeout}",',
+        '  allow: ["${2:allow}"],',
+        '  deny: ["${3:deny}"],',
+        "  // optional: fallbackPolicy",
+        "})$0",
+      ],
+      description: "Build Layer4 Proxy Protocol Handler",
+    },
+  },
+  buildLayer4Socks5Handler: {
+    name: "buildLayer4Socks5Handler",
+    description: "A `socks5` handler: a SOCKSv5 proxy server.",
+    params: [
+      {
+        name: "commands",
+        type: '("CONNECT" | "ASSOCIATE" | "BIND")[]',
+        required: false,
+        description: "Allowed SOCKS commands. Default: CONNECT and ASSOCIATE.",
+      },
+      {
+        name: "bindIp",
+        type: "string",
+        required: false,
+        description: "Local IP to bind outgoing connections to.",
+      },
+      {
+        name: "credentials",
+        type: "Record<string, string>",
+        required: false,
+        description: "Username → password; when set, clients must authenticate.",
+      },
+    ],
+    returnType: "Layer4Socks5Handler",
+    example: 'buildLayer4Socks5Handler({ credentials: { alice: "secret" } })',
+    snippet: {
+      prefix: "caddy-layer4-socks5-handler",
+      body: [
+        "buildLayer4Socks5Handler({",
+        '  commands: ["${1|CONNECT,ASSOCIATE,BIND|}"],',
+        '  bindIp: "${2:bindIp}",',
+        "  credentials: {},",
+        "})$0",
+      ],
+      description: "Build Layer4 Socks5 Handler",
+    },
+  },
+  buildLayer4TeeHandler: {
+    name: "buildLayer4TeeHandler",
+    description:
+      "A `tee` handler: also run `branch` on a copy of the connection's data, e.g.\nto mirror traffic to a second upstream.",
+    params: [
+      {
+        name: "branch",
+        type: "Layer4Handler[]",
+        required: true,
+        description: "the handlers that get the copy",
+      },
+    ],
+    returnType: "Layer4TeeHandler",
+    example: 'buildLayer4TeeHandler([buildLayer4ProxyHandler("mirror:5432")])',
+    snippet: {
+      prefix: "caddy-layer4-tee-handler",
+      body: ['buildLayer4TeeHandler([{ handler: "subroute" }])$0'],
+      description: "Build Layer4 Tee Handler",
+    },
+  },
+  buildLayer4EchoHandler: {
+    name: "buildLayer4EchoHandler",
+    description: "An `echo` handler: writes back everything it reads.",
+    params: [],
+    returnType: "Layer4EchoHandler",
+    example: "buildLayer4EchoHandler()",
+    snippet: {
+      prefix: "caddy-layer4-echo-handler",
+      body: ["buildLayer4EchoHandler()$0"],
+      description: "Build Layer4 Echo Handler",
+    },
+  },
+  buildLayer4CloseHandler: {
+    name: "buildLayer4CloseHandler",
+    description: "A `close` handler: closes the connection.",
+    params: [],
+    returnType: "Layer4CloseHandler",
+    example: "buildLayer4CloseHandler()",
+    snippet: {
+      prefix: "caddy-layer4-close-handler",
+      body: ["buildLayer4CloseHandler()$0"],
+      description: "Build Layer4 Close Handler",
+    },
+  },
+  buildLayer4PostgresTlsHandler: {
+    name: "buildLayer4PostgresTlsHandler",
+    description:
+      "A `postgres_tls` handler: answers a Postgres client's SSLRequest, so a `tls`\nhandler after it can terminate the TLS that follows.",
+    params: [],
+    returnType: "Layer4PostgresTlsHandler",
+    example: "buildLayer4PostgresTlsHandler()",
+    snippet: {
+      prefix: "caddy-layer4-postgres-tls-handler",
+      body: ["buildLayer4PostgresTlsHandler()$0"],
+      description: "Build Layer4 Postgres Tls Handler",
+    },
+  },
+  buildLayer4TlsMatcherSet: {
+    name: "buildLayer4TlsMatcherSet",
+    description:
+      "A matcher set for TLS connections, optionally by server name (SNI) and ALPN.\nTLS stays encrypted: route by SNI and pass the connection on as-is.",
+    params: [
+      {
+        name: "sni",
+        type: "string[]",
+        required: false,
+        description: "Server names (SNI) to match; wildcards like `*.example.com` allowed.",
+        example: "db.example.com",
+      },
+      {
+        name: "alpn",
+        type: "string[]",
+        required: false,
+        description: "ALPN protocols to match.",
+        example: "h2",
+      },
+    ],
+    returnType: "Layer4MatcherSet",
+    example: 'buildLayer4TlsMatcherSet({ sni: ["db.example.com"] })',
+    snippet: {
+      prefix: "caddy-layer4-tls-matcher-set",
+      body: [
+        "buildLayer4TlsMatcherSet({",
+        '  sni: ["${1:db.example.com}"],',
+        '  alpn: ["${2:alpn}"],',
+        "})$0",
+      ],
+      description: "Build Layer4 Tls Matcher Set",
+    },
+  },
+  buildLayer4HttpMatcherSet: {
+    name: "buildLayer4HttpMatcherSet",
+    description: "A matcher set for plain HTTP connections, optionally by host and path.",
+    params: [
+      {
+        name: "host",
+        type: "string[]",
+        required: false,
+        description: "Host header values to match.",
+        example: "example.com",
+      },
+      {
+        name: "path",
+        type: "string[]",
+        required: false,
+        description: "Request paths to match.",
+        example: "/api/*",
+      },
+    ],
+    returnType: "Layer4MatcherSet",
+    example: 'buildLayer4HttpMatcherSet({ host: ["example.com"] })',
+    snippet: {
+      prefix: "caddy-layer4-http-matcher-set",
+      body: [
+        "buildLayer4HttpMatcherSet({",
+        '  host: ["${1:example.com}"],',
+        '  path: ["${2:/api/*}"],',
+        "})$0",
+      ],
+      description: "Build Layer4 Http Matcher Set",
+    },
+  },
+  buildLayer4PostgresMatcherSet: {
+    name: "buildLayer4PostgresMatcherSet",
+    description:
+      "A matcher set for Postgres connections, optionally by user, database,\napplication name, or whether the client asks for TLS.",
+    params: [
+      {
+        name: "users",
+        type: "Record<string, string[]>",
+        required: false,
+        description:
+          'User name → databases it may use (`[]`: any database; key `"*"`: any other user).',
+      },
+      {
+        name: "clients",
+        type: "string[]",
+        required: false,
+        description: "Accepted `application_name` values.",
+      },
+      {
+        name: "tls",
+        type: '"enabled" | "disabled"',
+        required: false,
+        description:
+          '`"enabled"`: the client must start with an SSLRequest; `"disabled"`: it must not.',
+      },
+    ],
+    returnType: "Layer4MatcherSet",
+    example: 'buildLayer4PostgresMatcherSet({ users: { app: ["shop"] } })',
+    snippet: {
+      prefix: "caddy-layer4-postgres-matcher-set",
+      body: [
+        "buildLayer4PostgresMatcherSet({",
+        "  users: {},",
+        '  clients: ["${1:client}"],',
+        '  tls: "${2|enabled,disabled|}",',
+        "})$0",
+      ],
+      description: "Build Layer4 Postgres Matcher Set",
+    },
+  },
+  buildLayer4RemoteIpMatcherSet: {
+    name: "buildLayer4RemoteIpMatcherSet",
+    description: "A matcher set for client addresses.",
+    params: [
+      {
+        name: "ranges",
+        type: "string | string[]",
+        required: true,
+        description: "IPs or CIDR ranges",
+      },
+    ],
+    returnType: "Layer4MatcherSet",
+    example: 'buildLayer4RemoteIpMatcherSet(["10.0.0.0/8"])',
+    snippet: {
+      prefix: "caddy-layer4-remote-ip-matcher-set",
+      body: ['buildLayer4RemoteIpMatcherSet("${1:10.0.0.0/8}")$0'],
+      description: "Build Layer4 Remote Ip Matcher Set",
+    },
+  },
+  buildLayer4Route: {
+    name: "buildLayer4Route",
+    description: "A layer4 route: matcher sets (any may match) and the handlers to run.",
+    params: [
+      {
+        name: "id",
+        type: "string",
+        required: false,
+        description: "`@id`, so the route can be found and replaced later.",
+      },
+      {
+        name: "match",
+        type: "Layer4Protocol | Layer4MatcherSet[]",
+        required: false,
+        description:
+          'A protocol name (`"tls"`) or full matcher sets; none matches every connection.',
+      },
+      {
+        name: "handle",
+        type: "Layer4Handler[]",
+        required: true,
+        description: "Handlers, run in order (the last one usually `proxy`).",
+      },
+    ],
+    returnType: "Layer4Route",
+    example:
+      'buildLayer4Route({ match: "ssh", handle: [buildLayer4ProxyHandler("localhost:22")] })',
+    snippet: {
+      prefix: "caddy-layer4-route",
+      body: [
+        "buildLayer4Route({",
+        '  handle: [{ handler: "subroute" }],',
+        "  // optional: id, match",
+        "})$0",
+      ],
+      description: "Build Layer4 Route",
+    },
+  },
+  buildLayer4ProxyRoute: {
+    name: "buildLayer4ProxyRoute",
+    description: "A route that proxies matching connections to an upstream.",
+    params: [
+      {
+        name: "id",
+        type: "string",
+        required: false,
+        description: "",
+      },
+      {
+        name: "upstream",
+        type: "string | string[]",
+        required: true,
+        description: "",
+      },
+      {
+        name: "match",
+        type: "Layer4Protocol | Layer4MatcherSet[]",
+        required: false,
+        description: "",
+      },
+      {
+        name: "proxy",
+        type: "Layer4ProxyHandlerOptions",
+        required: false,
+        description: "Load balancing, health checks, upstream TLS, PROXY protocol.",
+      },
+    ],
+    returnType: "Layer4Route",
+    example:
+      'buildLayer4ProxyRoute({ id: "postgres", upstream: "postgres:5432", match: "postgres" })',
+    snippet: {
+      prefix: "caddy-layer4-proxy-route",
+      body: [
+        "buildLayer4ProxyRoute({",
+        '  upstream: "${1:localhost:3000}",',
+        "  // optional: id, match, proxy",
+        "})$0",
+      ],
+      description: "Build Layer4 Proxy Route",
+    },
+  },
+  buildLayer4SniRoute: {
+    name: "buildLayer4SniRoute",
+    description:
+      "Route TLS connections by server name (SNI): pass them through to an upstream\nthat terminates TLS itself, or terminate TLS in Caddy first.",
+    params: [
+      {
+        name: "id",
+        type: "string",
+        required: false,
+        description: "`@id`, so the route can be found and replaced later.",
+      },
+      {
+        name: "sni",
+        type: "string | string[]",
+        required: true,
+        description: "Server names (SNI) this route is for.",
+        example: "db.example.com",
+      },
+      {
+        name: "upstream",
+        type: "string | string[]",
+        required: true,
+        description: "`host:port` (or a list) to send the connections to.",
+        example: "localhost:8443",
+      },
+      {
+        name: "terminate",
+        type: "boolean",
+        required: false,
+        description:
+          "`false` (default): pass the TLS through untouched, the upstream terminates it.\n`true`: Caddy terminates TLS with its own certificate and proxies plaintext.",
+      },
+    ],
+    returnType: "Layer4Route",
+    example: 'buildLayer4SniRoute({ sni: "db.example.com", upstream: "localhost:8443" })',
+    snippet: {
+      prefix: "caddy-layer4-sni-route",
+      body: [
+        "buildLayer4SniRoute({",
+        '  sni: "${1:db.example.com}",',
+        '  upstream: "${2:localhost:3000}",',
+        "  // optional: id, terminate",
+        "})$0",
+      ],
+      description: "Build Layer4 Sni Route",
+    },
+  },
+  buildLayer4Server: {
+    name: "buildLayer4Server",
+    description: "A layer4 server: where it listens and its routes, tried in order.",
+    params: [
+      {
+        name: "listen",
+        type: "string | string[]",
+        required: true,
+        description: "",
+      },
+      {
+        name: "routes",
+        type: "Layer4Route[]",
+        required: true,
+        description: "",
+      },
+      {
+        name: "idleTimeout",
+        type: "string | number",
+        required: false,
+        description: "Close connections idle this long.",
+      },
+      {
+        name: "matchingTimeout",
+        type: "string | number",
+        required: false,
+        description: "How long matchers may wait for enough data. Default: 3s.",
+      },
+    ],
+    returnType: "Layer4Server",
+    example: 'buildLayer4Server({ listen: [":5432"], routes: [route] })',
+    snippet: {
+      prefix: "caddy-layer4-server",
+      body: [
+        "buildLayer4Server({",
+        '  listen: "${1::5432}",',
+        '  routes: [{ handle: [{ handler: "subroute" }] }],',
+        "  // optional: idleTimeout, matchingTimeout",
+        "})$0",
+      ],
+      description: "Build Layer4 Server",
+    },
+  },
+  buildLayer4App: {
+    name: "buildLayer4App",
+    description: "The whole `layer4` app (`apps.layer4`), for a full config load.",
+    params: [],
+    returnType: "Layer4App",
+    example: 'buildLayer4App({ db: buildLayer4Server({ listen: ":5432", routes: [route] }) })',
+    snippet: {
+      prefix: "caddy-layer4-app",
+      body: ["buildLayer4App({", "})$0"],
+      description: "Build Layer4 App",
+    },
+  },
+  buildLayer4ListenerWrapper: {
+    name: "buildLayer4ListenerWrapper",
+    description:
+      "The `layer4` listener wrapper for an HTTP server's `listener_wrappers`: its\nroutes see each connection first (e.g. SSH on :443); whatever they don't\nhandle continues to the HTTP server. Put it before the `tls` wrapper.",
+    params: [
+      {
+        name: "routes",
+        type: "Layer4Route[]",
+        required: true,
+        description: "",
+      },
+      {
+        name: "matchingTimeout",
+        type: "string | number",
+        required: false,
+        description: "How long matchers may wait for enough data. Default: 3s.",
+      },
+    ],
+    returnType: "Layer4ListenerWrapper",
+    example:
+      'buildLayer4ListenerWrapper({ routes: [buildLayer4ProxyRoute({ upstream: "localhost:22", match: "ssh" })] })',
+    snippet: {
+      prefix: "caddy-layer4-listener-wrapper",
+      body: [
+        "buildLayer4ListenerWrapper({",
+        '  routes: [{ handle: [{ handler: "subroute" }] }],',
+        "  // optional: matchingTimeout",
+        "})$0",
+      ],
+      description: "Build Layer4 Listener Wrapper",
     },
   },
 };

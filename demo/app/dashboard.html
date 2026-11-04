@@ -544,6 +544,10 @@
               <span class="indicator"></span>
               Node API
             </button>
+            <button class="mitm-tab" id="tab-pg" data-target="pg">
+              <span class="indicator"></span>
+              Postgres
+            </button>
           </div>
         </div>
         <!-- Hidden toggle for JS compatibility -->
@@ -572,6 +576,17 @@
               <button class="action-btn" id="test-config">Config <code>/node/config</code></button>
             </div>
             <iframe class="mitm-iframe" id="iframe-node" src="/mitmproxy-node/"></iframe>
+          </div>
+
+          <!-- Postgres Tab: SQL over TCP, decoded by the pgwire addon -->
+          <div class="tab-panel" id="panel-pg">
+            <div class="actions-bar">
+              <span class="actions-label">SQL</span>
+              <span class="actions-label" style="text-transform: none"
+                >Use the shop on the left; open a flow, then <b>Stream Data</b></span
+              >
+            </div>
+            <iframe class="mitm-iframe" id="iframe-pg" src="/mitmproxy-pg/"></iframe>
           </div>
         </div>
 
@@ -723,13 +738,24 @@
 
       // State
       let currentTab = "es";
-      let state = { elasticsearch: false, nodeapi: false };
+      let state = { elasticsearch: false, nodeapi: false, postgres: false };
+
+      // One entry per tab: the service it toggles, its label in the flow
+      // diagram, its mitmweb frame, and the app shown on the left.
+      const TABS = {
+        es: { service: "elasticsearch", label: "ES", iframe: "iframe-es", app: "/app/" },
+        node: { service: "nodeapi", label: "Node", iframe: "iframe-node", app: "/app/" },
+        pg: { service: "postgres", label: "PG", iframe: "iframe-pg", app: "/app/db.html" },
+      };
 
       // DOM
       const tabEs = document.getElementById("tab-es");
       const tabNode = document.getElementById("tab-node");
       const panelEs = document.getElementById("panel-es");
       const panelNode = document.getElementById("panel-node");
+      const tabPg = document.getElementById("tab-pg");
+      const panelPg = document.getElementById("panel-pg");
+      const appIframe = document.getElementById("app-iframe");
       const toggleIntercept = document.getElementById("toggle-intercept");
       const toggleLabel = document.getElementById("toggle-label");
       const toast = document.getElementById("toast");
@@ -749,8 +775,13 @@
         currentTab = tab;
         tabEs.classList.toggle("active", tab === "es");
         tabNode.classList.toggle("active", tab === "node");
+        tabPg.classList.toggle("active", tab === "pg");
         panelEs.classList.toggle("active", tab === "es");
         panelNode.classList.toggle("active", tab === "node");
+        panelPg.classList.toggle("active", tab === "pg");
+        // The shop on Postgres, or the search on Elasticsearch
+        const app = TABS[tab].app;
+        if (new URL(appIframe.src, location.href).pathname !== app) appIframe.src = app;
 
         updateTabIndicators();
         updateFlowDiagram();
@@ -759,10 +790,11 @@
       function updateTabIndicators() {
         tabEs.classList.toggle("capturing", state.elasticsearch);
         tabNode.classList.toggle("capturing", state.nodeapi);
+        tabPg.classList.toggle("capturing", state.postgres);
       }
 
       function updateFlowDiagram() {
-        const serviceId = currentTab === "es" ? "elasticsearch" : "nodeapi";
+        const serviceId = TABS[currentTab].service;
         const isActive = state[serviceId];
 
         // Update MITM node styling
@@ -770,7 +802,7 @@
         flowControl.classList.toggle("capturing", isActive);
 
         // Update service label
-        serviceNode.textContent = currentTab === "es" ? "ES" : "Node";
+        serviceNode.textContent = TABS[currentTab].label;
 
         // Update hint
         flowHint.textContent = isActive ? "intercepting traffic" : "click MITM to intercept";
@@ -781,7 +813,7 @@
 
       // Toggle interception
       async function toggleService(enabled) {
-        const serviceId = currentTab === "es" ? "elasticsearch" : "nodeapi";
+        const serviceId = TABS[currentTab].service;
         const action = enabled ? "enable" : "disable";
 
         try {
@@ -796,10 +828,7 @@
 
           // Refresh MITMproxy iframe to reconnect WebSocket and show fresh data
           if (enabled) {
-            const iframe =
-              serviceId === "elasticsearch"
-                ? document.getElementById("iframe-es")
-                : document.getElementById("iframe-node");
+            const iframe = document.getElementById(TABS[currentTab].iframe);
             if (iframe) {
               iframe.src = iframe.src; // Force refresh
             }
@@ -818,6 +847,7 @@
           const data = await res.json();
           state.elasticsearch = data.services?.elasticsearch?.enabled || false;
           state.nodeapi = data.services?.nodeapi?.enabled || false;
+          state.postgres = data.services?.postgres?.enabled || false;
           updateTabIndicators();
           updateFlowDiagram();
         } catch (e) {
@@ -953,12 +983,12 @@
       // Event listeners
       tabEs.addEventListener("click", () => switchTab("es"));
       tabNode.addEventListener("click", () => switchTab("node"));
+      tabPg.addEventListener("click", () => switchTab("pg"));
       toggleIntercept.addEventListener("change", (e) => toggleService(e.target.checked));
 
       // MITM node click - the main intercept control
       mitmNode.addEventListener("click", () => {
-        const serviceId = currentTab === "es" ? "elasticsearch" : "nodeapi";
-        toggleService(!state[serviceId]);
+        toggleService(!state[TABS[currentTab].service]);
       });
 
       document.getElementById("test-search").addEventListener("click", testSearch);

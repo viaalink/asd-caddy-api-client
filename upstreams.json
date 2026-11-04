@@ -1,0 +1,202 @@
+{
+  "$comment": "Upstream Go sources the generated types come from. Read by scripts/check-upstreams.ts and scripts/update-upstreams.ts (just upstreams-check / just upstreams-update). The update recipe rewrites the pins; edit by hand only to add an upstream. See DEPENDENCIES.md, 'The update cycle'.",
+  "upstreams": [
+    {
+      "name": "caddy",
+      "repo": "https://github.com/caddyserver/caddy",
+      "module": "github.com/caddyserver/caddy/v2",
+      "localPath": "local/caddy",
+      "track": {
+        "type": "tag",
+        "pattern": "^v2\\.\\d+\\.\\d+$"
+      },
+      "pin": {
+        "ref": "v2.11.4",
+        "commit": "e2eee6a7fce366321294c9c2a79f3146891dcbdf",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/caddy.yaml",
+      "generator": "generate:types (scripts/generate-caddy-types.ts)",
+      "docsRow": "Caddy",
+      "caddyBinary": true
+    },
+    {
+      "name": "caddy-security",
+      "repo": "https://github.com/greenpau/caddy-security",
+      "module": "github.com/greenpau/caddy-security",
+      "localPath": "local/caddy-security",
+      "track": {
+        "type": "tag",
+        "pattern": "^v1\\.\\d+\\.\\d+$"
+      },
+      "pin": {
+        "ref": "v1.1.64",
+        "commit": "b96087fc696ada2ed80f4ca81e031878a47d43ac",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/caddy-security.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "caddy-security"
+    },
+    {
+      "name": "go-authcrunch",
+      "repo": "https://github.com/greenpau/go-authcrunch",
+      "module": "github.com/greenpau/go-authcrunch",
+      "localPath": "local/go-authcrunch",
+      "track": {
+        "type": "gomod",
+        "parent": "caddy-security"
+      },
+      "pin": {
+        "ref": "v1.1.41",
+        "commit": "97408097f0d39c58be16c80131486edbbb358798",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/go-authcrunch.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "go-authcrunch"
+    },
+    {
+      "name": "caddy-l4",
+      "repo": "https://github.com/mholt/caddy-l4",
+      "module": "github.com/mholt/caddy-l4",
+      "localPath": "local/caddy-l4",
+      "track": {
+        "type": "branch",
+        "branch": "master"
+      },
+      "pin": {
+        "ref": "master",
+        "commit": "96e1a6bf063c206c3bd09ca6dc4a0484a158d83f",
+        "updated": "2026-11-04"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/caddy-l4.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "caddy-l4",
+      "note": "Tags are stale (v0.1.2 is years old); every user builds master, so this is pinned by commit."
+    },
+    {
+      "name": "libdns-porkbun",
+      "repo": "https://github.com/libdns/porkbun",
+      "module": "github.com/libdns/porkbun",
+      "localPath": "local/libdns-porkbun",
+      "track": {
+        "type": "tag",
+        "pattern": "^v\\d+\\.\\d+\\.\\d+$"
+      },
+      "pin": {
+        "ref": "v1.1.0",
+        "commit": "9299c8757522a00034044c090ffedb2ce3d6491c",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/libdns-porkbun.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "local/libdns-porkbun"
+    },
+    {
+      "name": "libdns-cloudflare",
+      "repo": "https://github.com/libdns/cloudflare",
+      "module": "github.com/libdns/cloudflare",
+      "localPath": "local/libdns-cloudflare",
+      "track": {
+        "type": "tag",
+        "pattern": "^v\\d+\\.\\d+\\.\\d+$"
+      },
+      "pin": {
+        "ref": "v0.2.2",
+        "commit": "57f633acd7561b44660889b0428d608e52e850f9",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/libdns-cloudflare.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "local/libdns-cloudflare"
+    },
+    {
+      "name": "caddy-dns-route53",
+      "repo": "https://github.com/caddy-dns/route53",
+      "module": "github.com/caddy-dns/route53",
+      "localPath": "local/caddy-dns-route53",
+      "track": {
+        "type": "tag",
+        "pattern": "^v\\d+\\.\\d+\\.\\d+$"
+      },
+      "pin": {
+        "ref": "v1.6.2",
+        "commit": "0b76c51234a730e35753dcd0abd1de0707f27eb3",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/caddy-dns-route53.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "local/caddy-dns-route53"
+    },
+    {
+      "name": "libdns-route53",
+      "repo": "https://github.com/libdns/route53",
+      "module": "github.com/libdns/route53",
+      "localPath": "local/libdns-route53",
+      "track": {
+        "type": "gomod",
+        "parent": "caddy-dns-route53"
+      },
+      "pin": {
+        "ref": "v1.6.2",
+        "commit": "840c6120709b2f9da6d74dc5d562e2625334aecc",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/libdns-route53.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "local/libdns-route53"
+    },
+    {
+      "name": "libdns-digitalocean",
+      "repo": "https://github.com/libdns/digitalocean",
+      "module": "github.com/libdns/digitalocean",
+      "localPath": "local/libdns-digitalocean",
+      "track": {
+        "type": "branch",
+        "branch": "master"
+      },
+      "pin": {
+        "ref": "master",
+        "commit": "dfa7af5c2e31f8e8d47bfbfaf1c2e09ba0b721ba",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/libdns-digitalocean.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "local/libdns-digitalocean",
+      "note": "No tags upstream, so pinned by commit."
+    },
+    {
+      "name": "libdns-godaddy",
+      "repo": "https://github.com/libdns/godaddy",
+      "module": "github.com/libdns/godaddy",
+      "localPath": "local/libdns-godaddy",
+      "track": {
+        "type": "tag",
+        "pattern": "^v\\d+\\.\\d+\\.\\d+$"
+      },
+      "pin": {
+        "ref": "v1.1.0",
+        "commit": "e324d3b2c9a2e63c7676e6d898cc30b1e286de13",
+        "updated": "2026-08-11"
+      },
+      "tygoConfig": "scripts/upstreams/tygo/libdns-godaddy.yaml",
+      "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
+      "docsRow": "local/libdns-godaddy"
+    }
+  ],
+  "supportedCaddy": [
+    {
+      "caddy": "v2.11.4",
+      "library": "0.9.0 – 0.10.x",
+      "vscode": "0.2.0 – 0.4.x",
+      "validation": "Types generated from this source. CI's unit and differential fuzz tests run `caddy validate`/`caddy adapt` on this binary; the extension's tests run on the schemas generated from it."
+    },
+    {
+      "caddy": "v2.11.2",
+      "library": "0.6.0 – 0.10.x",
+      "vscode": "0.2.0 – 0.4.x",
+      "validation": "Known-good baseline: the maintainers' day-to-day Caddy, used against the library and the extension."
+    }
+  ]
+}

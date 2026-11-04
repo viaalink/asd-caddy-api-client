@@ -1,0 +1,8 @@
+# Caddy with the caddy-l4 (layer4) plugin: besides the HTTP routes, the demo
+# puts Postgres behind Caddy, so the database route can be swapped too.
+# caddy-l4 is pinned to the commit the library's types are generated from (DEPENDENCIES.md).
+FROM caddy:2.11-builder AS builder
+RUN xcaddy build --with github.com/mholt/caddy-l4@96e1a6bf063c206c3bd09ca6dc4a0484a158d83f
+
+FROM caddy:2.11-alpine
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

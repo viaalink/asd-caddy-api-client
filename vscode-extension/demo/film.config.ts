@@ -20,5 +20,8 @@ export default {
     "caddy-mitm": {
       storyboard: resolve(__dirname, "storyboard-mitm.ts"),
     },
+    "caddy-sql": {
+      storyboard: resolve(__dirname, "storyboard-sql.ts"),
+    },
   },
 };

@@ -46,6 +46,39 @@ test-integration:
     echo ""
     echo "✅ Integration tests completed!"
 
+# SQL over TCP: Caddy (caddy-l4) + Postgres + mitmweb with the pgwire addon.
+# Brings tests/integration/docker-compose.layer4.yml up (admin :2021, pg :15432,
+# mitmweb :18081) and runs the layer4 integration test against it.
+# The project name is pinned with -p: dotenv-load can bring in a
+# COMPOSE_PROJECT_NAME (the demo's), and compose would then replace the
+# demo's containers of the same service names.
+test-layer4:
+    #!/usr/bin/env bash
+    set -e
+    compose="docker compose -p caddy-layer4-test -f tests/integration/docker-compose.layer4.yml"
+    # -V: a fresh Postgres every run, so its init script (the cleartext user) runs.
+    $compose up -d --build --wait --renew-anon-volumes
+    echo "⏳ Waiting for the Caddy admin API and mitmweb..."
+    for i in $(seq 1 60); do
+        curl -sf -H "Origin: http://127.0.0.1:2021" http://127.0.0.1:2021/config/ > /dev/null \
+            && curl -s -o /dev/null http://127.0.0.1:18081/ && break
+        sleep 1
+    done
+    LAYER4_TEST=true bun test src/__tests__/integration/layer4-postgres.integration.test.ts --no-coverage
+    # Every caddy-l4 module, on its own stack (admin 127.0.0.1:2022)
+    modules="docker compose -p caddy-layer4-modules-test -f tests/integration/docker-compose.layer4-modules.yml"
+    $modules up -d --build --wait
+    for i in $(seq 1 60); do
+        curl -sf -H "Origin: http://127.0.0.1:2022" http://127.0.0.1:2022/config/ > /dev/null && break
+        sleep 1
+    done
+    LAYER4_TEST=true bun test src/__tests__/integration/layer4-modules.integration.test.ts --no-coverage
+
+# Stop the layer4 test stack
+test-layer4-down:
+    docker compose -p caddy-layer4-test -f tests/integration/docker-compose.layer4.yml down -v
+    docker compose -p caddy-layer4-modules-test -f tests/integration/docker-compose.layer4-modules.yml down -v
+
 # Update integration test snapshots (Caddy config fixtures)
 test-integration-update-snapshots:
     #!/usr/bin/env bash
@@ -87,6 +120,11 @@ lint:
 # Format code
 format:
     bun run format
+
+# Format only the given paths (prettier, honouring .prettierignore)
+[positional-arguments]
+format-paths +paths:
+    bunx prettier --write --log-level warn "$@"
 
 # Check formatting without fixing
 format-check:
@@ -271,6 +309,20 @@ info:
 # Run all checks and build (CI mode)
 ci: check build
     @echo "✅ CI checks completed successfully"
+
+# Upstreams: compare upstreams.json pins with the newest Caddy/plugin/libdns versions (exit 10 = updates). E.g. `just upstreams-check --only caddy`
+[positional-arguments]
+upstreams-check *args:
+    bun scripts/check-upstreams.ts "$@"
+
+# Upstreams: put every local/ clone on its pin (clones what is missing, installs the versioned tygo.yaml)
+upstreams-sync:
+    bun scripts/update-upstreams.ts --sync-only
+
+# Upstreams: bump behind pins, regenerate, run the gate, write local/upstreams/summary.md (PR body). E.g. `just upstreams-update --only caddy-security --skip-vscode`
+[positional-arguments]
+upstreams-update *args:
+    bun scripts/update-upstreams.ts "$@"
 
 # Utility: git diff to log file
 glog:

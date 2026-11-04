@@ -8,7 +8,10 @@ name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}
 services:
   # Caddy reverse proxy with Admin API
   caddy:
-    image: caddy:2.11-alpine
+    # Caddy with caddy-l4: the HTTP routes and the layer4 route to Postgres
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
     container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-caddy
     ports:
       - "127.0.0.1:${DEMO_HTTP_PORT:-9080}:80" # HTTP
@@ -47,7 +50,7 @@ services:
 
   # MITMproxy for Elasticsearch (reverse mode)
   mitmproxy:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy
     command: >
       mitmweb
@@ -57,6 +60,7 @@ services:
       --listen-host 0.0.0.0
       --listen-port 8080
       --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
       --set keep_host_header=true
       --set block_global=false
     ports:
@@ -71,7 +75,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/'')"',
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
         ]
       interval: 5s
       timeout: 5s
@@ -80,7 +84,7 @@ services:
 
   # MITMproxy for Node API (reverse mode)
   mitmproxy-node:
-    image: mitmproxy/mitmproxy:10.4.2
+    image: mitmproxy/mitmproxy:12.2.1
     container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-node
     command: >
       mitmweb
@@ -90,6 +94,7 @@ services:
       --listen-host 0.0.0.0
       --listen-port 8080
       --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
       --set keep_host_header=true
       --set block_global=false
     ports:
@@ -103,7 +108,59 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/'')"',
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Postgres: the same products, for the SQL side of the demo
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-postgres
+    environment:
+      - POSTGRES_USER=demo
+      - POSTGRES_PASSWORD=demo
+      - POSTGRES_DB=shop
+    volumes:
+      - ./data:/data:ro
+      - ./seed/postgres.sql:/docker-entrypoint-initdb.d/products.sql:ro
+    networks:
+      - demo-net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "demo", "-d", "shop"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # MITMproxy for Postgres (reverse TCP mode, with the package's pgwire addon:
+  # the SQL, its parameters, the rows and errors, readable in Stream Data)
+  mitmproxy-pg:
+    image: mitmproxy/mitmproxy:12.2.1
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-pg
+    command: >
+      mitmweb
+      --mode reverse:tcp://postgres:5432@5432
+      --web-host 0.0.0.0
+      --web-port 8081
+      --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
+      -s /addons/pgwire.py
+    volumes:
+      - ../mitmproxy-addons:/addons:ro
+    ports:
+      - "127.0.0.1:${DEMO_MITM_PG_WEB_PORT:-9086}:8081" # Web UI
+    networks:
+      - demo-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
         ]
       interval: 5s
       timeout: 5s
@@ -121,6 +178,10 @@ services:
     environment:
       - CADDY_ADMIN_URL=http://caddy:2019
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      # Postgres through Caddy's layer4 route, so inspection can swap it
+      - DATABASE_URL=postgres://demo:demo@caddy:5432/shop
+      # mitmweb 11.1+ wants a password; Caddy passes it on to the mitmweb UIs
+      - MITMWEB_PASSWORD=${DEMO_MITMWEB_PASSWORD:-demo}
     volumes:
       - ./app:/app/public:ro
       - ./api/server.ts:/app/demo/server.ts:ro
@@ -132,6 +193,8 @@ services:
       elasticsearch:
         condition: service_healthy
       mitmproxy:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
 
   # Seed sample data into Elasticsearch

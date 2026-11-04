@@ -18,6 +18,29 @@ import {
   type Server,
 } from "../caddy-types.js";
 import { validateOrThrow } from "../utils/validation.js";
+import {
+  type Layer4Route,
+  type Layer4Server,
+  Layer4RouteSchema,
+  Layer4ServerSchema,
+} from "./layer4.js";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Caddy's answer to a request below a config key that does not exist:
+ * `{"error":"invalid traversal path at: config/…"}`, with HTTP 400 for a GET
+ * and 500 for a write (measured on Caddy 2.11 with caddy-l4).
+ */
+function isMissingConfigPath(error: unknown, statusCode: 400 | 500): boolean {
+  return (
+    error instanceof CaddyApiError &&
+    error.statusCode === statusCode &&
+    /invalid traversal path/i.test(error.responseBody ?? "")
+  );
+}
 
 // Create passthrough versions of schemas to preserve unknown fields from API responses
 // This ensures we don't accidentally strip fields that Caddy returns but aren't in our schema
@@ -448,6 +471,110 @@ export class CaddyClient {
     const response = await this.request("/config/apps/http/servers");
     const data = await response.json();
     return serversResponseSchema.parse(data);
+  }
+
+  /**
+   * Layer 4 (TCP/UDP) servers of the caddy-l4 plugin, by name.
+   *
+   * Caddy answers a GET below a key that does not exist with HTTP 400
+   * ("invalid traversal path"), so a Caddy without `apps.layer4` (or without
+   * `apps` at all) is reported here as "no servers", not as an error.
+   * @returns `apps.layer4.servers`, or an empty object when there are none
+   * @throws {CaddyApiError} If Caddy API returns any other error response
+   */
+  async getLayer4Servers(): Promise<Record<string, Layer4Server>> {
+    let data: unknown;
+    try {
+      const response = await this.request("/config/apps/layer4/servers");
+      data = await response.json();
+    } catch (error) {
+      if (isMissingConfigPath(error, 400)) return {};
+      throw error;
+    }
+    return z.record(Layer4ServerSchema).parse(data ?? {});
+  }
+
+  /**
+   * Create or replace a layer4 server. Creates whatever is missing on the way
+   * (`apps`, `apps.layer4`, `apps.layer4.servers`): Caddy's admin API will not
+   * write below a key that does not exist yet.
+   * Needs a Caddy built with github.com/mholt/caddy-l4.
+   * @param name - Server name under `apps.layer4.servers`
+   * @param server - From buildLayer4Server()
+   * @throws {ValidationError} If the server config is invalid
+   */
+  async setLayer4Server(name: string, server: Layer4Server): Promise<void> {
+    const validated = validateOrThrow(Layer4ServerSchema, server, "layer4 server");
+    // The raw config: a Caddy that was started without one answers `null`.
+    const raw: unknown = await (await this.request("/config/")).json();
+    const config = isRecord(raw) ? raw : undefined;
+    const apps = isRecord(config?.apps) ? config.apps : undefined;
+    const layer4 = isRecord(apps?.layer4) ? apps.layer4 : undefined;
+    const servers = isRecord(layer4?.servers) ? layer4.servers : undefined;
+
+    const post = (path: string, body: unknown): Promise<Response> =>
+      this.request(path, { method: "POST", body: JSON.stringify(body) });
+
+    if (servers) {
+      await post(`/config/apps/layer4/servers/${this.escapeServerName(name)}`, validated);
+    } else if (layer4) {
+      await post("/config/apps/layer4/servers", { [name]: validated });
+    } else if (apps) {
+      await post("/config/apps/layer4", { servers: { [name]: validated } });
+    } else if (config) {
+      await post("/config/apps", { layer4: { servers: { [name]: validated } } });
+    } else {
+      await post("/config/", { apps: { layer4: { servers: { [name]: validated } } } });
+    }
+  }
+
+  /**
+   * Put a layer4 route in place by its `@id`: replaced where it stands when it
+   * exists (one atomic `PATCH /id/…`, so the server keeps listening and running
+   * connections are not cut), appended to the server's routes when it does not.
+   *
+   * Note for TCP: a connection is routed once, when it opens. Connections that
+   * are already open keep going where they went; only new ones take the new route.
+   *
+   * @param server - Layer4 server name
+   * @param route - A route with an `@id` (buildLayer4ProxyRoute({ id, … }))
+   * @returns "replaced" or "added"
+   * @throws {ValidationError} If the route is invalid or has no `@id`
+   */
+  async putLayer4Route(server: string, route: Layer4Route): Promise<"replaced" | "added"> {
+    const validated = validateOrThrow(Layer4RouteSchema, route, "layer4 route");
+    const id = validated["@id"];
+    if (!id) {
+      throw new CaddyApiClientError("putLayer4Route needs a route with an @id");
+    }
+    try {
+      await this.request(`/id/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(validated),
+      });
+      return "replaced";
+    } catch (error) {
+      // Caddy answers an unknown @id with 404; anything else is a real error.
+      if (!(error instanceof CaddyApiError) || error.statusCode !== 404) throw error;
+    }
+    // `routes/...` with an array appends to the list, and also creates it when
+    // the server has no `routes` key yet (a plain POST would then write a lone
+    // object where Caddy expects a list, and the load would fail).
+    try {
+      await this.request(
+        `/config/apps/layer4/servers/${this.escapeServerName(server)}/routes/...`,
+        { method: "POST", body: JSON.stringify([validated]) }
+      );
+    } catch (error) {
+      if (isMissingConfigPath(error, 500)) {
+        throw new CaddyApiClientError(
+          `putLayer4Route: there is no layer4 server "${server}"; create it with setLayer4Server() first`,
+          { server, cause: (error as CaddyApiError).responseBody }
+        );
+      }
+      throw error;
+    }
+    return "added";
   }
 
   /**

@@ -145,6 +145,19 @@ This extension works with Caddy's JSON config: the format Caddy itself runs, and
 | `caddy.showCaddyDocsLinks` | `true`             | Links to caddyserver.com in hovers                                                   |
 | `caddy.showCodeLens`       | `true`             | Documentation CodeLens above handlers                                                |
 
+## Supported Caddy versions
+
+The schemas, completions and checks come from [@viaalink/caddy-api-client](https://www.npmjs.com/package/@viaalink/caddy-api-client), which is generated from Caddy's own source. Each new Caddy release is regenerated and the extension's tests are run against it before it is listed here.
+
+<!-- upstreams:supported-caddy:start -->
+
+| Caddy   | Library        | VS Code extension | How it is validated                                                                                                                                                                    |
+| ------- | -------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v2.11.4 | 0.9.0 – 0.10.x | 0.2.0 – 0.4.x     | Types generated from this source. CI's unit and differential fuzz tests run `caddy validate`/`caddy adapt` on this binary; the extension's tests run on the schemas generated from it. |
+| v2.11.2 | 0.6.0 – 0.10.x | 0.2.0 – 0.4.x     | Known-good baseline: the maintainers' day-to-day Caddy, used against the library and the extension.                                                                                    |
+
+<!-- upstreams:supported-caddy:end -->
+
 ## Works in
 
 VS Code 1.85+, [code-server](https://github.com/coder/code-server), VSCodium and other Open VSX editors. Every release is tested in desktop VS Code (API-level) and in code-server (UI-level, with Playwright).

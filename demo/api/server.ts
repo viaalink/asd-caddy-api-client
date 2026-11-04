@@ -5,6 +5,8 @@
  * - Dynamic route management via Caddy Admin API
  * - Hot-swappable MITMproxy traffic interception using MitmproxyManager
  * - Multiple services with independent monitoring control
+ * - SQL over TCP: Postgres behind a caddy-l4 route, swapped through a
+ *   mitmproxy that decodes the Postgres wire protocol
  */
 
 import {
@@ -14,11 +16,44 @@ import {
   buildRewriteHandler,
   buildIframeProxyRoute,
   buildWebSocketProxyRoute,
+  buildLayer4ProxyRoute,
+  buildLayer4Server,
 } from "../dist/index.js";
+import pg from "pg";
 import type { CaddyRoute } from "../dist/index.js";
 
 const CADDY_ADMIN_URL = process.env.CADDY_ADMIN_URL || "http://localhost:2019";
 const SERVER_NAME = "srv0";
+
+// mitmweb 11.1+ will not serve its UI or API without a password. The three
+// mitmwebs run with this one (docker-compose.yml, DEMO_MITMWEB_PASSWORD), and
+// Caddy hands it to them on every proxied request: the dashboard frames them
+// all from one origin, where their auth cookies (same name, different
+// secrets) would knock each other out.
+const MITMWEB_PASSWORD = process.env.MITMWEB_PASSWORD ?? "demo";
+
+/** Add `Authorization: Bearer <password>` to a route's reverse_proxy handlers that dial a mitmweb UI. */
+function withMitmwebAuth(route: CaddyRoute): CaddyRoute {
+  const handle = (route.handle ?? []).map((h) => {
+    const handler = h as Record<string, unknown>;
+    const upstreams = (handler.upstreams ?? []) as { dial?: string }[];
+    if (handler.handler !== "reverse_proxy" || !upstreams.some((u) => u.dial?.endsWith(":8081"))) {
+      return h;
+    }
+    const headers = (handler.headers ?? {}) as { request?: { set?: Record<string, string[]> } };
+    return {
+      ...handler,
+      headers: {
+        ...headers,
+        request: {
+          ...headers.request,
+          set: { ...headers.request?.set, Authorization: [`Bearer ${MITMWEB_PASSWORD}`] },
+        },
+      },
+    } as typeof h;
+  });
+  return { ...route, handle };
+}
 
 // Initialize Caddy client from the library
 const caddy = new CaddyClient({ adminUrl: CADDY_ADMIN_URL });
@@ -27,6 +62,7 @@ const caddy = new CaddyClient({ adminUrl: CADDY_ADMIN_URL });
 const mitmManager = new MitmproxyManager(caddy, {
   default: { host: "mitmproxy", port: 8080, webPort: 8081 }, // For Elasticsearch
   nodeproxy: { host: "mitmproxy-node", port: 8080, webPort: 8081 }, // For Node API
+  postgres: { host: "mitmproxy-pg", port: 5432, webPort: 8081 }, // reverse:tcp → postgres:5432
 });
 
 // Register Elasticsearch service (uses default proxy)
@@ -44,6 +80,62 @@ mitmManager.register({
   pathPrefix: "/node",
   backend: { host: "demo-api", port: 3000 },
 });
+
+// Register Postgres: a TCP service behind Caddy's layer4 server "pg" (caddy-l4)
+const PG_SERVER = "pg";
+mitmManager.register({
+  protocol: "tcp",
+  id: "postgres",
+  serverId: PG_SERVER,
+  backend: { host: "postgres", port: 5432 },
+  match: "postgres",
+  proxy: "postgres",
+});
+
+// The demo's own database access goes through Caddy (caddy:5432), so the route
+// can be swapped. A TCP connection is routed when it opens, so the pool closes
+// idle connections quickly: right after inspection is switched on, the next
+// search opens a new connection, and that one goes through mitmproxy.
+const db = new pg.Pool({
+  connectionString: process.env.DATABASE_URL ?? "postgres://demo:demo@caddy:5432/shop",
+  max: 4,
+  idleTimeoutMillis: 250,
+});
+
+/**
+ * Product search on Postgres. The SQL is put together from whatever the user
+ * picked, the way a query builder or ORM does it: the code holds the pieces,
+ * the wire shows the query.
+ */
+async function searchProductsSql(params: URLSearchParams) {
+  const where: string[] = [];
+  const values: unknown[] = [];
+  const add = (clause: (n: string) => string, value: unknown) => {
+    values.push(value);
+    where.push(clause(`$${values.length}`));
+  };
+  const q = params.get("q")?.trim();
+  if (q) add((n) => `(name ilike ${n} or description ilike ${n})`, `%${q}%`);
+  const category = params.get("category");
+  if (category) add((n) => `category = ${n}`, category);
+  const maxPrice = Number(params.get("maxPrice"));
+  if (maxPrice > 0) add((n) => `price <= ${n}`, maxPrice);
+  // Sort options map to columns; never put user input into the SQL itself.
+  // "rating" is the demo's second bug: the option shipped, the column never did.
+  const SORTS: Record<string, string> = { price: "price", name: "name", rating: "rating desc" };
+  const sort = SORTS[params.get("sort") ?? "price"] ?? "price";
+  const sql =
+    `select name, category, description, price from products` +
+    (where.length ? ` where ${where.join(" and ")}` : "") +
+    ` order by ${sort} limit 20`;
+  const started = performance.now();
+  const result = await db.query(sql, values);
+  return {
+    rows: result.rows,
+    count: result.rowCount ?? 0,
+    ms: Math.round(performance.now() - started),
+  };
+}
 
 /**
  * Setup initial routes using the library
@@ -139,6 +231,16 @@ async function setupRoutes() {
   );
   routes.push(
     buildIframeProxyRoute({
+      pathPrefix: "/mitmproxy-pg",
+      upstreamHost: "mitmproxy-pg",
+      upstreamPort: 8081,
+      routeId: "mitmproxy_pg_ui_route",
+      iframeEmbed: true,
+      overrideHost: "127.0.0.1:8081",
+    })
+  );
+  routes.push(
+    buildIframeProxyRoute({
       pathPrefix: "/mitmproxy-node",
       upstreamHost: "mitmproxy-node",
       upstreamPort: 8081,
@@ -173,7 +275,7 @@ async function setupRoutes() {
   // Apply routes using the library's addRoute method
   for (const route of routes) {
     const routeId = route["@id"] as string;
-    const added = await caddy.addRoute(SERVER_NAME, route);
+    const added = await caddy.addRoute(SERVER_NAME, withMitmwebAuth(route));
     if (added) {
       console.log(`  ✓ Added route: ${routeId}`);
     } else {
@@ -187,6 +289,24 @@ async function setupRoutes() {
 
   await mitmManager.disable("nodeapi");
   console.log("  ✓ Added route: mitm_nodeapi (direct)");
+
+  // Postgres behind Caddy: a layer4 server on :5432, built with the library.
+  // Its one route starts direct; MitmproxyManager swaps it in place.
+  await caddy.setLayer4Server(
+    PG_SERVER,
+    buildLayer4Server({
+      listen: ":5432",
+      routes: [
+        buildLayer4ProxyRoute({
+          id: "mitm_postgres",
+          upstream: "postgres:5432",
+          match: "postgres",
+        }),
+      ],
+    })
+  );
+  await mitmManager.disable("postgres");
+  console.log("  ✓ Added layer4 server: pg → postgres:5432 (direct)");
 
   console.log("Routes configured!");
 }
@@ -649,7 +769,10 @@ const server = Bun.serve({
           );
         }
         // Use correct proxy for each service
-        const proxyName = serviceId === "nodeapi" ? "nodeproxy" : "default";
+        // Node API has its own HTTP proxy; Postgres names its own (reverse TCP)
+        // proxy in its registration; everything else uses the default one.
+        const proxyName =
+          serviceId === "nodeapi" ? "nodeproxy" : serviceId === "postgres" ? "postgres" : "default";
         await mitmManager.enable(serviceId, { proxy: proxyName });
         return Response.json(
           {
@@ -705,26 +828,46 @@ const server = Bun.serve({
         );
       }
 
+      // Product search on Postgres (SQL built from the filters)
+      if (path === "/api/db/search") {
+        try {
+          return Response.json(await searchProductsSql(url.searchParams), { headers: corsHeaders });
+        } catch (error) {
+          // What a real app tends to tell its users: not much.
+          console.error("db search failed:", (error as Error).message);
+          return Response.json(
+            { error: "Something went wrong while searching." },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+      }
+
       // Clear MITMproxy flows
       if (path === "/api/monitoring/clear" && req.method === "POST") {
-        // mitmweb clears with POST /clear. Like every write it wants a matching
+        // mitmweb clears with POST /clear, with the password. Like every write it wants a matching
         // XSRF cookie and header (any value works, they only have to agree), and
         // its DNS-rebinding guard only accepts a localhost/IP Host header.
         const clear = async (host: string): Promise<boolean> => {
           const res = await fetch(`http://${host}:8081/clear`, {
             method: "POST",
-            headers: { Host: "127.0.0.1:8081", Cookie: "_xsrf=demo", "X-XSRFToken": "demo" },
+            headers: {
+              Host: "127.0.0.1:8081",
+              Authorization: `Bearer ${MITMWEB_PASSWORD}`,
+              Cookie: "_xsrf=demo",
+              "X-XSRFToken": "demo",
+            },
           }).catch(() => null);
           return res?.ok === true;
         };
         const results: Record<string, boolean> = {
           elasticsearch: await clear("mitmproxy"),
           nodeapi: await clear("mitmproxy-node"),
+          postgres: await clear("mitmproxy-pg"),
         };
 
         return Response.json(
           {
-            success: results.elasticsearch && results.nodeapi,
+            success: results.elasticsearch && results.nodeapi && results.postgres,
             cleared: results,
             message: "MITMproxy flows cleared",
           },
@@ -764,6 +907,18 @@ const server = Bun.serve({
         const file = Bun.file("../public/style.css");
         return new Response(file, {
           headers: { "Content-Type": "text/css", ...corsHeaders },
+        });
+      }
+
+      if (path === "/db.html") {
+        return new Response(Bun.file("../public/db.html"), {
+          headers: { "Content-Type": "text/html", ...corsHeaders },
+        });
+      }
+
+      if (path === "/db.js") {
+        return new Response(Bun.file("../public/db.js"), {
+          headers: { "Content-Type": "application/javascript", ...corsHeaders },
         });
       }
 

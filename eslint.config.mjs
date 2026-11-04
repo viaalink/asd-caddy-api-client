@@ -12,6 +12,7 @@ export default tseslint.config(
       "dist/**",
       "coverage/**",
       "local/**",
+      ".claude/worktrees/**", // agent worktrees, checked by their own runs
       ".asd/**",
       "demo/**", // Demo files are standalone
       "examples/**", // Example files are standalone demos
