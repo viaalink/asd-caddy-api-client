@@ -10,6 +10,15 @@ Write [Caddy](https://caddyserver.com/) JSON configs with IntelliSense that know
 
 ▶ **[Watch the demo on YouTube](https://youtu.be/IIfOw6wbDMQ)** (2:16): every feature in it is the real extension against a real Caddy.
 
+### More films from the same toolkit
+
+These show [`@viaalink/caddy-api-client`](https://www.npmjs.com/package/@viaalink/caddy-api-client), the library behind this extension, together with mitmproxy. They are not features inside VS Code.
+
+|                                                                                                               |                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [![MITM proxy film](https://img.youtube.com/vi/Jt4BY9unm9k/mqdefault.jpg)](https://youtu.be/Jt4BY9unm9k)      | **[Watch HTTP traffic with mitmproxy](https://youtu.be/Jt4BY9unm9k)**: with one click, Caddy sends a service's requests through mitmproxy, so you can read them between Caddy and your backend. |
+| [![SQL on the wire film](https://img.youtube.com/vi/9uY2AO0v45w/mqdefault.jpg)](https://youtu.be/9uY2AO0v45w) | **[Read the SQL on the wire](https://youtu.be/9uY2AO0v45w)**: the Postgres decoder that ships with the library shows each query exactly as the application sends it, even without a query log.  |
+
 ```
 ext install Viaalink.vscode-caddy-tools
 ```
