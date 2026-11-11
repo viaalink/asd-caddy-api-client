@@ -148,7 +148,10 @@ if [ "$version" != "$base_version" ]; then
   if ! [[ "$version" =~ $SEMVER ]] || ! newer "$version" "$base_version"; then
     hold "$pr" "version '$version' is not a plain semver step up from '$base_version'."
   fi
-  if ! file_at CHANGELOG.md "$head" | grep -qF "## [$version]("; then
+  # Read it whole first: with pipefail, `file_at … | grep -q` fails exactly
+  # when grep finds the heading early and the writer gets SIGPIPE (PR #103).
+  changelog=$(file_at CHANGELOG.md "$head")
+  if ! grep -qF "## [$version](" <<<"$changelog"; then
     hold "$pr" "CHANGELOG.md has no '## [$version](' heading."
   fi
 fi
