@@ -27,7 +27,9 @@ concurrency:
 jobs:
   update:
     name: Check and update upstreams
-    runs-on: ubuntu-latest
+    # ubuntu-latest is Ubuntu 26.04 since 2026-10-19; Playwright cannot install
+    # chromium there yet ("does not support chromium on ubuntu26.04-x64").
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
       contents: write # push the bot/upstreams branch
