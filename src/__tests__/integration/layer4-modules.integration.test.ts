@@ -240,8 +240,8 @@ describe.skipIf(!enabled)("caddy-l4 modules accept the library's configs", () =>
       winbox: { modes: ["standard"], username: "admin" },
       xmpp: {},
       // the IP file may be missing (an empty list), its directory must exist. Every
-      // later load replaces this config, which hung Caddy before the caddy-l4 fork's
-      // fix (DEPENDENCIES.md, caddy-l4).
+      // later load replaces this config, which hung Caddy before caddy-l4's fix
+      // (mholt/caddy-l4#492, DEPENDENCIES.md).
       remote_ip_list: { remote_ip_file: "/tmp/l4mod-remote-ips.txt" },
     };
     const udp: Partial<Record<(typeof LAYER4_MATCHERS)[number], unknown>> = {

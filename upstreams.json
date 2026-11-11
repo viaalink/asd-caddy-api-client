@@ -58,22 +58,22 @@
     },
     {
       "name": "caddy-l4",
-      "repo": "https://github.com/viaalink/caddy-l4",
+      "repo": "https://github.com/mholt/caddy-l4",
       "module": "github.com/mholt/caddy-l4",
       "localPath": "local/caddy-l4",
       "track": {
         "type": "branch",
-        "branch": "fix/remoteiplist-reload-hang"
+        "branch": "master"
       },
       "pin": {
-        "ref": "fix/remoteiplist-reload-hang",
-        "commit": "009d9b00abee87bed76b66ae1c44283ca494c3f9",
-        "updated": "2026-11-04"
+        "ref": "master",
+        "commit": "e54f24a1a59b099d22778ed423935cde56d83d4b",
+        "updated": "2026-11-11"
       },
       "tygoConfig": "scripts/upstreams/tygo/caddy-l4.yaml",
       "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
       "docsRow": "caddy-l4",
-      "note": "Temporarily on our fork: branch fix/remoteiplist-reload-hang = upstream master 96e1a6bf plus the remote_ip_list reload fix, until https://github.com/mholt/caddy-l4/pull/492 is merged. Then set repo back to https://github.com/mholt/caddy-l4, track branch master and pin the merged commit. The Go module path stays github.com/mholt/caddy-l4. Tags are stale (v0.1.2 is years old); every user builds master, so this is pinned by commit."
+      "note": "Tags are stale (v0.1.2 is years old); every user builds master, so this is pinned by commit. The remote_ip_list reload fix is upstream since mholt/caddy-l4#492 (merge commit e54f24a1)."
     },
     {
       "name": "libdns-porkbun",
