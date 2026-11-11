@@ -9,9 +9,12 @@
  *   just upstreams-update --skip-vscode            # leave out `just vscode-test`
  *   just upstreams-sync                            # = --sync-only: clones on their pins, nothing else
  *
+ *   just upstreams-update --release-bump           # also bump package.json + CHANGELOG (the bot does)
+ *
  * Writes local/upstreams/{summary.md,result.json,logs/*.log}.
  * Exit codes: 0 nothing to do or gate green, 20 updated but the gate failed, 1 error.
- * It never commits, pushes, merges or publishes.
+ * It never commits, pushes, merges or publishes; .github/workflows/upstreams.yml
+ * opens the PR and upstreams-release.yml merges and tags it once CI is green.
  *
  * Hand-fixes survive. Some generated files carry fixes by hand (tygo's
  * comment-merging artifact, the queryOps types in caddy-rewrite.ts). So the
@@ -41,11 +44,15 @@ import {
   type Target,
   type Upstream,
   type UpstreamsConfig,
+  type ReleaseKind,
+  addChangelogRelease,
   compareUrl,
   formatReport,
   git,
   gitRaw,
   loadConfig,
+  nextVersion,
+  releaseKindFromDiff,
   renderSupportedCaddy,
   replaceSupportedCaddy,
   resolveTargets,
@@ -65,7 +72,19 @@ const DOC_FILES = {
   installCaddy: ".github/actions/install-caddy/action.yml",
 };
 /** Files this script rewrites; they must be clean before it starts. */
-const OWNED = [GENERATED, "upstreams.json", ...Object.values(DOC_FILES)];
+const OWNED = [
+  GENERATED,
+  "upstreams.json",
+  "package.json",
+  "CHANGELOG.md",
+  ...Object.values(DOC_FILES),
+];
+/** Generated files whose diff decides the release kind (the derived ones follow from these). */
+const RELEASE_DIFF_PATHS = [
+  GENERATED,
+  ":(exclude)src/generated/schemas",
+  ":(exclude)src/generated/extension-assets.ts",
+];
 
 interface Args {
   only?: Set<string>;
@@ -76,6 +95,8 @@ interface Args {
   syncOnly: boolean;
   renderDocs: boolean;
   allowDirty: boolean;
+  /** Bump package.json and write the CHANGELOG release entry (the bot PR ships as a release). */
+  releaseBump: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -87,6 +108,7 @@ function parseArgs(argv: string[]): Args {
     syncOnly: false,
     renderDocs: false,
     allowDirty: false,
+    releaseBump: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -101,6 +123,7 @@ function parseArgs(argv: string[]): Args {
     else if (arg === "--sync-only") a.syncOnly = true;
     else if (arg === "--render-docs") a.renderDocs = true;
     else if (arg === "--allow-dirty") a.allowDirty = true;
+    else if (arg === "--release-bump") a.releaseBump = true;
     else throw new Error(`unknown argument ${arg}`);
   }
   if (a.targets.size > 0 && !a.only) a.only = new Set(a.targets.keys());
@@ -402,7 +425,14 @@ function writeDocs(config: UpstreamsConfig, changed: Target[]): string[] {
 // Summary
 // ---------------------------------------------------------------------------
 
+interface Release {
+  kind: ReleaseKind;
+  from: string;
+  to: string;
+}
+
 interface Summary {
+  release: Release | null;
   changed: Target[];
   /** Pins before this run, by upstream name. */
   from: Map<string, Pin>;
@@ -424,9 +454,19 @@ function writeSummary(s: Summary, gateOk: boolean): string {
   lines.push(`## ${prTitle(s.changed)}`, "");
   lines.push(
     "Opened by the upstream update cycle (`just upstreams-update`, `.github/workflows/upstreams.yml`). " +
-      "It is never merged automatically: review the regenerated code, then merge, version, CHANGELOG and publish by hand.",
+      "With the `auto-release` label, `.github/workflows/upstreams-release.yml` merges it once every CI check is green " +
+      "and tags the version below, which publishes to npm. A failing gate gets `gate-failing` instead and waits for " +
+      "the auto-fix routine or a human; label `hold` stops both. DEPENDENCIES.md, 'The update cycle'.",
     ""
   );
+  if (s.release) {
+    lines.push(
+      s.release.kind === "none"
+        ? `### Release: none (generated code unchanged; stays \`${s.release.from}\`)`
+        : `### Release: \`${s.release.from}\` → \`${s.release.to}\` (${s.release.kind})`,
+      ""
+    );
+  }
   lines.push(`### Gate: ${gateOk ? "PASS" : "FAILING"}`, "");
   lines.push("| step | result | time |", "| --- | --- | --- |");
   for (const r of [...s.generation, ...s.gate]) {
@@ -477,7 +517,7 @@ function writeSummary(s: Summary, gateOk: boolean): string {
     "- [ ] Read the upstream diffs above; write the `vX → vY notes` in DEPENDENCIES.md (new/removed JSON fields, security fixes).",
     "- [ ] If typecheck failed: fix tygo's comment-merging artifacts by hand (DEPENDENCIES.md, 'Adding a Provider' step 5).",
     "- [ ] Builders/schemas in `src/plugins/*` and `src/caddy/*` cover any new syntax you want exposed.",
-    "- [ ] CHANGELOG + version bump only if this ships in a release (no npm bump without functional changes).",
+    "- [ ] Version + CHANGELOG: written by the bot (patch for additions, minor when a generated line was removed or changed, none when the generated code is unchanged). Raise it by hand if a builder change is breaking.",
     "- [ ] Compatibility matrix in DEPENDENCIES.md/README.md, and the library/extension versions in the supported-Caddy table."
   );
 
@@ -497,6 +537,61 @@ function writeSummary(s: Summary, gateOk: boolean): string {
   const text = lines.join("\n") + "\n";
   writeFileSync(join(OUT_DIR, "summary.md"), text);
   return text;
+}
+
+// ---------------------------------------------------------------------------
+// Release bump
+// ---------------------------------------------------------------------------
+
+/**
+ * Decide the release from the regenerated code, bump package.json, write the
+ * CHANGELOG entry and fill in the supported-Caddy row. The PR then carries
+ * exactly what will be tagged, so CI tests the release itself.
+ */
+function writeRelease(config: UpstreamsConfig, changed: Target[], from: Map<string, Pin>): Release {
+  const kind = releaseKindFromDiff(gitRaw(["diff", "-U0", "--", ...RELEASE_DIFF_PATHS]));
+  const pkgPath = join(ROOT_DIR, "package.json");
+  const pkgText = readFileSync(pkgPath, "utf-8");
+  const pkg = JSON.parse(pkgText) as { version: string; repository?: { url?: string } };
+  const prev = pkg.version;
+  const next = nextVersion(prev, kind);
+  const vscodeVersion = (
+    JSON.parse(readFileSync(join(ROOT_DIR, "vscode-extension/package.json"), "utf-8")) as {
+      version: string;
+    }
+  ).version;
+
+  // The row writeDocs added for a new Caddy says "next release"; name it.
+  for (const row of config.supportedCaddy) {
+    if (row.library === "next release") row.library = `${next} and later`;
+    // Unchanged generated code: the published extension already has these schemas.
+    if (row.vscode === "next release" && kind === "none") row.vscode = `${vscodeVersion} and later`;
+  }
+  writeDocs(config, []);
+
+  if (kind !== "none") {
+    writeFileSync(pkgPath, pkgText.replace(/"version": "[^"]*"/, `"version": "${next}"`));
+    const repoUrl = (pkg.repository?.url ?? "").replace(/^git\+/, "").replace(/\.git$/, "");
+    const bullets = changed.map((t) => {
+      const old = from.get(t.upstream.name) ?? t.upstream.pin;
+      return `Types regenerated from ${t.upstream.name} ${shortRef(t)} (was ${shortRef(old)}; [diff](${compareUrl(t.upstream.repo, old, t)})).`;
+    });
+    const caddy = changed.find((t) => t.upstream.caddyBinary);
+    if (caddy) bullets.push(`Supports Caddy ${caddy.ref}.`);
+    const clPath = join(ROOT_DIR, "CHANGELOG.md");
+    writeFileSync(
+      clPath,
+      addChangelogRelease(readFileSync(clPath, "utf-8"), {
+        version: next,
+        previous: prev,
+        date: today(),
+        repoUrl,
+        bullets,
+      })
+    );
+  }
+  console.log(`  release: ${kind === "none" ? "none" : `${prev} -> ${next} (${kind})`}`);
+  return { kind, from: prev, to: next };
 }
 
 // ---------------------------------------------------------------------------
@@ -585,7 +680,13 @@ async function main(): Promise<number> {
   if (derived.length > 0) step("format-derived", "just", ["format-paths", ...derived]);
 
   const notes = writeDocs(config, changed);
-  step("format-docs", "just", ["format-paths", "upstreams.json", ...Object.values(DOC_FILES)]);
+  const release = args.releaseBump ? writeRelease(config, changed, from) : null;
+  step("format-docs", "just", [
+    "format-paths",
+    "upstreams.json",
+    "CHANGELOG.md",
+    ...Object.values(DOC_FILES),
+  ]);
 
   // Gate.
   const gate: StepResult[] = [];
@@ -613,7 +714,18 @@ async function main(): Promise<number> {
     generation.every((r) => r.ok) && carry.conflicts.length === 0 && gate.every((r) => r.ok);
 
   writeSummary(
-    { changed, from, all, gate, generation, carry, tagDelta, notes, caddyOnPath: caddyVersion() },
+    {
+      release,
+      changed,
+      from,
+      all,
+      gate,
+      generation,
+      carry,
+      tagDelta,
+      notes,
+      caddyOnPath: caddyVersion(),
+    },
     gateOk
   );
   writeResult({
@@ -622,6 +734,7 @@ async function main(): Promise<number> {
     title: prTitle(changed),
     caddyVersion: changed.find((t) => t.upstream.caddyBinary)?.ref ?? null,
     upstreams: changed.map((t) => ({ name: t.upstream.name, to: shortRef(t), commit: t.commit })),
+    release,
   });
   console.log(`\nSummary: ${join(OUT_DIR, "summary.md")}`);
   console.log(`Gate: ${gateOk ? "PASS" : "FAILING"}`);

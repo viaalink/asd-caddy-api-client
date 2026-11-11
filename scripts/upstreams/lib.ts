@@ -511,3 +511,75 @@ export function updateInstallCaddyDefault(actionYaml: string, version: string): 
     `$1"${version.replace(/^v/, "")}"`
   );
 }
+
+// ---------------------------------------------------------------------------
+// Release bump (the bot PR carries its own version + CHANGELOG entry)
+// ---------------------------------------------------------------------------
+
+/**
+ * none: the generated code did not change, so nothing ships to npm.
+ * patch: only additions (new fields, new types, new comments).
+ * minor: a generated line of code was removed or changed, which can break a
+ * TypeScript user (pre-1.0, minor is the breaking slot).
+ */
+export type ReleaseKind = "none" | "patch" | "minor";
+
+/** Classify a `git diff -U0` of the generated sources. */
+export function releaseKindFromDiff(diff: string): ReleaseKind {
+  let added = 0;
+  let removedCode = 0;
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("+++") || line.startsWith("---")) continue;
+    const body = line.slice(1).trim();
+    const isComment =
+      body === "" || body.startsWith("//") || body.startsWith("*") || body.startsWith("/*");
+    if (line.startsWith("+") && !isComment) added++;
+    else if (line.startsWith("-") && !isComment) removedCode++;
+  }
+  if (removedCode > 0) return "minor";
+  return added > 0 || diff.trim() !== "" ? "patch" : "none";
+}
+
+export function nextVersion(version: string, kind: ReleaseKind): string {
+  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  if (!m) throw new Error(`not a plain semver version: ${version}`);
+  const [maj, min, pat] = m.slice(1).map(Number);
+  if (kind === "minor") return `${maj}.${min + 1}.0`;
+  if (kind === "patch") return `${maj}.${min}.${pat + 1}`;
+  return version;
+}
+
+/**
+ * Turn `## [Unreleased]` (if any) into the release heading and add the
+ * bullets under its `### Changed`; without an Unreleased section, insert a
+ * new release section above the newest one.
+ */
+export function addChangelogRelease(
+  markdown: string,
+  r: { version: string; previous: string; date: string; repoUrl: string; bullets: string[] }
+): string {
+  const heading = `## [${r.version}](${r.repoUrl}/compare/v${r.previous}...v${r.version}) (${r.date})`;
+  const items = r.bullets.map((b) => `- ${b}`).join("\n");
+  const lines = markdown.split("\n");
+  const unreleased = lines.findIndex((l) => /^## \[Unreleased\]/i.test(l));
+  if (unreleased >= 0) {
+    let end = lines.findIndex((l, i) => i > unreleased && l.startsWith("## "));
+    if (end < 0) end = lines.length;
+    lines[unreleased] = heading;
+    const changed = lines.findIndex((l, i) => i > unreleased && i < end && l === "### Changed");
+    if (changed >= 0) {
+      if (lines[changed + 1]?.trim() === "") lines.splice(changed + 2, 0, items);
+      else lines.splice(changed + 1, 0, "", items);
+    } else {
+      // Keep one blank line before the next release heading.
+      let at = end;
+      while (at > unreleased + 1 && lines[at - 1].trim() === "") at--;
+      lines.splice(at, 0, "", "### Changed", "", items);
+    }
+    return lines.join("\n").replace(/\n{3,}/g, "\n\n");
+  }
+  const first = lines.findIndex((l) => l.startsWith("## ["));
+  const at = first < 0 ? lines.length : first;
+  lines.splice(at, 0, heading, "", "### Changed", "", items, "");
+  return lines.join("\n");
+}

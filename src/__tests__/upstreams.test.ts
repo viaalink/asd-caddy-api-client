@@ -8,13 +8,16 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import {
   ROOT_DIR,
+  addChangelogRelease,
   bumpKind,
   loadConfig,
+  nextVersion,
   orderByDependency,
   parseConfig,
   parseGoModRequires,
   pickLatestTag,
   pseudoVersionCommit,
+  releaseKindFromDiff,
   renderSupportedCaddy,
   replaceSupportedCaddy,
   SUPPORTED_END,
@@ -197,6 +200,80 @@ describe("upstreams.json", () => {
     };
     expect(() => parseConfig(JSON.stringify({ upstreams: [orphan], supportedCaddy: [] }))).toThrow(
       /unknown parent/
+    );
+  });
+});
+
+describe("releaseKindFromDiff", () => {
+  test("no diff: no release", () => {
+    expect(releaseKindFromDiff("")).toBe("none");
+  });
+
+  test("only added code or comments: patch", () => {
+    const diff = [
+      "--- a/src/generated/caddy-http.ts",
+      "+++ b/src/generated/caddy-http.ts",
+      "@@ -10,0 +11,2 @@",
+      "+  /** New in 2.11.9 */",
+      "+  trusted_proxies_unix?: boolean;",
+    ].join("\n");
+    expect(releaseKindFromDiff(diff)).toBe("patch");
+  });
+
+  test("a changed comment alone is a patch", () => {
+    expect(releaseKindFromDiff("@@ -1 +1 @@\n-// old words\n+// new words")).toBe("patch");
+  });
+
+  test("a removed or changed line of code: minor", () => {
+    const diff = "@@ -5 +5 @@\n-  timeout?: number;\n+  timeout?: string;";
+    expect(releaseKindFromDiff(diff)).toBe("minor");
+  });
+});
+
+describe("nextVersion", () => {
+  test("bumps by kind", () => {
+    expect(nextVersion("0.11.1", "patch")).toBe("0.11.2");
+    expect(nextVersion("0.11.1", "minor")).toBe("0.12.0");
+    expect(nextVersion("0.11.1", "none")).toBe("0.11.1");
+  });
+
+  test("refuses a pre-release version", () => {
+    expect(() => nextVersion("1.0.0-beta.1", "patch")).toThrow();
+  });
+});
+
+describe("addChangelogRelease", () => {
+  const release = {
+    version: "0.12.0",
+    previous: "0.11.1",
+    date: "2026-11-16",
+    repoUrl: "https://github.com/viaalink/asd-caddy-api-client",
+    bullets: ["Types regenerated from caddy v2.11.9."],
+  };
+  const heading =
+    "## [0.12.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.11.1...v0.12.0) (2026-11-16)";
+  const old = "## [0.11.1](https://x/compare/v0.11.0...v0.11.1) (2026-11-04)\n\n### Fixed\n\n- a\n";
+
+  test("without Unreleased: a new section above the newest release", () => {
+    const out = addChangelogRelease(`# Changelog\n\nIntro.\n\n${old}`, release);
+    expect(out).toBe(
+      `# Changelog\n\nIntro.\n\n${heading}\n\n### Changed\n\n- Types regenerated from caddy v2.11.9.\n\n${old}`
+    );
+  });
+
+  test("Unreleased with ### Changed: renamed, bullets go first under Changed", () => {
+    const md = `# Changelog\n\n## [Unreleased]\n\n### Changed\n\n- human entry\n\n${old}`;
+    const out = addChangelogRelease(md, release);
+    expect(out).toBe(
+      `# Changelog\n\n${heading}\n\n### Changed\n\n- Types regenerated from caddy v2.11.9.\n- human entry\n\n${old}`
+    );
+  });
+
+  test("Unreleased without ### Changed: a Changed section is appended to it", () => {
+    const md = `# Changelog\n\n## [Unreleased]\n\n### Added\n\n- thing\n\n${old}`;
+    const out = addChangelogRelease(md, release);
+    expect(out).toBe(
+      `# Changelog\n\n${heading}\n\n### Added\n\n- thing\n\n### Changed\n\n- Types regenerated from caddy v2.11.9.\n\n${old}`
     );
   });
 });
