@@ -28,8 +28,9 @@ runs:
         base="https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}"
         tarball="caddy_${CADDY_VERSION}_linux_${arch}.tar.gz"
         tmp="$(mktemp -d)"
-        curl -fsSL -o "$tmp/$tarball" "$base/$tarball"
-        curl -fsSL "$base/caddy_${CADDY_VERSION}_checksums.txt" \
+        # --retry: GitHub release downloads sometimes answer 504 (the 2026-11-09 upstreams run).
+        curl -fsSL --retry 5 --retry-all-errors -o "$tmp/$tarball" "$base/$tarball"
+        curl -fsSL --retry 5 --retry-all-errors "$base/caddy_${CADDY_VERSION}_checksums.txt" \
           | grep " ${tarball}\$" | (cd "$tmp" && sha512sum -c -)
         tar -xzf "$tmp/$tarball" -C "$tmp" caddy
         sudo install -m 0755 "$tmp/caddy" /usr/local/bin/caddy

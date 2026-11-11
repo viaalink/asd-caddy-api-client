@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [Unreleased]
+
+### Changed
+
+- caddy-l4 is built from upstream again (`github.com/mholt/caddy-l4@e54f24a1`): the
+  `remote_ip_list` reload fix was merged as
+  [mholt/caddy-l4#492](https://github.com/mholt/caddy-l4/pull/492). Generated types are unchanged.
+
 ## [0.11.1](https://github.com/viaalink/asd-caddy-api-client/compare/v0.11.0...v0.11.1) (2026-11-04)
 
 ### Fixed
