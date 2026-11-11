@@ -195,4 +195,5 @@ jobs:
           GH_TOKEN: ${{ secrets.UPSTREAMS_TOKEN || github.token }}
           PR: ${{ steps.cpr.outputs.pull-request-number }}
           STALE: ${{ steps.update.outputs.gate == 'pass' && 'gate-failing' || 'auto-release' }}
-        run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label "$STALE" || true
+        # REST, not `gh pr edit` (which trips over the retired Projects classic API).
+        run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/$PR/labels/$STALE" >/dev/null 2>&1 || true

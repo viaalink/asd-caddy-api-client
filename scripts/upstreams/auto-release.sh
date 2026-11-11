@@ -25,6 +25,11 @@ REQUIRED=("Lint" "Type Check" "Unit Tests" "Integration Tests" "Caddy Security T
 DENY='^(\.github/workflows/|\.husky/|Justfile$|bun\.lock$|package-lock\.json$|vscode-extension/package(-lock)?\.json$)'
 
 say() { echo "$*" | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"; }
+# REST, not `gh pr edit`: older gh versions fail that on the retired Projects (classic) API.
+add_label() {
+  if [ "${DRY_RUN:-}" = "1" ]; then say "DRY RUN: would label PR #$1 $2"; return; fi
+  gh api "repos/$REPO/issues/$1/labels" -f "labels[]=$2" >/dev/null || true
+}
 
 pr_json=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
   --json number,headRefOid,labels,isCrossRepository,title,baseRefName --jq '.[0] // empty')
@@ -63,7 +68,7 @@ files=$(gh pr diff "$pr" --repo "$REPO" --name-only)
 denied=$(grep -E "$DENY" <<<"$files" || true)
 if [ -n "$denied" ]; then
   say "PR #$pr touches files the bot may not release on its own: $(tr '\n' ' ' <<<"$denied")"
-  gh pr edit "$pr" --repo "$REPO" --add-label hold >/dev/null || true
+  add_label "$pr" hold
   exit 0
 fi
 pkg_at() { gh api "repos/$REPO/contents/package.json?ref=$1" --jq .content | base64 -d; }
@@ -71,7 +76,7 @@ base_pkg=$(pkg_at main)
 head_pkg=$(pkg_at "$head")
 if [ "$(jq -S 'del(.version)' <<<"$base_pkg")" != "$(jq -S 'del(.version)' <<<"$head_pkg")" ]; then
   say "PR #$pr changes package.json beyond its version; holding it."
-  gh pr edit "$pr" --repo "$REPO" --add-label hold >/dev/null || true
+  add_label "$pr" hold
   exit 0
 fi
 version=$(jq -r .version <<<"$head_pkg")
