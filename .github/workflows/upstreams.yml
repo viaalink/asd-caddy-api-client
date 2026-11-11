@@ -68,8 +68,9 @@ jobs:
           labels=$(gh pr list --repo "$GITHUB_REPOSITORY" --head bot/upstreams --state open \
             --json labels --jq '[.[].labels[].name] | join(",")')
           if [[ ",$labels," == *",autofix,"* || ",$labels," == *",hold,"* ]]; then
-            echo "bot/upstreams is labelled autofix/hold ($labels); not touching it this run" \
-              | tee -a "$GITHUB_STEP_SUMMARY"
+            # Loud: a label nobody removes would stop upstream updates for good.
+            echo "::warning::bot/upstreams PR is labelled autofix/hold ($labels): no upstream update this run. Remove the label once the fix is done."
+            echo "bot/upstreams is labelled autofix/hold ($labels); not touching it this run" >> "$GITHUB_STEP_SUMMARY"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 

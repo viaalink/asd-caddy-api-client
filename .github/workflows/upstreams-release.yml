@@ -18,6 +18,10 @@ on:
   # The auto-fix routine (or a human) labelled a fixed PR after CI went green.
   pull_request_target:
     types: [labeled]
+  # Sweep: catches a dropped event and tags a merge whose run died before
+  # tagging. The script decides from current state, so this is idempotent.
+  schedule:
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,15 +31,11 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: upstreams-release
-  cancel-in-progress: false
-
 jobs:
   release:
     name: Merge and tag the upstream PR
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.head_branch == 'bot/upstreams' &&
        github.event.workflow_run.head_repository.full_name == github.repository &&
@@ -44,6 +44,12 @@ jobs:
        github.event.label.name == 'auto-release' &&
        github.event.pull_request.head.ref == 'bot/upstreams' &&
        github.event.pull_request.head.repo.full_name == github.repository)
+    # On the job, not the workflow: a run whose job is skipped (CI of any
+    # other PR, any other label) then never enters the group, so it cannot
+    # replace a pending run that matters.
+    concurrency:
+      group: upstreams-release
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
