@@ -42,6 +42,9 @@ caddy-security-tests, vscode-extension-tests, build**. All must be green.
 - **Never merge a PR until every CI check is green.**
 - **Never run `npm publish` or create a release tag without the user's explicit go-ahead each
   time.** Version/changelog bumps land in the PR by hand; no `standard-version`, no auto-tagging.
+  The one standing exception (approved 2026-11-11): the upstream bot PR (`bot/upstreams`) is
+  merged and tagged by `.github/workflows/upstreams-release.yml` once all CI is green
+  (DEPENDENCIES.md, "The update cycle"). Don't extend that path to other PRs.
 - The VSCode extension (`vscode-extension/`) is versioned **independently** — its own
   `package.json`/`CHANGELOG.md`. Never couple its version number to the main package's, and don't
   bump the main package version for a release with no functional library changes.

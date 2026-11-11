@@ -1,0 +1,68 @@
+name: Upstreams release
+
+# Merges the upstream bot PR (bot/upstreams, label auto-release) once every CI
+# check on its head is green, then tags the version the PR carries; the tag
+# starts release.yml, which publishes to npm. All checks live in
+# scripts/upstreams/auto-release.sh. These triggers run the workflow and the
+# script from main, never from the PR, so the PR's code cannot change them.
+#
+# Needs secret UPSTREAMS_TOKEN (fine-grained PAT or GitHub App token with
+# contents + pull-requests write): a merge or tag made with GITHUB_TOKEN
+# starts no further workflow, so nothing would publish.
+
+on:
+  # CI finished on the bot branch.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  # The auto-fix routine (or a human) labelled a fixed PR after CI went green.
+  pull_request_target:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report what would happen, change nothing"
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: upstreams-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Merge and tag the upstream PR
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.head_branch == 'bot/upstreams' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'pull_request_target' &&
+       github.event.label.name == 'auto-release' &&
+       github.event.pull_request.head.ref == 'bot/upstreams' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout main (the script, never the PR)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Merge and tag
+        env:
+          GH_TOKEN: ${{ secrets.UPSTREAMS_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::UPSTREAMS_TOKEN is not set; the bot PR cannot be merged or released."
+            exit 1
+          fi
+          bash scripts/upstreams/auto-release.sh

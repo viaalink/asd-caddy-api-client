@@ -5,8 +5,11 @@ name: Upstreams
 # caddy-security, go-authcrunch, caddy-l4 and libdns/caddy-dns versions. When
 # one moved it regenerates, runs the gate and opens or updates ONE pull
 # request from the fixed branch bot/upstreams. A failing gate still opens the
-# PR, marked as failing, so the new syntax is visible. It never merges, tags
-# or publishes: that stays a human step.
+# PR, marked as failing, so the new syntax is visible. The PR carries its own
+# version bump and CHANGELOG entry (--release-bump). A green gate labels it
+# auto-release: upstreams-release.yml merges it once every CI check is green
+# and tags it, and release.yml publishes to npm. A failing gate labels it
+# gate-failing for the auto-fix routine (DEPENDENCIES.md, "The update cycle").
 
 on:
   schedule:
@@ -55,8 +58,24 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # A run force-pushes bot/upstreams. Do not wipe a fix the auto-fix
+      # routine (label autofix) or a human (label hold) pushed on top.
+      - name: Leave a PR that is being fixed alone
+        id: busy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          labels=$(gh pr list --repo "$GITHUB_REPOSITORY" --head bot/upstreams --state open \
+            --json labels --jq '[.[].labels[].name] | join(",")')
+          if [[ ",$labels," == *",autofix,"* || ",$labels," == *",hold,"* ]]; then
+            echo "bot/upstreams is labelled autofix/hold ($labels); not touching it this run" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check upstreams
         id: check
+        if: steps.busy.outputs.skip != 'true'
         env:
           ONLY: ${{ inputs.only }}
         run: |
@@ -113,7 +132,7 @@ jobs:
           CI: true
         run: |
           set +e
-          args=()
+          args=(--release-bump)
           if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
           xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" \
             just upstreams-update "${args[@]}"
@@ -125,6 +144,9 @@ jobs:
           esac
           gate=$(jq -r .gate local/upstreams/result.json)
           title=$(jq -r .title local/upstreams/result.json)
+          kind=$(jq -r '.release.kind // "none"' local/upstreams/result.json)
+          to=$(jq -r '.release.to // ""' local/upstreams/result.json)
+          if [ "$kind" != "none" ]; then title="$title (release $to)"; fi
           if [ "$gate" != "pass" ]; then title="[gate failing] $title"; fi
           {
             echo "gate=$gate"
@@ -144,6 +166,7 @@ jobs:
       # on this PR when UPSTREAMS_TOKEN (a fine-grained PAT or GitHub App
       # token with contents+pull-requests write) is set.
       - name: Open or update the pull request
+        id: cpr
         if: steps.update.outputs.title != ''
         uses: peter-evans/create-pull-request@v7
         with:
@@ -153,11 +176,23 @@ jobs:
           commit-message: ${{ steps.update.outputs.title }}
           title: ${{ steps.update.outputs.title }}
           body-path: local/upstreams/summary.md
-          labels: ${{ steps.update.outputs.gate == 'pass' && 'dependencies' || 'dependencies,gate-failing' }}
+          labels: ${{ steps.update.outputs.gate == 'pass' && 'dependencies,auto-release' || 'dependencies,gate-failing' }}
           add-paths: |
             upstreams.json
+            package.json
+            CHANGELOG.md
             src/generated/**
             DEPENDENCIES.md
             README.md
             vscode-extension/README.md
             .github/actions/install-caddy/action.yml
+
+      # create-pull-request only adds labels: drop the one from an earlier run
+      # that no longer holds, so a red PR never keeps auto-release.
+      - name: Drop the stale gate label
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.UPSTREAMS_TOKEN || github.token }}
+          PR: ${{ steps.cpr.outputs.pull-request-number }}
+          STALE: ${{ steps.update.outputs.gate == 'pass' && 'gate-failing' || 'auto-release' }}
+        run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label "$STALE" || true

@@ -224,14 +224,40 @@ just upstreams-sync     # put every local/ clone on its pin (clones what is miss
    counts and compare links, warnings, regenerated files, log tails of what failed)
    and `local/upstreams/result.json`. Exit 0 = green or nothing to do, 20 = gate failed.
 
-It never commits. `.github/workflows/upstreams.yml` runs it every Monday (and on
-demand) and opens or updates **one** pull request from `bot/upstreams` with the summary
-as its body — also when the gate fails, then titled `[gate failing]` and labelled
-`gate-failing`, so the new syntax is visible. Merging, the version bump, the CHANGELOG
-and publishing stay manual. For CI to run on that PR, set an `UPSTREAMS_TOKEN` secret
-(fine-grained PAT or GitHub App token, contents + pull-requests write): a PR pushed
-with the default `GITHUB_TOKEN` starts no workflows. The repository setting _Allow
-GitHub Actions to create and approve pull requests_ must be on.
+It never commits. Three pieces run it unattended (decided 2026-11-11: releases follow
+upstream automatically, but only through a fully green CI):
+
+1. **`.github/workflows/upstreams.yml`** (Mondays 05:23 UTC, and on demand) runs it with
+   `--release-bump` and opens or updates **one** pull request from `bot/upstreams` with the
+   summary as its body. `--release-bump` makes the PR carry its own release: no version
+   change when the generated code is unchanged, a **patch** when it only gains lines, a
+   **minor** when a generated line of code was removed or changed (pre-1.0, minor is the
+   breaking slot). It bumps `package.json`, turns `## [Unreleased]` (or a new section) into
+   the release entry in `CHANGELOG.md`, and fills the version into the supported-Caddy row.
+   A green gate labels the PR `auto-release`; a failing one titles it `[gate failing]` and
+   labels it `gate-failing`. A PR labelled `autofix` or `hold` is left alone, so a run never
+   force-pushes over a fix.
+2. **The auto-fix routine** (a Claude Code cloud routine, daily) takes a `gate-failing` bot
+   PR, labels it `autofix`, fixes the code (tygo artifacts, builders, schemas, tests) on
+   `bot/upstreams`, raises the version to minor if its fix is breaking, and once
+   `just check` and `just build` pass, swaps `gate-failing` for `auto-release`. After three
+   attempts without success it labels the PR `needs-human` and stops.
+3. **`.github/workflows/upstreams-release.yml`** (after every CI run on `bot/upstreams`, and
+   when the PR gets `auto-release`) runs `scripts/upstreams/auto-release.sh` from main. It
+   squash-merges the PR only if it is labelled `auto-release` and not `hold`/`gate-failing`,
+   CI's eight checks (Lint, Type Check, Unit/Integration/Caddy Security/Differential Fuzz/
+   VSCode Extension Tests, Build) all passed on its current head, it touches no workflow,
+   hook, `Justfile` or lockfile, and `package.json` changes only its version (else it adds
+   `hold`). Then it tags `v<version>`, and `release.yml` publishes to npm. No version change,
+   no tag. A dry run: _Actions → Upstreams release → Run workflow_ (dry run is the default).
+
+To stop all of it for one PR, label it `hold`. The VS Code extension is not released by
+this: its own release stays manual.
+
+Setup: an `UPSTREAMS_TOKEN` secret (fine-grained PAT or GitHub App token, contents +
+pull-requests write). With the default `GITHUB_TOKEN`, the bot's PR starts no CI and the
+merge and tag start no release. The repository setting _Allow GitHub Actions to create and
+approve pull requests_ must be on.
 
 Locally, a Go older than an upstream's `go` line fails tygo (`toolchain not available`);
 run with `GOTOOLCHAIN=go1.25.0+auto`. The update reports a swallowed tygo failure in
