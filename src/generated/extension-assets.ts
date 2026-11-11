@@ -6,7 +6,7 @@
  * Run: npm run generate:extension
  *
  * @generated
- * @version 0.10.2
+ * @version 0.11.1
  * @generatedAt 2026-11-04T16:59:09.062Z
  */
 
@@ -54,7 +54,7 @@ export interface HandlerMetadata {
 /**
  * Library version this metadata was generated from
  */
-export const METADATA_VERSION = "0.10.2";
+export const METADATA_VERSION = "0.11.1";
 
 /**
  * Timestamp when this metadata was generated

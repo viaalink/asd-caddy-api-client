@@ -202,6 +202,7 @@ export type AdminHandlerFunc = any;
  */
 export interface APIError {
   error: string;
+  warnings?: any /* warning.Warning */[];
 }
 
 //////////

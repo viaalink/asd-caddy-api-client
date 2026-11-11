@@ -766,6 +766,9 @@
                 "file_limit": {
                   "type": "number"
                 },
+                "plain_time_format": {
+                  "type": "string"
+                },
                 "@id": {
                   "type": "string"
                 }
@@ -930,12 +933,6 @@
           "properties": {
             "max_size": {
               "type": "number"
-            },
-            "read_timeout": {
-              "type": ["number", "string"]
-            },
-            "write_timeout": {
-              "type": ["number", "string"]
             },
             "set": {
               "type": "string"

@@ -3,9 +3,65 @@ import { z } from "zod";
 
 export const secretsManagerSchema = z.any();
 
+export const oAuthRegistrationStoreConfigSchema = z.object({
+  path: z.string(),
+});
+
+export const oAuthApplicationSourceSchema = z.object({
+  name: z.string(),
+  revision: z.string(),
+  directives: z.array(z.string()),
+  digest: z.string(),
+});
+
+export const claimsEnrichmentBindingSchema = z.object({
+  policy: z.string(),
+  config: z.any().optional(),
+  backend: z.unknown(),
+});
+
+export const externalAuthorizationBindingSchema = z.object({
+  policy: z.string(),
+  config: z.any().optional(),
+  backend: z.unknown(),
+});
+
+export const accessSignerBackendModuleSchema = z.any();
+
+export const accessSignerFactorySchema = z.any();
+
+export const credentialAuthenticatorSchema = z.any();
+
+export const credentialAuthenticatorBackendModuleSchema = z.any();
+
+export const externalAuthorizationBackendModuleSchema = z.any();
+
+export const identityProviderBackendModuleSchema = z.any();
+
+export const identityStoreBackendModuleSchema = z.any();
+
+export const messagingProviderBackendModuleSchema = z.any();
+
+export const oAuthLoginStoreConfigSchema = z.any();
+
+export const oAuthLoginStoreBackendModuleSchema = z.any();
+
+export const oAuthLoginStoreFactorySchema = z.any();
+
+export const oAuthLoginStoreSchema = z.any();
+
+export const claimsEnrichmentBackendModuleSchema = z.any();
+
+export const refreshStoreBackendModuleSchema = z.any();
+
+export const refreshStoreFactorySchema = z.any();
+
+export const registrationWorkflowBackendModuleSchema = z.any();
+
 export const authnMiddlewareSchema = z.object({
   route_matcher: z.string().optional(),
   portal_name: z.string().optional(),
+  base_path: z.string().optional(),
 });
 
 export const authzMiddlewareSchema = z.object({
@@ -17,5 +73,33 @@ const configSchema = z.any();
 
 export const appSchema = z.object({
   config: configSchema.optional(),
+  oauth_registration_store: oAuthRegistrationStoreConfigSchema.optional(),
+  oauth_application_sources: z
+    .array(z.union([oAuthApplicationSourceSchema, z.undefined()]))
+    .optional(),
+  oidc_provider_directives: z.record(z.string(), z.array(z.string())).optional(),
+  portal_cookie_directives: z.record(z.string(), z.array(z.string())).optional(),
+  portal_token_refresh_directives: z.record(z.string(), z.array(z.string())).optional(),
+  portal_documents_directives: z.record(z.string(), z.array(z.string())).optional(),
+  portal_access_token_profile_directives: z.record(z.string(), z.array(z.string())).optional(),
+  policy_access_token_profile_directives: z.record(z.string(), z.array(z.string())).optional(),
+  oauth_provider_directives: z.record(z.string(), z.array(z.string())).optional(),
+  oauth_authorization_directives: z.record(z.string(), z.array(z.string())).optional(),
   secrets_managers: z.array(z.unknown()).optional(),
+  credential_authenticators: z.array(z.unknown()).optional(),
+  identity_stores: z.array(z.unknown()).optional(),
+  identity_providers: z.array(z.unknown()).optional(),
+  oauth_login_stores: z.array(z.unknown()).optional(),
+  access_signers: z.array(z.unknown()).optional(),
+  refresh_stores: z.array(z.unknown()).optional(),
+  messaging_providers: z.array(z.unknown()).optional(),
+  registration_workflows: z.array(z.unknown()).optional(),
+  claims_enrichment: z.array(z.union([claimsEnrichmentBindingSchema, z.undefined()])).optional(),
+  external_authorization: z
+    .array(z.union([externalAuthorizationBindingSchema, z.undefined()]))
+    .optional(),
+});
+
+export const authorizationHandlerSchema = z.object({
+  AuthzMiddleware: authzMiddlewareSchema,
 });

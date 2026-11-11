@@ -4,15 +4,10 @@
 // source: transformer.go
 
 /**
- * Config represents a common set of configuration settings
- * applicable to the cookies issued by authn.Authenticator.
+ * Config preserves the serialized transform configuration shared with parser.
  */
-export interface Config {
-  matchers?: string[];
-  actions?: string[];
-}
+export type Config = any /* config.Config */;
 /**
- * Factory holds configuration and associated finctions
- * for the cookies issued by authn.Authenticator.
+ * Factory applies an ordered, immutable snapshot of user transformations.
  */
 export interface Factory {}

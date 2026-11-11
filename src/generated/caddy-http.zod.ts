@@ -50,6 +50,26 @@ export const httpRedirectListenerWrapperSchema = z.object({
   max_header_bytes: z.number().optional(),
 });
 
+export const idleDeadlineSchema = z.object({
+  Start: z.string(),
+  Timeout: z.union([z.number(), z.string()]),
+  MinRate: z.number(),
+  HardDeadline: z.string(),
+});
+
+export const idleTimeoutReaderSchema = z.object({
+  ReadCloser: z.any(),
+  Ctrl: z.any().optional(),
+  Deadline: idleDeadlineSchema,
+  Logger: z.unknown().optional(),
+  DrainDeadline: z.boolean(),
+  ClearBetweenReads: z.boolean(),
+});
+
+export const responseWriterWrapperSchema = z.object({
+  ResponseWriter: z.unknown(),
+});
+
 export const invokeSchema = z.object({
   name: z.string().optional(),
 });
@@ -111,10 +131,6 @@ export const matchTlsSchema = z.object({
 
 export const matchNotSchema = z.object({});
 
-export const responseWriterWrapperSchema = z.object({
-  ResponseWriter: z.unknown(),
-});
-
 export const responseRecorderSchema = z.unknown();
 
 export const shouldBufferFuncSchema = z.any();
@@ -145,6 +161,12 @@ export const staticResponseSchema = z.object({
   abort: z.boolean().optional(),
 });
 
+export const matchUrlPatternSchema = z.object({
+  pattern: z.string().optional(),
+  base_url: z.string().optional(),
+  ignore_case: z.boolean().optional(),
+});
+
 export const varsMiddlewareSchema = z.record(z.string(), z.any());
 
 export const varsMatcherSchema = z.record(z.string(), z.array(z.string()));
@@ -156,6 +178,15 @@ const durationSchema = z.any();
 const moduleMapSchema = z.any();
 
 const connectionPoliciesSchema = z.any();
+
+export const idleTimeoutWriterSchema = z.object({
+  ResponseWriterWrapper: responseWriterWrapperSchema.optional(),
+  Ctrl: z.any().optional(),
+  Deadline: idleDeadlineSchema,
+  MaxChunk: z.number(),
+  Logger: z.unknown().optional(),
+  ClearBetweenWrites: z.boolean(),
+});
 
 export const matchPathReSchema = z.object({
   MatchRegexp: matchRegexpSchema,
@@ -187,13 +218,20 @@ export const serverSchema = z.object({
   packet_conn_wrappers: z.array(z.unknown()).optional(),
   read_timeout: durationSchema.optional(),
   read_header_timeout: durationSchema.optional(),
+  read_idle_timeout: durationSchema.optional(),
+  read_min_rate: z.number().optional(),
   write_timeout: durationSchema.optional(),
+  write_idle_timeout: durationSchema.optional(),
+  write_min_rate: z.number().optional(),
+  max_write_chunk: z.number().optional(),
   idle_timeout: durationSchema.optional(),
   keepalive_interval: durationSchema.optional(),
   keepalive_idle: durationSchema.optional(),
   keepalive_count: z.number().optional(),
   max_header_bytes: z.number().optional(),
   enable_full_duplex: z.boolean().optional(),
+  expected_underscore_headers: z.array(z.string()).optional(),
+  expected_dot_headers: z.array(z.string()).optional(),
   routes: routeListSchema.optional(),
   errors: httpErrorConfigSchema.optional(),
   named_routes: z.record(z.string(), z.union([routeSchema, z.undefined()])).optional(),

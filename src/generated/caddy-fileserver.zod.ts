@@ -6,6 +6,7 @@ export const browseSchema = z.object({
   reveal_symlinks: z.boolean().optional(),
   sort: z.array(z.string()).optional(),
   file_limit: z.number().optional(),
+  plain_time_format: z.string().optional(),
 });
 
 export const matchFileSchema = z.object({

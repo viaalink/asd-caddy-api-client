@@ -91,6 +91,27 @@ export interface MatchLocalIP {
 export interface MatchNot {}
 
 //////////
+// source: packetconn.go
+
+/**
+ * PacketConnWrapper is a Caddy module that wraps App as a packet conn wrapper, it doesn't support tcp.
+ */
+export interface PacketConnWrapper {
+  /**
+   * Routes express composable logic for handling byte streams.
+   */
+  routes?: RouteList;
+  /**
+   * Maximum time before packet connection association (by downstream address:port) is removed. Default: 30s.
+   */
+  idle_timeout?: Duration;
+  /**
+   * Maximum time connections have to complete the matching phase (the first terminal handler is matched). Default: 3s.
+   */
+  matching_timeout?: Duration;
+}
+
+//////////
 // source: regexp.go
 
 /**

@@ -13,6 +13,23 @@ export interface IdentityStoreConfig {
 }
 
 //////////
+// source: external_config.go
+
+/**
+ * ExternalIdentityStoreConfig describes a host-owned configured identity store.
+ * ConfigDigest binds normalized backend configuration without serializing the
+ * runtime handle or backend credentials. The host must regenerate this derived
+ * descriptor after resolving configuration, and supply a matching runtime via
+ * authcrunch.ServerOptions.IdentityStores. It does not register a factory kind.
+ */
+export interface ExternalIdentityStoreConfig {
+  name?: string;
+  kind?: string;
+  realm?: string;
+  config_digest?: string;
+}
+
+//////////
 // source: method.go
 
 /**
@@ -39,3 +56,8 @@ export const LDAP: IdentityStoreType = 2;
  * IdentityStore represents identity store.
  */
 export type IdentityStore = any;
+/**
+ * IdentityRequestStore is an optional identity-store capability for profile
+ * operations bound to the immutable authentication evidence in the request.
+ */
+export type IdentityRequestStore = any;

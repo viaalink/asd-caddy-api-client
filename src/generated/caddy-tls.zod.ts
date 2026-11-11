@@ -165,6 +165,8 @@ export const matchLocalIpSchema = z.object({
   ranges: z.array(z.string()).optional(),
 });
 
+export const matchNotSchema = z.object({});
+
 export const onDemandPermissionSchema = z.any();
 
 export const permissionByHttpSchema = z.object({

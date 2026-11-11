@@ -283,8 +283,23 @@
                       "read_header_timeout": {
                         "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
                       },
+                      "read_idle_timeout": {
+                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
+                      },
+                      "read_min_rate": {
+                        "type": "number"
+                      },
                       "write_timeout": {
                         "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
+                      },
+                      "write_idle_timeout": {
+                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
+                      },
+                      "write_min_rate": {
+                        "type": "number"
+                      },
+                      "max_write_chunk": {
+                        "type": "number"
                       },
                       "idle_timeout": {
                         "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
@@ -303,6 +318,18 @@
                       },
                       "enable_full_duplex": {
                         "type": "boolean"
+                      },
+                      "expected_underscore_headers": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "expected_dot_headers": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "errors": {
                         "type": "object",
@@ -1391,6 +1418,9 @@
                                           "file_limit": {
                                             "type": "number"
                                           },
+                                          "plain_time_format": {
+                                            "type": "string"
+                                          },
                                           "@id": {
                                             "type": "string"
                                           }
@@ -1555,12 +1585,6 @@
                                     "properties": {
                                       "max_size": {
                                         "type": "number"
-                                      },
-                                      "read_timeout": {
-                                        "type": ["number", "string"]
-                                      },
-                                      "write_timeout": {
-                                        "type": ["number", "string"]
                                       },
                                       "set": {
                                         "type": "string"

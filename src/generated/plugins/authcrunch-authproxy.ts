@@ -7,6 +7,16 @@
  * Authenticator is an interface to an identity store.
  */
 export type Authenticator = any;
+/**
+ * ContextAuthenticator optionally propagates the protected HTTP request deadline.
+ * Legacy authenticators retain the original interface and their own timeout.
+ */
+export type ContextAuthenticator = Authenticator;
+/**
+ * FreshAuthenticator opts out of credential result caching. Implementations
+ * return a stable value for their lifetime; runtime reconfiguration is not safe.
+ */
+export type FreshAuthenticator = Authenticator;
 
 //////////
 // source: config.go

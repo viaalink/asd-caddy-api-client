@@ -3,7 +3,5 @@ import { z } from "zod";
 
 export const requestBodySchema = z.object({
   max_size: z.number().optional(),
-  read_timeout: z.union([z.number(), z.string()]).optional(),
-  write_timeout: z.union([z.number(), z.string()]).optional(),
   set: z.string().optional(),
 });

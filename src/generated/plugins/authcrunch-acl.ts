@@ -12,6 +12,30 @@ export interface AccessList {}
 // source: condition.go
 
 //////////
+// source: fields.go
+
+/**
+ * FieldTypeString matches a scalar string claim.
+ */
+export const FieldTypeString = "string";
+/**
+ * FieldTypeStringList matches a claim containing only strings.
+ */
+export const FieldTypeStringList = "string_list";
+/**
+ * FieldConfig binds a policy-local ACL name to an exact top-level claim key.
+ * Claim is literal: punctuation does not select nested objects or a remote URL.
+ */
+export interface FieldConfig {
+  name?: string;
+  claim?: string;
+  type?: string;
+}
+
+//////////
+// source: path.go
+
+//////////
 // source: rule.go
 
 /**

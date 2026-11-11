@@ -49,6 +49,8 @@ export const proxyProtocolTransportSchema = z.any();
 
 export const healthCheckSchemeOverriderTransportSchema = z.any();
 
+export const contentLengthRequiredTransportSchema = z.any();
+
 export const bufferedTransportSchema = z.any();
 
 export const requestHeaderOpsTransportSchema = z.any();
@@ -235,6 +237,7 @@ export const handlerSchema = z.object({
   headers: headersHandlerSchema.optional(),
   request_buffers: z.number().optional(),
   response_buffers: z.number().optional(),
+  proxy_status_name: z.string().optional(),
   stream_timeout: durationSchema.optional(),
   stream_buffer_size: z.number().optional(),
   stream_close_delay: durationSchema.optional(),

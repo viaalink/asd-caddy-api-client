@@ -2,10 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [Unreleased]
+## [0.12.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.11.1...v0.12.0) (2026-11-11)
 
 ### Changed
 
+- Types regenerated from caddy v2.11.9 (was v2.11.4; [diff](https://github.com/caddyserver/caddy/compare/v2.11.4...v2.11.9)).
+- Types regenerated from caddy-security v1.6.2 (was v1.1.64; [diff](https://github.com/greenpau/caddy-security/compare/v1.1.64...v1.6.2)).
+- Types regenerated from go-authcrunch v1.5.0 (was v1.1.41; [diff](https://github.com/greenpau/go-authcrunch/compare/v1.1.41...v1.5.0)).
+- Types regenerated from caddy-l4 master@eafc300 (was master@e54f24a; [diff](https://github.com/mholt/caddy-l4/compare/e54f24a1a59b...eafc300ef23b)).
+- Supports Caddy v2.11.9.
 - caddy-l4 is built from upstream again (`github.com/mholt/caddy-l4@e54f24a1`): the
   `remote_ip_list` reload fix was merged as
   [mholt/caddy-l4#492](https://github.com/mholt/caddy-l4/pull/492). Generated types are unchanged.

@@ -26,6 +26,19 @@ export interface Config {
 }
 
 //////////
+// source: confirmation.go
+
+/**
+ * ConfirmationProvider optionally replaces the portal's legacy read/delete/AddUser
+ * sequence. Success means a confirmed, enabled account is durably available for
+ * login. The provider owns expiry, attempt limits, single use and recoverable
+ * creation, and must withhold success on storage failure. The portal redirects to
+ * login without executing legacy AddUser or administrative approval notifications.
+ * Failure must not expose credentials or raw confirmation codes.
+ */
+export type ConfirmationProvider = any;
+
+//////////
 // source: domain_restriction_rule.go
 
 /**
@@ -44,6 +57,25 @@ export interface DomainRestrictionRule {
  * DomainRestrictionRuleset holds the rules associated with domain restrictions.
  */
 export interface DomainRestrictionRuleset {}
+
+//////////
+// source: external_config.go
+
+/**
+ * ExternalUserRegistryConfig describes a host-owned configured user registry.
+ * ConfigDigest binds normalized backend configuration without serializing the
+ * runtime handle or backend credentials. The host must regenerate this derived
+ * descriptor after resolving configuration, and supply a matching runtime via
+ * authcrunch.ServerOptions.UserRegistries. It does not register a factory kind.
+ */
+export interface ExternalUserRegistryConfig {
+  name?: string;
+  kind?: string;
+  identity_store?: string;
+  email_provider?: string;
+  realm?: string;
+  config_digest?: string;
+}
 
 //////////
 // source: local_user_registry.go
@@ -120,3 +152,13 @@ export const UnknownUserRegistryProviderKindLabel = "unknown";
  * Provider is an interface to work with user registration providers.
  */
 export type Provider = any;
+
+//////////
+// source: ui.go
+
+/**
+ * LocalizedUI optionally supplies localized registration presentation. Registry
+ * implementations without this capability retain their supplied titles/hints.
+ * The language comes from the portal UI; validation policies remain unchanged.
+ */
+export type LocalizedUI = any;
