@@ -65,6 +65,12 @@ const GO_TYPE_TO_JSON_KEY: Record<string, string> = {
   // "supported" list above once added to the schema, with the same
   // caddy-validate verification rigor.
   MatchVarsRE: "vars_regexp",
+  // Added in Caddy v2.11.9 (modules/caddyhttp/urlpatternmatcher.go, module ID
+  // `http.matchers.url_pattern`; plain struct, no custom JSON marshaling).
+  // Verified with `caddy validate` on v2.11.9: `url_pattern` is accepted,
+  // `urlpattern` is an unknown module. Acknowledged gap until added to
+  // CaddyRouteMatcherSchema.
+  MatchURLPattern: "url_pattern",
 };
 
 function extractMatcherTypeNamesFrom(path: string): string[] {
@@ -98,7 +104,7 @@ describe("CaddyRouteMatcherSchema stays in sync with real Caddy matchers", () =>
 
   test("every currently-supported matcher key is actually present in CaddyRouteMatcherSchema", () => {
     const schemaKeys = Object.keys(CaddyRouteMatcherSchema.shape);
-    const acknowledgedGaps = new Set(["vars_regexp"]);
+    const acknowledgedGaps = new Set(["vars_regexp", "url_pattern"]);
     const supportedJsonKeys = Object.values(GO_TYPE_TO_JSON_KEY).filter(
       (key) => !acknowledgedGaps.has(key)
     );
