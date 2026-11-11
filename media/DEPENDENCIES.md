@@ -18,7 +18,7 @@ Which npm package version supports which Caddy and plugin versions:
 
 | Component | Version | Commit   | Updated    |
 | --------- | ------- | -------- | ---------- |
-| Caddy     | v2.11.4 | e2eee6a7 | 2026-08-11 |
+| Caddy     | v2.11.9 | 0d98caea | 2026-11-11 |
 
 **Source:** `local/caddy` (git repository)
 **Generated files:** `src/generated/caddy-*.ts`, `src/generated/caddy-*.zod.ts`
@@ -39,11 +39,11 @@ by hand before trusting the output.
 
 ## Plugins
 
-| Plugin         | Version           | Source               | Updated    |
-| -------------- | ----------------- | -------------------- | ---------- |
-| caddy-security | v1.1.64           | local/caddy-security | 2026-08-11 |
-| go-authcrunch  | v1.1.41           | local/go-authcrunch  | 2026-08-11 |
-| caddy-l4       | commit `e54f24a1` | local/caddy-l4       | 2026-11-11 |
+| Plugin         | Version   | Source               | Updated    |
+| -------------- | --------- | -------------------- | ---------- |
+| caddy-security | v1.6.2    | local/caddy-security | 2026-11-11 |
+| go-authcrunch  | v1.5.0    | local/go-authcrunch  | 2026-11-11 |
+| caddy-l4       | `eafc300` | local/caddy-l4       | 2026-11-11 |
 
 **v1.1.59 → v1.1.64 notes:** caddy-security's own exported struct shape is unchanged
 (zero `json:"..."` tag diffs) — `caddy-security.ts`/`.zod.ts` regenerate byte-identical.
