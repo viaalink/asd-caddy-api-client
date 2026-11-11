@@ -9,6 +9,7 @@ import type { LoginIcon } from "./authcrunch-icons";
  * Config holds the configuration for the IdentityProvider.
  */
 export interface Config {
+  attachment?: any /* attachment.Config */;
   /**
    * Name is the unique name associated with the IdentityProvider.
    */
@@ -73,3 +74,6 @@ export interface Config {
  * IdentityProvider represents SAML-based identity provider.
  */
 export interface IdentityProvider {}
+
+//////////
+// source: state.go

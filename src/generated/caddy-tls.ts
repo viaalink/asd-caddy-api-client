@@ -756,7 +756,8 @@ export type ConnectionMatcher = any;
 export type LeafCertificateLoader = any;
 /**
  * ClientCertificateVerifier is a type which verifies client certificates.
- * It is called during verifyPeerCertificate in the TLS handshake.
+ * It is called during verifyConnection in the TLS handshake, only when
+ * the client presented a certificate.
  */
 export type ClientCertificateVerifier = any;
 
@@ -1089,6 +1090,23 @@ export interface MatchLocalIP {
    */
   ranges?: string[];
 }
+/**
+ * MatchNot matches a TLS handshake by negating the results of its
+ * matcher sets. A single "not" matcher takes one or more matcher sets.
+ * Each matcher set is OR'ed; in other words, if any matcher set returns
+ * true, the final result of the "not" matcher is false. Individual
+ * matchers within a set work the same (i.e. different matchers in
+ * the same set are AND'ed).
+ * NOTE: The generated docs which describe the structure of this
+ * module are wrong because of how this type unmarshals JSON in a
+ * custom way. The correct structure is:
+ * ```json
+ * [{}, {}]
+ * ```
+ * where each of the array elements is a matcher set, i.e. an
+ * object keyed by matcher name.
+ */
+export interface MatchNot {}
 
 //////////
 // source: ondemand.go

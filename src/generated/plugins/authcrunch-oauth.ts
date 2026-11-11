@@ -3,6 +3,9 @@
 import type { LoginIcon } from "./authcrunch-icons";
 
 //////////
+// source: authenticate.go
+
+//////////
 // source: authenticate_setup.go
 
 //////////
@@ -18,6 +21,8 @@ import type { LoginIcon } from "./authcrunch-icons";
  * Config holds the configuration for the IdentityProvider.
  */
 export interface Config {
+  login_store?: LoginStoreConfig;
+  attachment?: any /* attachment.Config */;
   name?: string;
   realm?: string;
   driver?: string;
@@ -76,6 +81,10 @@ export interface Config {
   key_verification_disabled?: boolean;
   pass_grant_type_disabled?: boolean;
   response_type_disabled?: boolean;
+  /**
+   * NonceDisabled omits the authorization nonce and its token-claim check for
+   * login transactions initiated with this policy.
+   */
   nonce_disabled?: boolean;
   scope_disabled?: boolean;
   pkce_disabled?: boolean;
@@ -151,12 +160,73 @@ export interface JwksKey {
   kty?: string;
   n?: string;
   use?: string;
+  key_ops?: string[];
   nbf?: string;
   crv?: string;
   x?: string;
   y?: string;
   k?: string;
 }
+
+//////////
+// source: jwks_store.go
+
+//////////
+// source: login_store.go
+
+/**
+ * LoginStoreConfig selects a host-injected store. Omission retains private memory.
+ * Namespace identifies a deployment; the provider adds a configuration digest.
+ */
+export interface LoginStoreConfig {
+  name?: string;
+  namespace?: string;
+}
+/**
+ * LoginBinding identifies the initiating browser and exact callback endpoint.
+ * Browser is SHA-256 of the protected SessionID supplied by the consumer.
+ */
+export interface LoginBinding {
+  browser?: string /* []byte */;
+  callback?: string;
+}
+/**
+ * LoginTransaction is private server evidence, never an HTTP input. Stores must
+ * preserve every field. Deadlines are Unix seconds; offline time counts. Claim
+ * is empty until atomically assigned by Claim. Records contain private PKCE data.
+ */
+export interface LoginTransaction {
+  state?: string;
+  nonce?: string;
+  nonce_required?: boolean;
+  verifier?: string;
+  binding: LoginBinding;
+  return_url?: string;
+  created_at?: number /* int64 */;
+  expires_at?: number /* int64 */;
+  claim?: string;
+}
+/**
+ * LoginStore supplies linearizable, namespace-isolated OAuth transactions.
+ * Create never overwrites an existing state. Claim checks expiry, exact binding
+ * and an empty Claim atomically, installs the supplied unpredictable claim ID,
+ * and returns the complete record. Wrong bindings do not consume transactions.
+ * Get returns an independent, unexpired snapshot, including the current claim.
+ * Complete atomically deletes only an unexpired transaction with that claim.
+ * Cancel deletes pending or claimed transactions only for the exact binding.
+ * Missing/mismatched cancellation returns false, nil. Other invalid operations
+ * return ErrLoginInvalid; capacity returns ErrLoginCapacity. Backend failures
+ * return errors and MUST NOT publish tentative results. Honor context deadlines.
+ * Acknowledged claims/cancellations must survive supported backend failover;
+ * never resurrect a claim after an ambiguous commit or a worker crash. Expiry is
+ * checked inside operations, not just by cleanup. Synchronize replica/backend
+ * clocks; Validate permits only bounded creation skew, never an expiry grace.
+ * Protect record confidentiality, integrity and transport. Storage is trusted
+ * authentication infrastructure, not a generic eventually consistent cache.
+ * The embedding host owns injected stores and closes them after all consumers
+ * drain. Provider.Close never closes or purges an injected store.
+ */
+export type LoginStore = any;
 
 //////////
 // source: provider.go
@@ -168,6 +238,13 @@ export interface IdentityProvider {}
 
 //////////
 // source: state.go
+
+/**
+ * MemoryLoginStore is bounded, process-local OAuth transaction storage. Sharing
+ * this object coordinates consumers in one process only; it is not durable HA.
+ * The zero value is usable with the default capacity.
+ */
+export interface MemoryLoginStore {}
 
 //////////
 // source: user.go

@@ -93,10 +93,11 @@ A weekly job checks every Caddy, caddy-security, caddy-l4 and DNS-provider relea
 
 <!-- upstreams:supported-caddy:start -->
 
-| Caddy   | Library        | VS Code extension | How it is validated                                                                                                                                                                    |
-| ------- | -------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v2.11.4 | 0.9.0 – 0.10.x | 0.2.0 – 0.4.x     | Types generated from this source. CI's unit and differential fuzz tests run `caddy validate`/`caddy adapt` on this binary; the extension's tests run on the schemas generated from it. |
-| v2.11.2 | 0.6.0 – 0.10.x | 0.2.0 – 0.4.x     | Known-good baseline: the maintainers' day-to-day Caddy, used against the library and the extension.                                                                                    |
+| Caddy   | Library          | VS Code extension | How it is validated                                                                                                                                                                                      |
+| ------- | ---------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v2.11.9 | 0.12.0 and later | next release      | Upstream update PR: types regenerated from this source, then `just check` (CI runs the unit and differential fuzz tests on this binary), `just build` and `just vscode-test` on the regenerated schemas. |
+| v2.11.4 | 0.9.0 – 0.10.x   | 0.2.0 – 0.4.x     | Types generated from this source. CI's unit and differential fuzz tests run `caddy validate`/`caddy adapt` on this binary; the extension's tests run on the schemas generated from it.                   |
+| v2.11.2 | 0.6.0 – 0.10.x   | 0.2.0 – 0.4.x     | Known-good baseline: the maintainers' day-to-day Caddy, used against the library and the extension.                                                                                                      |
 
 <!-- upstreams:supported-caddy:end -->
 

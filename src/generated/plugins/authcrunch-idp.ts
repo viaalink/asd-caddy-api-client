@@ -13,6 +13,55 @@ export interface IdentityProviderConfig {
 }
 
 //////////
+// source: external_config.go
+
+/**
+ * ExternalIdentityProviderConfig describes a host-owned configured identity provider.
+ * ConfigDigest binds normalized backend configuration without serializing the
+ * runtime handle or backend credentials. The host must regenerate this derived
+ * descriptor after resolving configuration, and supply a matching runtime via
+ * authcrunch.ServerOptions.IdentityProviders. It does not register a factory kind.
+ */
+export interface ExternalIdentityProviderConfig {
+  name?: string;
+  kind?: string;
+  driver?: string;
+  realm?: string;
+  config_digest?: string;
+}
+
+//////////
+// source: http_login.go
+
+/**
+ * LoginIdentity is authenticated provider output, not caller-submitted claims.
+ * It deliberately cannot assert password/MFA evidence or reserved JWT fields.
+ */
+export interface LoginIdentity {
+  subject?: string;
+  email?: string;
+  name?: string;
+  roles?: string[];
+}
+/**
+ * HTTPLoginResult returns exactly one of a pinned redirect or authenticated
+ * identity. Cookie is optional browser binding/deletion state; no HTTP output is
+ * published until Login succeeds. A supplied cookie must use the declared name,
+ * exact callback path, Secure, HttpOnly, host-only scope, and SameSite Lax or
+ * Strict. All fields are runtime-only.
+ */
+export interface HTTPLoginResult {}
+/**
+ * HTTPLoginProvider optionally authenticates an injected IdentityProvider at
+ * /provider/<realm>. Implementations own protocol verification, browser binding,
+ * pinned destinations, expiry and replay prevention. Returned identity must be
+ * verified before success. The portal applies transforms, challenge policy and
+ * signing; this capability provides federated evidence, never local MFA evidence.
+ * The embedding host owns backend lifecycle and trusted issuance APIs.
+ */
+export type HTTPLoginProvider = any;
+
+//////////
 // source: method.go
 
 /**

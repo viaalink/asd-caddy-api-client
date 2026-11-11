@@ -50,3 +50,9 @@ export const listenerWrapperSchema = z.object({
   routes: routeListSchema.optional(),
   matching_timeout: durationSchema.optional(),
 });
+
+export const packetConnWrapperSchema = z.object({
+  routes: routeListSchema.optional(),
+  idle_timeout: durationSchema.optional(),
+  matching_timeout: durationSchema.optional(),
+});

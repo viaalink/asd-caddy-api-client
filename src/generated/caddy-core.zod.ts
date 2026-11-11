@@ -21,6 +21,7 @@ export const adminHandlerFuncSchema = z.any();
 
 export const apiErrorSchema = z.object({
   error: z.string(),
+  warnings: z.array(z.any()).optional(),
 });
 
 export const moduleMapSchema = z.record(z.string(), z.unknown());

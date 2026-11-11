@@ -13,11 +13,16 @@ import type { ConnectionPolicies } from "./caddy-tls";
  * Additionally, automatic HTTPS will also enable HTTPS for servers that listen
  * only on the HTTPS port but which do not have any TLS connection policies
  * defined by adding a good, default TLS connection policy.
+ * Similar to how other popular web servers work, incoming request header fields
+ * with underscores or dots are ignored/dropped implicitly to mitigate security
+ * risks. Specific headers to allow can be explicitly configured using
+ * `expected_underscore_headers` and `expected_dot_headers`.
+ * ### Placeholders
  * In HTTP routes, additional placeholders are available (replace any `*`):
  * Placeholder | Description
  * ------------|---------------
- * `{http.request.body}` | The request body (⚠️ inefficient; use only for debugging)
- * `{http.request.body_base64}` | The request body, base64-encoded (⚠️ for debugging)
+ * `{http.request.body}` | The request body (⚠️ inefficient; use only for debugging); if reading it exceeds a `request_body` `max_size` limit, templates and the `vars` and `vars_regexp` matchers fail the request with HTTP 413 instead of silently returning a truncated body
+ * `{http.request.body_base64}` | The request body, base64-encoded (⚠️ for debugging); same 413 behavior on `max_size` limits as `{http.request.body}` in templates and the `vars` matchers
  * `{http.request.cookie.*}` | HTTP request cookie
  * `{http.request.duration}` | Time up to now spent handling the request (after decoding headers from client)
  * `{http.request.duration_ms}` | Same as 'duration', but in milliseconds.
@@ -33,10 +38,12 @@ import type { ConnectionPolicies } from "./caddy-tls";
  * `{http.request.orig_uri.path.*}` | Parts of the original path, split by `/` (0-based from left)
  * `{http.request.orig_uri.path.dir}` | The request's original directory
  * `{http.request.orig_uri.path.file}` | The request's original filename
+ * `{http.request.orig_uri.path.file_escaped}` | The request's original filename, percent-encoded as in the request's escaped path
  * `{http.request.orig_uri.query}` | The request's original query string (without `?`)
  * `{http.request.orig_uri.prefixed_query}` | The request's original query string with a `?` prefix, if non-empty
  * `{http.request.port}` | The port part of the request's Host header
- * `{http.request.proto}` | The protocol of the request
+ * `{http.request.proto}` | The raw protocol of the request as returned by Go (e.g., HTTP/2.0 or HTTP/3.0)
+ * `{http.request.proto_name}` | The spec-defined protocol of the request (e.g., HTTP/2 or HTTP/3)
  * `{http.request.local.host}` | The host (IP) part of the local address the connection arrived on
  * `{http.request.local.port}` | The port part of the local address the connection arrived on
  * `{http.request.local}` | The local address the connection arrived on
@@ -381,6 +388,129 @@ export interface HTTPRedirectListenerWrapper {
 }
 
 //////////
+// source: idletimeout.go
+
+/**
+ * DefaultMaxWriteChunk is used by IdleTimeoutWriter when MaxChunk is zero.
+ * See IdleTimeoutWriter for why a limit is needed at all; nginx's
+ * analogous sendfile_max_chunk defaults to 2 MiB and is admin-tunable
+ * for the same reason this is exposed as a field rather than a constant.
+ */
+export const DefaultMaxWriteChunk = 64 * 1024;
+/**
+ * IdleDeadline computes the next read/write deadline for the idle-reset
+ * mechanism shared by IdleTimeoutReader and IdleTimeoutWriter.
+ * With MinRate == 0, the deadline is simply pushed forward on every
+ * call (now+Timeout): a slow but steadily-progressing transfer is never
+ * killed, while a connection that stalls (no bytes for the duration of
+ * Timeout) is. This alone doesn't bound a transfer that trickles just
+ * enough data to never go idle.
+ * With MinRate > 0, the allowance instead grows from a fixed Start
+ * based on bytes transferred so far (1/MinRate seconds of extra
+ * allowance per byte), matching Apache mod_reqtimeout's MinRate: a
+ * trickle that doesn't sustain MinRate bytes/sec falls behind real
+ * time and gets cut, even though no single call ever stalls.
+ * HardDeadline, if non-zero, caps the result either way, so this can't
+ * silently defeat an explicitly configured ReadTimeout/WriteTimeout
+ * ceiling.
+ */
+export interface IdleDeadline {
+  Start: string;
+  Timeout: number | string;
+  MinRate: number /* int64 */;
+  HardDeadline: string;
+}
+/**
+ * IdleTimeoutReader wraps a request body with IdleDeadline, resetting
+ * the read deadline before every Read call instead of bounding the
+ * whole body transfer with a single hard deadline.
+ * The deadline is cleared after a non-timeout error (most likely io.EOF) is
+ * encountered when reading the body to prevent context canceled errors for h1
+ * requests. An expired deadline is kept when DrainDeadline is set to bound
+ * net/http's post-handler drain.
+ * see: https://github.com/caddyserver/caddy/issues/8103
+ * A read deadline set by a handler through http.ResponseController
+ * reaches SetReadDeadline and caps every idle reset, so a handler can
+ * tighten the idle timeout but can't loosen it.
+ */
+export interface IdleTimeoutReader {
+  ReadCloser: any /* io.ReadCloser */;
+  Ctrl?: any /* http.ResponseController */;
+  Deadline: IdleDeadline;
+  Logger?: unknown;
+  /**
+   * DrainDeadline makes HandlerDone arm a final idle deadline if
+   * the body is unfinished, bounding net/http's post-handler drain.
+   * Only HTTP/1 drains a request body on the connection after the
+   * handler returns, so it is pointless (and costs a timer on
+   * HTTP/2) for other protocols or requests without a body.
+   */
+  DrainDeadline: boolean;
+  /**
+   * ClearBetweenReads makes the reader put back the earliest of
+   * HardDeadline and the deadline set by the handler (no deadline if
+   * there is neither) after every successful read, so the idle
+   * deadline only bounds reads in flight. It is required for HTTP/2,
+   * where the read deadline is a timer that fails the body when it
+   * fires, even with no read in flight: otherwise a handler that stops
+   * reading for longer than the timeout (e.g. while an upstream is
+   * slow to accept the body) loses the body, although the client is
+   * only held back by flow control. Other protocols only check the
+   * deadline during a read.
+   */
+  ClearBetweenReads: boolean;
+}
+/**
+ * IdleTimeoutWriter wraps a ResponseWriter with IdleDeadline, resetting
+ * the write deadline before every Write, ReadFrom and Flush call, the same
+ * way IdleTimeoutReader does for reads. With MinRate == 0, the deadline
+ * only bounds the write or flush actually in flight, so a handler that
+ * pauses between writes (e.g. streaming or SSE) is unaffected.
+ * That relies on a deadline left armed between writes being harmless,
+ * which holds for HTTP/1 and HTTP/3, where it is only checked by the
+ * next write on the connection or stream. On HTTP/2 the write deadline
+ * is a timer that resets the stream when it fires, even with no write
+ * in flight, so ClearBetweenWrites must be set for HTTP/2 requests
+ * (see #8118).
+ * MaxChunk bounds how much a single underlying Write/ReadFrom call is
+ * allowed to cover; zero uses DefaultMaxWriteChunk. SetWriteDeadline
+ * bounds the whole call it precedes, not just a stall within it:
+ * net.Conn.Write loops internally until the entire buffer is sent
+ * (unlike Read, which returns after one syscall), and
+ * ResponseWriter.ReadFrom hands the entire remaining source to the
+ * connection in one call, be it via sendfile or an internal buffered
+ * copy loop. Without chunking, a single large Write or a large body
+ * copied via io.Copy would have its whole transfer bounded by one
+ * deadline, silently truncating a slow-but-healthy transfer exactly
+ * like a hard WriteTimeout would. A 64 KiB default still preserves
+ * most of the sendfile fast path's benefit (net/sendfile.go
+ * special-cases *io.LimitedReader to keep using sendfile per chunk).
+ * A write deadline set by a handler through http.ResponseController
+ * reaches SetWriteDeadline and caps every idle reset, so a handler can
+ * tighten the idle timeout (e.g. to drop a slow SSE subscriber) but
+ * can't loosen it.
+ */
+export interface IdleTimeoutWriter {
+  ResponseWriterWrapper?: ResponseWriterWrapper;
+  Ctrl?: any /* http.ResponseController */;
+  Deadline: IdleDeadline;
+  MaxChunk: number /* int */;
+  Logger?: unknown;
+  /**
+   * ClearBetweenWrites makes the writer clear its idle deadline after
+   * every successful write or flush, putting back HardDeadline or the
+   * deadline set by the handler if any, and arm a final one in
+   * HandlerDone if written data may still be buffered. It is required
+   * for HTTP/2 and unnecessary (and costs a deadline update per write)
+   * for other protocols.
+   */
+  ClearBetweenWrites: boolean;
+}
+
+//////////
+// source: incremental.go
+
+//////////
 // source: invoke.go
 
 /**
@@ -526,6 +656,11 @@ export interface ExtraLogFields {}
  */
 export const LogSkipVar: string = "log_skip";
 /**
+ * LogLevelVar is the request variable used to override access log severity.
+ * Supported string values are DEBUG, INFO, WARN, and ERROR (case-insensitive).
+ */
+export const LogLevelVar: string = "log_level";
+/**
  * For adding additional fields to the access logs
  */
 export const ExtraLogFieldsCtxKey: CtxKey = "extra_log_fields";
@@ -604,12 +739,10 @@ export type MatchHost = string[];
  * escaped form, `%25`.
  * Even though wildcards (`*`) operate in the normalized space, the special
  * escaped wildcard (`%*`), which is not a valid escape sequence, may be
- * used in place of a span that should NOT be decoded; that is, `/bands/%*`
- * will match `/bands/AC%2fDC` whereas `/bands/*` will not.
- * Even though path matching is done in normalized space, the special
- * wildcard `%*` may be used in place of a span that should NOT be decoded;
- * that is, `/bands/%*\/` will match `/bands/AC%2fDC/` whereas `/bands/*\/`
- * will not.
+ * used in place of a span that should NOT be decoded; that is, `/bands/%*\/`
+ * will match `/bands/AC%2fDC/` whereas `/bands/*\/` will not. Note that a
+ * pattern ending in a bare trailing wildcard, such as `/bands/*`, is a
+ * prefix match in normalized space, so it does match `/bands/AC%2fDC`.
  * This matcher is fast, so it does not support regular expressions or
  * capture groups. For slower but more powerful matching, use the
  * path_regexp matcher. (Note that due to the special treatment of
@@ -830,6 +963,17 @@ export interface Metrics {
 //////////
 // source: replacer.go
 
+/**
+ * RequestBodyLimitError is returned by the {http.request.body} and
+ * {http.request.body_base64} placeholders when reading the request body
+ * exceeded a request_body max_size limit. Placeholder consumers such as
+ * templates and the vars matchers recognize exactly this condition and no
+ * other error, so unrelated errors keep their existing behavior.
+ */
+export interface RequestBodyLimitError {
+  Err: Error; // the underlying reason, e.g. *http.MaxBytesError
+}
+
 //////////
 // source: responsematchers.go
 
@@ -1007,11 +1151,56 @@ export interface Server {
    */
   read_header_timeout?: Duration;
   /**
+   * How long to allow a read from a client's upload to stall before
+   * aborting the connection, reset on every successful read. Unlike
+   * ReadTimeout, which bounds the whole transfer with a single
+   * deadline, this only fires if the connection actually stalls, so
+   * it mitigates slowloris-style attacks without penalizing large
+   * uploads from legitimately slow clients. Combine with ReadTimeout
+   * for a hard ceiling on top.
+   * Default is 1 minute. A negative value disables it, for instance
+   * behind a proxy that already buffers request bodies.
+   */
+  read_idle_timeout?: Duration;
+  /**
+   * ReadMinRate, if set, requires the client to sustain at least this
+   * many bytes/second, averaged from the start of the request body
+   * read, or the connection is aborted. Unlike ReadIdleTimeout alone,
+   * this also catches a trickle that sends just enough to never go
+   * idle, but never accumulates real throughput (a "MinRate" in
+   * Apache mod_reqtimeout terms). If zero, no rate is enforced and
+   * ReadIdleTimeout resets to a flat window on every read instead.
+   */
+  read_min_rate?: number /* int64 */;
+  /**
    * WriteTimeout is how long to allow a write to a client. Note
    * that setting this to a small value when serving large files
    * may negatively affect legitimately slow clients.
    */
   write_timeout?: Duration;
+  /**
+   * How long to allow a write to a client to stall before aborting
+   * the connection, reset on every successful write, the same way
+   * ReadIdleTimeout works for reads. A handler that streams a large
+   * response, or pauses between writes (e.g. SSE), is unaffected as
+   * long as each individual write keeps making progress. Combine
+   * with WriteTimeout for a hard ceiling on top.
+   * Default is 1 minute. A negative value disables it, for instance
+   * behind a proxy that already times out slow clients.
+   */
+  write_idle_timeout?: Duration;
+  /**
+   * WriteMinRate is like ReadMinRate, but for writes to the client.
+   */
+  write_min_rate?: number /* int64 */;
+  /**
+   * MaxWriteChunk bounds how many bytes a single underlying write
+   * operation is allowed to cover, so that WriteIdleTimeout/WriteMinRate
+   * can actually apply between chunks of a large response instead of
+   * being bounded by one deadline for the whole thing (nginx's
+   * sendfile_max_chunk exists for the same reason). Default: 64 KiB.
+   */
+  max_write_chunk?: number /* int */;
   /**
    * IdleTimeout is the maximum time to wait for the next request
    * when keep-alives are enabled. If zero, a default timeout of
@@ -1044,7 +1233,7 @@ export interface Server {
   keepalive_count?: number /* int */;
   /**
    * MaxHeaderBytes is the maximum size to parse from a client's
-   * HTTP request headers.
+   * HTTP request headers. Default: 16 KiB.
    */
   max_header_bytes?: number /* int */;
   /**
@@ -1064,6 +1253,61 @@ export interface Server {
    * TODO: This is an EXPERIMENTAL feature. Subject to change or removal.
    */
   enable_full_duplex?: boolean;
+  /**
+   * A list of header field names containing underscores that should
+   * be preserved instead of being dropped. By default, Caddy drops
+   * ALL headers with underscores to prevent ambiguity with
+   * CGI/FastCGI backends that map hyphens to underscores
+   * (GHSA-f59h-q822-g45g). When this list is configured, only the
+   * specified headers are kept; their hyphenated variants are
+   * actively dropped to prevent confusion. Entries are
+   * case-insensitive. A trailing "*" acts as a prefix glob
+   * (e.g., "webhook_*" matches any header starting with
+   * "webhook_"). If an allowlisted header arrives with
+   * multiple values (repeated field), all values are dropped
+   * as a safeguard against header injection.
+   * If the same logical header name is also allowlisted (in dot form)
+   * in ExpectedDotHeaders, both spellings are kept independently. Only
+   * do this if you know your backend doesn't fold both forms onto the
+   * same variable name; PHP/CGI-style backends do (see
+   * ExpectedDotHeaders), so allowlisting both there reintroduces the
+   * ambiguity this filter exists to remove.
+   * A header name containing both an underscore and a dot (e.g.
+   * "webhook_user.id") is never matched by a prefix glob here, even
+   * one whose prefix matches, because the free-form suffix a glob
+   * allows can't be vetted for an embedded dot; only an exact (non-glob)
+   * entry for that literal spelling is honored.
+   * TODO: This is an EXPERIMENTAL feature. Subject to change or removal.
+   */
+  expected_underscore_headers?: string[];
+  /**
+   * A list of header field names containing dots that should be
+   * preserved instead of being dropped. By default, Caddy drops ALL
+   * headers with dots to prevent ambiguity with backends that fold
+   * dots to underscores when registering CGI-style variables, e.g.
+   * PHP's $_SERVER (GHSA-49wc-4hcv-v58q). When this list is
+   * configured, only the specified headers are kept; their
+   * hyphenated variants are actively dropped to prevent confusion.
+   * Entries are case-insensitive. A trailing "*" acts as a prefix
+   * glob (e.g., "webhook.*" matches any header starting with
+   * "webhook."). If an allowlisted header arrives with multiple
+   * values (repeated field), all values are dropped as a safeguard
+   * against header injection.
+   * Dotted headers are legal HTTP tokens and some non-CGI backends
+   * (e.g. Node.js, Go) use them as ordinary, unrelated header names.
+   * If your backend is one of those, this poses no risk. Only
+   * PHP/CGI/FastCGI-style backends fold '.', '_', and '-' onto the
+   * same variable name; avoid allowlisting both the dot and
+   * underscore form of the same logical name if such a backend is in
+   * the request path, since Caddy will not stop you and the backend
+   * may then see either value depending on map iteration order.
+   * A header name containing both a dot and an underscore is never
+   * matched by a prefix glob here, for the same reason described on
+   * ExpectedUnderscoreHeaders; only an exact (non-glob) entry for
+   * that literal spelling is honored.
+   * TODO: This is an EXPERIMENTAL feature. Subject to change or removal.
+   */
+  expected_dot_headers?: string[];
   /**
    * Routes describes how this server will handle requests.
    * Routes are executed sequentially. First a route's matchers
@@ -1351,6 +1595,33 @@ export interface Subroute {
    * can be promoted to this configuration instead.
    */
   errors?: HTTPErrorConfig;
+}
+
+//////////
+// source: urlpatternmatcher.go
+
+/**
+ * MatchURLPattern matches requests against a [URLPattern], giving named
+ * groups, wildcards and regexp components beyond what the simpler path
+ * matcher offers.
+ * [URLPattern]: https://urlpattern.spec.whatwg.org/
+ */
+export interface MatchURLPattern {
+  /**
+   * Pattern is the URLPattern to match against. A relative pattern (e.g.
+   * "/books/:id") matches the request path on any host; an absolute pattern
+   * (e.g. "https://example.com/books/:id") also constrains scheme and host.
+   */
+  pattern?: string;
+  /**
+   * BaseURL resolves a relative Pattern against a fixed origin, scoping the
+   * match to that scheme and host. Leave empty to match any origin.
+   */
+  base_url?: string;
+  /**
+   * IgnoreCase matches the pattern case-insensitively.
+   */
+  ignore_case?: boolean;
 }
 
 //////////

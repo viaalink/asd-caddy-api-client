@@ -10,16 +10,10 @@ export interface RequestBody {
   /**
    * The maximum number of bytes to allow reading from the body by a later handler.
    * If more bytes are read, an error with HTTP status 413 is returned.
+   * Requests declaring a larger Content-Length get the same error
+   * before any later handler runs.
    */
   max_size?: number /* int64 */;
-  /**
-   * EXPERIMENTAL. Subject to change/removal.
-   */
-  read_timeout?: number | string;
-  /**
-   * EXPERIMENTAL. Subject to change/removal.
-   */
-  write_timeout?: number | string;
   /**
    * This field permit to replace body on the fly
    * EXPERIMENTAL. Subject to change/removal.

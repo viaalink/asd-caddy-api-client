@@ -33,6 +33,13 @@ export interface Browse {
    * FileLimit limits the number of up to n DirEntry values in directory order.
    */
   file_limit?: number /* int */;
+  /**
+   * PlainTimeFormat specifies the Go time layout used for modification
+   * times in plain-text directory listings. The default layout is
+   * `January 2, 2006 at 15:04:05`. See
+   * [Go's time layout documentation](https://pkg.go.dev/time#pkg-constants).
+   */
+  plain_time_format?: string;
 }
 
 //////////

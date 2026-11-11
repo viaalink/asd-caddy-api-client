@@ -608,16 +608,29 @@ export interface Handler {
    * and buffered in memory before being proxied to the backend. This
    * should be avoided if at all possible for performance reasons, but
    * could be useful if the backend is intolerant of read latency or
-   * chunked encodings.
+   * chunked encodings. An incremental request with an explicitly configured
+   * buffer receives a 501 response. A transport-supplied default is bypassed
+   * only when the request already meets the transport's framing requirements.
    */
   request_buffers?: number /* int64 */;
   /**
    * If nonzero, the entire response body up to this size will be read
    * and buffered in memory before being proxied to the client. This
    * should be avoided if at all possible for performance reasons, but
-   * could be useful if the backend has tighter memory constraints.
+   * could be useful if the backend has tighter memory constraints. Forwarding
+   * an incremental response with content produces a 501 response whenever
+   * buffering is configured.
    */
   response_buffers?: number /* int64 */;
+  /**
+   * The name identifying this proxy in the Proxy-Status response header
+   * field (RFC 9209). It has to identify the deployment rather than the
+   * software, so there is no sensible default: a service name
+   * ("ExampleCDN"), a hostname ("proxy-3.example.com") or an IP address
+   * are all appropriate. This is used when Caddy refuses to forward a
+   * message marked Incremental. When empty, no Proxy-Status field is generated.
+   */
+  proxy_status_name?: string;
   /**
    * If nonzero, streaming requests such as WebSockets will be
    * forcibly closed at the end of the timeout. Default: no timeout.
@@ -774,6 +787,12 @@ export type ProxyProtocolTransport = any;
  * that can override the scheme used for health checks.
  */
 export type HealthCheckSchemeOverriderTransport = any;
+/**
+ * ContentLengthRequiredTransport is implemented by transports that cannot
+ * forward a request body whose length they do not know, and so need it
+ * buffered in full when the request does not carry a Content-Length.
+ */
+export type ContentLengthRequiredTransport = any;
 /**
  * BufferedTransport is implemented by transports
  * that needs to buffer requests and/or responses.

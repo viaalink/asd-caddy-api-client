@@ -5,14 +5,312 @@ import type { Config } from "./authcrunch-core";
 //////////
 // source: app.go
 
-export type SecretsManager = any;
+export type SecretsManager = any /* plugin.SecretsManager */;
 /**
  * App implements security manager.
  */
 export interface App {
   config?: Config;
+  oauth_registration_store?: OAuthRegistrationStoreConfig;
+  oauth_application_sources?: (OAuthApplicationSource | undefined)[];
+  /**
+   * OIDCProviderDirectives preserves complete provider bodies across Caddy JSON.
+   * Reattach them after all explicit/stored applications are available, before
+   * validating the runtime portal. Declarative JSON omits copied client snapshots.
+   */
+  oidc_provider_directives?: { [key: string]: string[] };
+  /**
+   * PortalCookieDirectives holds complete cookie snapshots awaiting runtime
+   * replacement or a deferred refresh override, keyed by portal name. It replaces
+   * that portal's CookieConfig after resolving token refresh configuration.
+   */
+  portal_cookie_directives?: { [key: string]: string[] };
+  /**
+   * PortalTokenRefreshDirectives preserves complete token refresh bodies with
+   * runtime references. Resolve and attach before validating runtime portals.
+   */
+  portal_token_refresh_directives?: { [key: string]: string[] };
+  /**
+   * PortalDocumentsDirectives preserves complete Documents statements with
+   * runtime references, independently of the other portal API settings.
+   */
+  portal_documents_directives?: { [key: string]: string[] };
+  /**
+   * Access-token profiles retain complete deferred bodies separately for
+   * portals and policies, which may have the same name.
+   */
+  portal_access_token_profile_directives?: { [key: string]: string[] };
+  policy_access_token_profile_directives?: { [key: string]: string[] };
+  /**
+   * OAuthProviderDirectives retains complete, validated provider statements
+   * with runtime references, keyed by provider name. Reparse after replacement
+   * so driver defaults never become part of an unresolved secret lookup.
+   */
+  oauth_provider_directives?: { [key: string]: string[] };
+  /**
+   * OAuthAuthorizationDirectives retains complete policy statements with
+   * runtime references. Resolve once before applying direct OAuth validation.
+   */
+  oauth_authorization_directives?: { [key: string]: string[] };
   secrets_managers?: unknown[];
+  /**
+   * CredentialAuthenticatorConfigs declares fresh API-key backends selected by
+   * existing policy auth-proxy name/realm bindings. Handles are app-owned.
+   */
+  credential_authenticators?: unknown[];
+  /**
+   * IdentityStoreConfigs declares host-owned stores injected into the single
+   * AuthCrunch root. Configuration modules never own the returned handles.
+   */
+  identity_stores?: unknown[];
+  /**
+   * IdentityProviderConfigs declares caller-owned external login providers.
+   */
+  identity_providers?: unknown[];
+  /**
+   * OAuthLoginStoreConfigs declares app-owned pending OAuth transaction stores.
+   * Prepared factories are immutable; the root only borrows returned clients.
+   */
+  oauth_login_stores?: unknown[];
+  /**
+   * AccessSignerConfigs declares app-owned access signers. The root borrows
+   * their immutable runtimes; private keys stay outside its exportable KMS.
+   */
+  access_signers?: unknown[];
+  /**
+   * RefreshStoreConfigs declares app-owned durable refresh stores. The root
+   * borrows their handles and activates immutable views after state admission.
+   */
+  refresh_stores?: unknown[];
+  /**
+   * MessagingProviderConfigs declares caller-owned notification backends.
+   */
+  messaging_providers?: unknown[];
+  /**
+   * RegistrationWorkflowConfigs declares caller-owned enrollment backends.
+   */
+  registration_workflows?: unknown[];
+  /**
+   * ClaimsEnrichment binds host modules to individual authorization policies.
+   */
+  claims_enrichment?: (ClaimsEnrichmentBinding | undefined)[];
+  /**
+   * ExternalAuthorization adds a required decision after each policy's local checks.
+   */
+  external_authorization?: (ExternalAuthorizationBinding | undefined)[];
 }
+
+//////////
+// source: app_access_signers.go
+
+/**
+ * AccessSignerBackendModule prepares an immutable factory without loading keys
+ * or acquiring resources. Module cleanup never owns returned signer handles.
+ */
+export type AccessSignerBackendModule = any /* plugin.AccessSignerBackendModule */;
+/**
+ * AccessSignerFactory freezes copied configuration and core metadata. Every
+ * constructor call transfers a fresh signer to the app; later module mutations
+ * cannot change it. A failed constructor returns a safely closable partial
+ * handle, or real nil after unwinding acquisition. The context applies to setup,
+ * not runtime lifetime. Optional io.Closer ownership belongs solely to the app.
+ */
+export type AccessSignerFactory = any /* plugin.AccessSignerFactory */;
+
+//////////
+// source: app_credential_authenticators.go
+
+/**
+ * CredentialAuthenticator is an app-owned fresh API-key backend. Basic methods
+ * exist only for the upstream interface; host bindings never enable them.
+ * Each lookup receives the protected request's context and bypasses caches.
+ */
+export type CredentialAuthenticator = any /* plugin.CredentialAuthenticator */;
+/**
+ * CredentialAuthenticatorBackendModule prepares configuration without opening
+ * runtime resources. Each factory call transfers a distinct backend to the app,
+ * shared only by that app's matching policies. Setup context is not a shutdown
+ * signal; module Cleanup must not close the returned handle. On failure return
+ * a closable partial result or unwind acquisition, using a real nil interface.
+ */
+export type CredentialAuthenticatorBackendModule =
+  any /* plugin.CredentialAuthenticatorBackendModule */;
+
+//////////
+// source: app_documents_storage.go
+
+//////////
+// source: app_external_authorization.go
+
+/**
+ * ExternalAuthorizationBinding selects one backend and a complete identity binding
+ * for an existing policy. Only one binding is allowed per policy. BackendRaw is
+ * decoded by a security.external_authorization.<driver> Caddy module; it is not an
+ * AuthCrunch registry entry. Runtime objects never enter declarative JSON.
+ */
+export interface ExternalAuthorizationBinding {
+  policy: string;
+  config?: any /* external.Config */;
+  backend: unknown;
+}
+/**
+ * ExternalAuthorizationBackendModule is implemented by Caddy backend factories.
+ * Provision/Validate must only prepare configuration, without opening runtime
+ * resources. NewExternalAuthorizationBackend creates a fresh, exclusively app-owned
+ * backend and checks any backend-specific binding constraints. Its context is
+ * for construction only; do not retain it as a runtime cancellation signal.
+ * The app calls io.Closer.Close, when implemented by the returned backend, after
+ * draining requests and closing the AuthCrunch root. Module Cleanup must never
+ * close that backend. On error, return acquired resources as a closable backend
+ * or unwind them before returning nil. Return real nil, not a typed nil. Do not
+ * share a closable backend between calls; each call transfers one ownership.
+ */
+export type ExternalAuthorizationBackendModule =
+  any /* plugin.ExternalAuthorizationBackendModule */;
+
+//////////
+// source: app_identity_provider_files.go
+
+//////////
+// source: app_identity_providers.go
+
+/**
+ * IdentityProviderBackendModule prepares an external provider without opening
+ * runtime resources. Its descriptor fingerprints normalized configuration.
+ * Each factory call transfers a fresh, configured handle to the app, preserving
+ * optional HTTP login and attachment capabilities. Return a safely closable
+ * partial handle or a real nil after unwinding acquisition on failure. Module
+ * Cleanup must not close the runtime; the app drains requests before disposal.
+ */
+export type IdentityProviderBackendModule = any /* plugin.IdentityProviderBackendModule */;
+
+//////////
+// source: app_identity_stores.go
+
+/**
+ * IdentityStoreBackendModule prepares a store without opening runtime storage.
+ * The descriptor fingerprints normalized configuration for root persistence.
+ * Each successful factory call transfers a distinct handle to the app. On
+ * failure return a partial handle safe to close or unwind acquisition before
+ * returning a real nil interface, never a typed nil. Cleanup panics from an
+ * invalid plugin are contained so other acquired stores can still be closed.
+ * Runtime calls use request contexts; the setup context is not a shutdown signal.
+ * Module Cleanup must not close the returned store.
+ */
+export type IdentityStoreBackendModule = any /* plugin.IdentityStoreBackendModule */;
+
+//////////
+// source: app_messaging.go
+
+/**
+ * MessagingProviderBackendModule validates configuration without opening storage.
+ * Each factory call transfers a fresh provider and optional io.Closer to the app.
+ * On failure, return a closable partial result or unwind before returning nil.
+ * Module Cleanup must not close returned providers. The constructor context only
+ * bounds setup; the app owns worker cancellation separately from Caddy cleanup.
+ */
+export type MessagingProviderBackendModule = any /* plugin.MessagingProviderBackendModule */;
+
+//////////
+// source: app_messaging_worker.go
+
+//////////
+// source: app_oauth_login_stores.go
+
+/**
+ * OAuthLoginStoreConfig identifies an immutable host factory and its runtime.
+ * ConfigHash is the lowercase SHA-256 of normalized backend configuration. It
+ * checks factory agreement; it is neither the provider's transaction namespace
+ * nor an AuthCrunch persistence epoch. Metadata contains no runtime handles.
+ */
+export type OAuthLoginStoreConfig = any /* plugin.OAuthLoginStoreConfig */;
+/**
+ * OAuthLoginStoreBackendModule prepares a detached immutable factory without
+ * opening resources. Later changes to the module must not change the factory's
+ * metadata, storage path or constructor inputs. Module Cleanup must not dispose
+ * returned runtimes. Backend configuration remains literal at this boundary.
+ */
+export type OAuthLoginStoreBackendModule = any /* plugin.OAuthLoginStoreBackendModule */;
+/**
+ * OAuthLoginStoreFactory creates a distinct app-owned backend for each call.
+ * Metadata is copied, and constructors must consume the already-prepared values.
+ * The context bounds setup only, not runtime lifetime. On failure, return any
+ * acquired resource as a safely closable partial result or unwind it before
+ * returning real nil. Neither factories nor modules own the returned backend.
+ */
+export type OAuthLoginStoreFactory = any /* plugin.OAuthLoginStoreFactory */;
+/**
+ * OAuthLoginStore preserves the upstream transactional interface. Its metadata
+ * method must attest an initialized, usable, not-closed runtime and return the
+ * factory's exact copied descriptor. Implement io.Closer when disposal is needed;
+ * the app invokes it only after consumers drain and the root closes. Never
+ * publish tentative results or add logical retries around upstream operations.
+ */
+export type OAuthLoginStore = any /* plugin.OAuthLoginStore */;
+
+//////////
+// source: app_plugins.go
+
+/**
+ * ClaimsEnrichmentBinding selects one backend and a complete identity binding
+ * for an existing policy. Only one binding is allowed per policy. BackendRaw is
+ * decoded by a security.claims_enrichment.<driver> Caddy module; it is not an
+ * AuthCrunch registry entry. Runtime objects never enter declarative JSON.
+ */
+export interface ClaimsEnrichmentBinding {
+  policy: string;
+  config?: any /* enrichment.Config */;
+  backend: unknown;
+}
+/**
+ * ClaimsEnrichmentBackendModule is implemented by Caddy backend factories.
+ * Provision/Validate must only prepare configuration, without opening runtime
+ * resources. NewClaimsEnrichmentBackend creates a fresh, exclusively app-owned
+ * backend and checks any backend-specific binding constraints. Its context is
+ * for construction only; do not retain it as a runtime cancellation signal.
+ * The app calls io.Closer.Close, when implemented by the returned backend, after
+ * draining requests and closing the AuthCrunch root. Module Cleanup must never
+ * close that backend. On error, return acquired resources as a closable backend
+ * or unwind them before returning nil. Return real nil, not a typed nil. Do not
+ * share a closable backend between calls; each call transfers one ownership.
+ */
+export type ClaimsEnrichmentBackendModule = any /* plugin.ClaimsEnrichmentBackendModule */;
+
+//////////
+// source: app_portal_mounts.go
+
+//////////
+// source: app_refresh_stores.go
+
+/**
+ * RefreshStoreBackendModule prepares an immutable factory without opening files
+ * or acquiring resources. Module cleanup never owns returned store handles.
+ */
+export type RefreshStoreBackendModule = any /* plugin.RefreshStoreBackendModule */;
+/**
+ * RefreshStoreFactory freezes copied configuration and core metadata. Every
+ * constructor call transfers a fresh store to the app; later module mutations
+ * cannot change it. A failed constructor returns a safely closable partial
+ * handle, or real nil after unwinding acquisition. The context applies to setup,
+ * not runtime lifetime. Optional io.Closer ownership belongs solely to the app.
+ */
+export type RefreshStoreFactory = any /* plugin.RefreshStoreFactory */;
+
+//////////
+// source: app_registration_workflows.go
+
+/**
+ * RegistrationWorkflowBackendModule prepares enrollment without opening storage.
+ * Each factory call receives only its selected, borrowed dependencies and returns
+ * a fresh provider. On failure return a safely closable partial handle or a real
+ * nil after unwinding acquisition. Module Cleanup must not dispose the provider.
+ * Neither factories nor providers may close their borrowed store or messaging
+ * provider. The app drains requests before closing workflows and dependencies.
+ */
+export type RegistrationWorkflowBackendModule = any /* plugin.RegistrationWorkflowBackendModule */;
+
+//////////
+// source: caddyfile.go
 
 //////////
 // source: caddyfile_authn.go
@@ -33,6 +331,53 @@ export interface App {
 // source: caddyfile_user.go
 
 //////////
+// source: command_api_key.go
+
+//////////
+// source: command_credentials.go
+
+//////////
+// source: command_identity_sqlite.go
+
+//////////
+// source: command_local.go
+
+//////////
+// source: command_local_client.go
+
+//////////
+// source: command_provision.go
+
+//////////
+// source: oauth_registration_config.go
+
+/**
+ * OAuthApplicationSource retains current policy and an immutable credential
+ * reference. Stored ID/secret values are never serialized into host config.
+ */
+export interface OAuthApplicationSource {
+  name: string;
+  revision: string;
+  directives: string[];
+  digest: string;
+}
+
+//////////
+// source: oauth_registration_store.go
+
+/**
+ * OAuthRegistrationStoreConfig identifies host-owned, private, immutable credential
+ * revisions. It is independent of Caddy storage and AuthCrunch session storage.
+ * Path must be an explicit absolute path; normal configuration never creates it.
+ */
+export interface OAuthRegistrationStoreConfig {
+  path: string;
+}
+
+//////////
+// source: oidc_config.go
+
+//////////
 // source: plugin_authn.go
 
 /**
@@ -42,14 +387,32 @@ export interface App {
 export interface AuthnMiddleware {
   route_matcher?: string;
   portal_name?: string;
+  /**
+   * BasePath declares a literal portal mount. Omission retains legacy inference;
+   * a present value must be canonical, including an explicit slash for root.
+   */
+  base_path?: string;
+}
+
+//////////
+// source: plugin_authorization.go
+
+/**
+ * AuthorizationHandler preserves the gatekeeper's three outcomes. Caddy's
+ * generic authentication chain cannot represent a handled callback or denial;
+ * keep the legacy provider available for JSON consumers, and use this handler
+ * for the authorize directive.
+ */
+export interface AuthorizationHandler {
+  AuthzMiddleware: AuthzMiddleware;
 }
 
 //////////
 // source: plugin_authz.go
 
 /**
- * AuthzMiddleware authorizes access to endpoints based on
- * the presense and content of JWT token.
+ * AuthzMiddleware delegates JWT and direct OAuth authorization to a policy.
+ * AuthorizationHandler supplies the route-level handled-response contract.
  */
 export interface AuthzMiddleware {
   route_matcher?: string;
