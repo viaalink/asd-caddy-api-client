@@ -61,8 +61,9 @@ tag_merge() {
     warn "PR #$pr merged version '$version' after '$prev': not a plain semver step up; not tagging."
     return 0
   fi
-  existing=$(gh api "repos/$REPO/git/ref/tags/v$version" --jq .object.sha 2>/dev/null || true)
-  if [ -n "$existing" ]; then
+  # Decide on the exit status, not the output: on a 404 `gh api --jq` still
+  # prints the error body to stdout (PR #103 went untagged that way).
+  if existing=$(gh api "repos/$REPO/git/ref/tags/v$version" --jq .object.sha 2>/dev/null); then
     if [ "$existing" != "$merge" ]; then warn "Tag v$version exists at $existing, not at merge $merge."; fi
     return 0
   fi
