@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.12.1](https://github.com/viaalink/asd-caddy-api-client/compare/v0.12.0...v0.12.1) (2026-11-16)
+
+### Changed
+
+- Types regenerated from caddy-l4 master@1353123 (was master@eafc300; [diff](https://github.com/mholt/caddy-l4/compare/eafc300ef23b...1353123db5e2)).
+- Types regenerated from caddy-dns-route53 v1.6.3 (was v1.6.2; [diff](https://github.com/caddy-dns/route53/compare/v1.6.2...v1.6.3)).
+- Types regenerated from libdns-route53 v1.6.3 (was v1.6.2; [diff](https://github.com/libdns/route53/compare/v1.6.2...v1.6.3)).
+
 ## [0.12.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.11.1...v0.12.0) (2026-11-11)
 
 ### Changed

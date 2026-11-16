@@ -67,8 +67,8 @@
       },
       "pin": {
         "ref": "master",
-        "commit": "eafc300ef23bcb2a28cc329a18e1e98bcd2b7cee",
-        "updated": "2026-11-11"
+        "commit": "1353123db5e20715b645f93874218821b42630a9",
+        "updated": "2026-11-16"
       },
       "tygoConfig": "scripts/upstreams/tygo/caddy-l4.yaml",
       "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
@@ -121,9 +121,9 @@
         "pattern": "^v\\d+\\.\\d+\\.\\d+$"
       },
       "pin": {
-        "ref": "v1.6.2",
-        "commit": "0b76c51234a730e35753dcd0abd1de0707f27eb3",
-        "updated": "2026-08-11"
+        "ref": "v1.6.3",
+        "commit": "eab223a1fb269102e5fa19a7868fd69cbf6cfc4e",
+        "updated": "2026-11-16"
       },
       "tygoConfig": "scripts/upstreams/tygo/caddy-dns-route53.yaml",
       "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
@@ -139,9 +139,9 @@
         "parent": "caddy-dns-route53"
       },
       "pin": {
-        "ref": "v1.6.2",
-        "commit": "840c6120709b2f9da6d74dc5d562e2625334aecc",
-        "updated": "2026-08-11"
+        "ref": "v1.6.3",
+        "commit": "b9557eb367900164c2dfeddf2ab25b236eefde99",
+        "updated": "2026-11-16"
       },
       "tygoConfig": "scripts/upstreams/tygo/libdns-route53.yaml",
       "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",

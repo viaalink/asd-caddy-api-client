@@ -19,12 +19,26 @@ export const firstSelectionSchema = z.object({});
 
 export const ipHashSelectionSchema = z.object({});
 
+export const upstreamSourceSchema = z.any();
+
+export const aUpstreamsSchema = z.object({});
+
+export const aaaaUpstreamsSchema = z.object({});
+
 const durationSchema = z.any();
 
 const tlsConfigSchema = z.any();
 
 export const activeHealthChecksSchema = z.object({
   port: z.number().optional(),
+  uri: z.string().optional(),
+  headers: z.record(z.string(), z.array(z.string())).optional(),
+  method: z.string().optional(),
+  body: z.string().optional(),
+  follow_redirects: z.boolean().optional(),
+  max_size: z.number().optional(),
+  expect_status: z.number().optional(),
+  expect_body: z.string().optional(),
   interval: durationSchema.optional(),
   timeout: durationSchema.optional(),
   close_if_unhealthy: z.boolean().optional(),
@@ -58,10 +72,20 @@ export const upstreamSchema = z.object({
   weight: z.number().optional(),
 });
 
+export const srvUpstreamsSchema = z.object({
+  service: z.string().optional(),
+  proto: z.string().optional(),
+  name: z.string().optional(),
+  refresh: durationSchema.optional(),
+  grace_period: durationSchema.optional(),
+  dial_network: z.string().optional(),
+});
+
 export const upstreamPoolSchema = z.array(z.union([upstreamSchema, z.undefined()]));
 
 export const handlerSchema = z.object({
   upstreams: upstreamPoolSchema.optional(),
+  dynamic_upstreams: z.unknown().optional(),
   health_checks: healthChecksSchema.optional(),
   load_balancing: loadBalancingSchema.optional(),
   proxy_protocol: z.string().optional(),

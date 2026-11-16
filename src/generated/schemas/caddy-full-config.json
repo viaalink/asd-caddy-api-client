@@ -3134,6 +3134,7 @@
                                           },
                                           "minItems": 1
                                         },
+                                        "dynamic_upstreams": {},
                                         "health_checks": {
                                           "type": "object",
                                           "properties": {
@@ -3142,6 +3143,36 @@
                                               "properties": {
                                                 "port": {
                                                   "type": "number"
+                                                },
+                                                "uri": {
+                                                  "type": "string"
+                                                },
+                                                "headers": {
+                                                  "type": "object",
+                                                  "additionalProperties": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "method": {
+                                                  "type": "string"
+                                                },
+                                                "body": {
+                                                  "type": "string"
+                                                },
+                                                "follow_redirects": {
+                                                  "type": "boolean"
+                                                },
+                                                "max_size": {
+                                                  "type": "number"
+                                                },
+                                                "expect_status": {
+                                                  "type": "number"
+                                                },
+                                                "expect_body": {
+                                                  "type": "string"
                                                 },
                                                 "interval": {
                                                   "anyOf": [
