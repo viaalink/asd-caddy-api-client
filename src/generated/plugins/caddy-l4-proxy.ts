@@ -12,8 +12,12 @@ import type { TLSConfig } from "../caddy-reverseproxy";
 export interface HealthChecks {
   /**
    * Active health checks run in the background on a timer. To
-   * minimally enable active health checks, set either path or
-   * port (or both).
+   * minimally enable active health checks, set the interval; the
+   * default probe is a raw TCP dial. Set uri to probe over HTTP
+   * instead (see the fields below), which lets the proxy follow
+   * an application-level signal such as a primary-election endpoint.
+   * The HTTP probe uses TLS if, and only if, the upstream has TLS
+   * enabled, and trusts the upstream exactly as proxied connections do.
    */
   active?: ActiveHealthChecks;
   /**
@@ -27,6 +31,11 @@ export interface HealthChecks {
  * ActiveHealthChecks holds configuration related to active health
  * checks (that is, health checks which occur independently in a
  * background goroutine).
+ * The HTTP fields (uri, headers, method, body, follow_redirects, max_size,
+ * expect_status and expect_body) and their semantics are ported from
+ * caddyhttp/reverseproxy.ActiveHealthChecks in Caddy, and are kept as close
+ * to it as possible so that this copy can be dropped in favor of the
+ * original when the two are merged.
  */
 export interface ActiveHealthChecks {
   /**
@@ -34,6 +43,48 @@ export interface ActiveHealthChecks {
    * address) for health checks.
    */
   port?: number /* int */;
+  /**
+   * The URI (path and query) to request for an HTTP health check, e.g.
+   * "/primary". It must start with "/". When set, each check performs an
+   * HTTP request against the upstream (on Port if configured, otherwise the
+   * dial port) instead of a raw TCP dial. HTTPS is used if, and only if,
+   * the upstream has TLS enabled; the upstream's TLS settings (including
+   * insecure_skip_verify) are applied to the probe.
+   */
+  uri?: string;
+  /**
+   * HTTP headers to set on health check requests. A "Host" entry sets the
+   * request's Host. Only used when URI is set.
+   */
+  headers?: Record<string, string[]>;
+  /**
+   * The HTTP method to use for health checks (default "GET").
+   */
+  method?: string;
+  /**
+   * The body to send with the health check request.
+   */
+  body?: string;
+  /**
+   * Whether to follow HTTP redirects in response to active health checks (default off).
+   */
+  follow_redirects?: boolean;
+  /**
+   * The maximum response body to download from the backend
+   * during a health check.
+   */
+  max_size?: number /* int64 */;
+  /**
+   * The HTTP status code to expect from a healthy backend. A value below
+   * 100 is a status class, e.g. 2 matches any 2xx response. If unset, any
+   * 2xx response is healthy.
+   */
+  expect_status?: number /* int */;
+  /**
+   * A regular expression against which to match the response
+   * body of a healthy backend.
+   */
+  expect_body?: string;
   /**
    * How frequently to perform active health checks (default 30s).
    */
@@ -177,9 +228,15 @@ export interface IPHashSelection {}
  */
 export interface Handler {
   /**
-   * Upstreams is the list of backends to proxy to.
+   * Upstreams is the static list of backends to proxy to.
    */
   upstreams?: UpstreamPool;
+  /**
+   * DynamicUpstreamsRaw is a module that discovers upstreams dynamically (per
+   * connection) instead of listing them statically — e.g. from DNS SRV
+   * records, so the backend set need not be restated in config.
+   */
+  dynamic_upstreams?: unknown;
   /**
    * Health checks update the status of backends, whether they are
    * up or down. Down backends will not be proxied to.
@@ -261,3 +318,72 @@ export interface Upstream {
    */
   weight?: number /* int */;
 }
+
+//////////
+// source: upstreams.go
+
+/**
+ * UpstreamSource gets the list of upstreams to proxy to dynamically, instead of
+ * from a static configuration, so the backend set can be discovered (e.g. from
+ * DNS) rather than hard-coded. It is given the connection's replacer for
+ * placeholder expansion (and nothing connection-specific), so the same source
+ * can also be polled by the active health checker, which has no connection.
+ */
+export type UpstreamSource = any;
+/**
+ * SRVUpstreams discovers upstreams from DNS SRV records, so the upstream set
+ * does not have to be restated in config when DNS already publishes it. Results
+ * are cached and refreshed periodically.
+ * Each configured source owns its cache and the peer-pool references for the
+ * addresses it currently resolves to: a reference is taken when an address
+ * first appears and released when it drops out of the results or when the
+ * source is cleaned up (on config reload), so peers do not accumulate as the
+ * backend set churns. Note: active health checks only run on
+ * statically-configured upstreams; passive health checking and connection
+ * counting still apply to dynamically-discovered ones. Because the lookup runs
+ * while the source's lock is held, a slow resolver delays the connections
+ * served by this source while a refresh is in flight.
+ */
+export interface SRVUpstreams {
+  /**
+   * The service label of the SRV record (the "_service" part).
+   */
+  service?: string;
+  /**
+   * The protocol label of the SRV record, "tcp" or "udp" (the "_proto" part).
+   */
+  proto?: string;
+  /**
+   * The name label; or, if service and proto are empty, the entire domain
+   * name to look up.
+   */
+  name?: string;
+  /**
+   * The interval at which to refresh the SRV lookup. Results are cached
+   * between lookups. Default: 1m.
+   */
+  refresh?: Duration;
+  /**
+   * If > 0 and a lookup fails, keep using the cached results instead of
+   * returning an error. Note that each failed refresh pushes the window
+   * forward, so while the lookup keeps failing the last good results are
+   * served for as long as the failures continue, not just for one grace
+   * period after they were fetched. Default: 0.
+   */
+  grace_period?: Duration;
+  /**
+   * Specific network to dial the discovered upstreams on (e.g. "tcp4"); the
+   * SRV record only provides host and port. Defaults to "tcp".
+   */
+  dial_network?: string;
+}
+/**
+ * AUpstreams discovers upstreams from a name's DNS A records (IPv4). For AAAA
+ * (IPv6) records, use the sibling aaaa source.
+ */
+export interface AUpstreams {}
+/**
+ * AAAAUpstreams discovers upstreams from a name's DNS AAAA records (IPv6). For
+ * A (IPv4) records, use the sibling a source.
+ */
+export interface AAAAUpstreams {}

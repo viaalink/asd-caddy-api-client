@@ -43,7 +43,7 @@ by hand before trusting the output.
 | -------------- | --------- | -------------------- | ---------- |
 | caddy-security | v1.6.2    | local/caddy-security | 2026-11-11 |
 | go-authcrunch  | v1.5.0    | local/go-authcrunch  | 2026-11-11 |
-| caddy-l4       | `eafc300` | local/caddy-l4       | 2026-11-11 |
+| caddy-l4       | `1353123` | local/caddy-l4       | 2026-11-16 |
 
 **v1.1.59 → v1.1.64 notes:** caddy-security's own exported struct shape is unchanged
 (zero `json:"..."` tag diffs) — `caddy-security.ts`/`.zod.ts` regenerate byte-identical.
@@ -62,7 +62,7 @@ only.
 
 | Component | Upstream                    | Pinned                                                                    | Updated    |
 | --------- | --------------------------- | ------------------------------------------------------------------------- | ---------- |
-| caddy-l4  | `github.com/mholt/caddy-l4` | commit `e54f24a1a59b099d22778ed423935cde56d83d4b` (master, merge of #492) | 2026-11-11 |
+| caddy-l4  | `github.com/mholt/caddy-l4` | commit `e54f24a1a59b099d22778ed423935cde56d83d4b` (master, merge of #492) | 2026-11-16 |
 
 Pinned to a commit, not a tag: the latest tag (`v0.1.2`, 2026-07-15) is months behind what
 everyone builds (`xcaddy build --with github.com/mholt/caddy-l4` takes the default branch). The
@@ -141,10 +141,10 @@ fields.
 | --------------------------- | -------------------------------- | ------------------------------------ | ---------- |
 | `local/libdns-porkbun`      | `github.com/libdns/porkbun`      | `v1.1.0`                             | 2026-08-11 |
 | `local/libdns-cloudflare`   | `github.com/libdns/cloudflare`   | `v0.2.2`                             | 2026-08-11 |
-| `local/libdns-route53`      | `github.com/libdns/route53`      | `v1.6.2`                             | 2026-08-11 |
+| `local/libdns-route53`      | `github.com/libdns/route53`      | `v1.6.3`                             | 2026-11-16 |
 | `local/libdns-digitalocean` | `github.com/libdns/digitalocean` | no tags — pinned to commit `dfa7af5` | 2026-08-11 |
 | `local/libdns-godaddy`      | `github.com/libdns/godaddy`      | `v1.1.0`                             | 2026-08-11 |
-| `local/caddy-dns-route53`   | `github.com/caddy-dns/route53`   | `v1.6.2`                             | 2026-08-11 |
+| `local/caddy-dns-route53`   | `github.com/caddy-dns/route53`   | `v1.6.3`                             | 2026-11-16 |
 
 **Generated files:** `src/generated/plugins/caddy-dns-{porkbun,cloudflare,digitalocean,godaddy}.ts`/`.zod.ts`, `caddy-dns-route53-libdns.ts`/`.zod.ts`, `caddy-dns-route53-wrapper.ts`/`.zod.ts`
 **Hand-written builders:** `src/plugins/caddy-dns/`
