@@ -4,7 +4,7 @@ import { z } from "zod";
 export const clientSchema = z.object({});
 
 export const dnsSchema = z.object({
-  Record: z.any(),
+  Record: z.any().optional(),
   ID: z.string(),
 });
 

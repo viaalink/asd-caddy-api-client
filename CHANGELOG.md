@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## Unreleased
+
+### Changed
+
+- **zod 4.** The client is built on zod 4.6.7 (was zod 3), and its peer dependency is now `zod ^4.6.7`. Zod 3.25.76 and every zod before 4.6.6 has GHSA-mrhx-c7xc-m3w5 (high): a large array that fails an array schema makes zod collect one issue per element without a limit, until the process runs out of memory. No patched zod 3 exists. An application that also uses zod 3 next to this client must move to zod 4.
+- Parsing accepts the same configs as before: a generated field whose Go type ts-to-zod cannot resolve (`z.any()` or `z.unknown()`) stays optional, as it was on zod 3 (zod 4 makes such a key required; `scripts/zod4-optional-any.ts`, run by `generate-zod-schemas.ts`). Without it, the `push` handler without `headers.HeaderOps` failed to parse.
+- `ValidationError` carries zod 4's issues; their messages read differently ("Invalid input: expected string, received number").
+
 ## [0.12.1](https://github.com/viaalink/asd-caddy-api-client/compare/v0.12.0...v0.12.1) (2026-11-16)
 
 ### Changed

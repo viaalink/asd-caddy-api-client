@@ -1466,7 +1466,7 @@ export const MitmwebOptionsSchema = z.object({
 export function validate<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
   if (!result.success) {
-    throw new ValidationError(`Validation failed: ${result.error.message}`, result.error.errors);
+    throw new ValidationError(`Validation failed: ${result.error.message}`, result.error.issues);
   }
   return result.data;
 }

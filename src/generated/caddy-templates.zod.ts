@@ -17,7 +17,7 @@ export const templatesSchema = z.object({
 });
 
 export const templateContextSchema = z.object({
-  Root: z.unknown(),
+  Root: z.unknown().optional(),
   Req: z.unknown().optional(),
   Args: z.array(z.any()),
   RespHeader: wrappedHeaderSchema,

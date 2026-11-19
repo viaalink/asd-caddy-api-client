@@ -4,7 +4,7 @@
  * @module utils/validation
  */
 import { resolve, normalize, isAbsolute } from "path";
-import { ZodError, type ZodType, type ZodTypeDef, type ZodIssue } from "zod";
+import { ZodError, type ZodType, type ZodIssue } from "zod";
 import { ValidationError } from "../errors.js";
 
 /**
@@ -106,8 +106,8 @@ export function validateFilePath(
  * // Throws: ValidationError: Invalid enum value...
  * ```
  */
-export function validateOrThrow<Output, Def extends ZodTypeDef, Input>(
-  schema: ZodType<Output, Def, Input>,
+export function validateOrThrow<Output, Input>(
+  schema: ZodType<Output, Input>,
   data: unknown,
   context?: string
 ): Output {
@@ -117,7 +117,7 @@ export function validateOrThrow<Output, Def extends ZodTypeDef, Input>(
     if (error instanceof ZodError) {
       const message = context ? `${context}: ${formatZodError(error)}` : formatZodError(error);
 
-      throw new ValidationError(message, error.errors);
+      throw new ValidationError(message, error.issues);
     }
     throw error;
   }
