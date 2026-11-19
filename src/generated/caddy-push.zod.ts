@@ -9,7 +9,7 @@ export const resourceSchema = z.object({
 const headerOpsSchema = z.any();
 
 export const headerConfigSchema = z.object({
-  HeaderOps: headerOpsSchema,
+  HeaderOps: headerOpsSchema.optional(),
 });
 
 export const handlerSchema = z.object({

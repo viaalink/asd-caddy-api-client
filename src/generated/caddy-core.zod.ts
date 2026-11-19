@@ -43,7 +43,7 @@ export const cloudEventSchema = z.object({
 export const ctxKeySchema = z.string();
 
 export const contextSchema = z.object({
-  Context: z.unknown(),
+  Context: z.unknown().optional(),
 });
 
 export const fileSystemsSchema = z.any();
@@ -115,7 +115,7 @@ export const replacementFuncSchema = z.any();
 export const storageConverterSchema = z.any();
 
 export const usagePoolSchema = z.object({
-  RWMutex: z.unknown(),
+  RWMutex: z.unknown().optional(),
 });
 
 export const constructorSchema = z.any();
@@ -135,7 +135,7 @@ export const adminAccessSchema = z.object({
 
 export const adminRouteSchema = z.object({
   Pattern: z.string(),
-  Handler: adminHandlerSchema,
+  Handler: adminHandlerSchema.optional(),
 });
 
 export const sinkLogSchema = z.object({
@@ -144,7 +144,7 @@ export const sinkLogSchema = z.object({
 
 export const moduleInfoSchema = z.object({
   ID: moduleIdSchema,
-  New: z.any(),
+  New: z.any().optional(),
 });
 
 export const remoteAdminSchema = z.object({

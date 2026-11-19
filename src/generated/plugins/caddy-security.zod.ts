@@ -17,13 +17,13 @@ export const oAuthApplicationSourceSchema = z.object({
 export const claimsEnrichmentBindingSchema = z.object({
   policy: z.string(),
   config: z.any().optional(),
-  backend: z.unknown(),
+  backend: z.unknown().optional(),
 });
 
 export const externalAuthorizationBindingSchema = z.object({
   policy: z.string(),
   config: z.any().optional(),
-  backend: z.unknown(),
+  backend: z.unknown().optional(),
 });
 
 export const accessSignerBackendModuleSchema = z.any();

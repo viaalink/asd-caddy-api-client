@@ -6,9 +6,10 @@
  */
 
 import { execFileSync } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { optionalAnyFields } from "./zod4-optional-any.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -55,6 +56,9 @@ function generateZodSchema(
       cwd: ROOT_DIR,
       stdio: "pipe",
     });
+    // zod 4 requires a key typed z.any()/z.unknown(); zod 3 did not (see zod4-optional-any.ts).
+    const absoluteOutput = join(ROOT_DIR, relativeOutput);
+    writeFileSync(absoluteOutput, optionalAnyFields(readFileSync(absoluteOutput, "utf8")));
     console.log(`  ✓ Generated ${moduleName}.zod.ts`);
     return true;
   } catch {

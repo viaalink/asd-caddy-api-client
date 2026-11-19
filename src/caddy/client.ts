@@ -491,7 +491,7 @@ export class CaddyClient {
       if (isMissingConfigPath(error, 400)) return {};
       throw error;
     }
-    return z.record(Layer4ServerSchema).parse(data ?? {});
+    return z.record(z.string(), Layer4ServerSchema).parse(data ?? {});
   }
 
   /**

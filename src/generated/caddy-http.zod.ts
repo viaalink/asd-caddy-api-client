@@ -58,7 +58,7 @@ export const idleDeadlineSchema = z.object({
 });
 
 export const idleTimeoutReaderSchema = z.object({
-  ReadCloser: z.any(),
+  ReadCloser: z.any().optional(),
   Ctrl: z.any().optional(),
   Deadline: idleDeadlineSchema,
   Logger: z.unknown().optional(),
@@ -67,7 +67,7 @@ export const idleTimeoutReaderSchema = z.object({
 });
 
 export const responseWriterWrapperSchema = z.object({
-  ResponseWriter: z.unknown(),
+  ResponseWriter: z.unknown().optional(),
 });
 
 export const invokeSchema = z.object({

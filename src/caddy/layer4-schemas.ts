@@ -251,7 +251,7 @@ export interface Layer4MatcherSet extends z.infer<typeof Layer4MatcherSetBaseSch
 /**
  * A matcher set, e.g. `{ "postgres": {} }` or `{ "tls": { "sni": ["db.example.com"] } }`.
  */
-export const Layer4MatcherSetSchema: z.ZodType<Layer4MatcherSet, z.ZodTypeDef, unknown> =
+export const Layer4MatcherSetSchema: z.ZodType<Layer4MatcherSet, unknown> =
   Layer4MatcherSetBaseSchema.extend({
     not: z.array(z.lazy(() => Layer4MatcherSetSchema)).optional(),
   }).catchall(z.unknown());
@@ -262,7 +262,7 @@ export const Layer4MatcherSetSchema: z.ZodType<Layer4MatcherSet, z.ZodTypeDef, u
 
 /** Upstream TLS: the same options as the HTTP reverse proxy's TLS transport. */
 export const Layer4UpstreamTlsSchema = GeneratedReverseProxyTlsConfigSchema.extend({
-  ca: z.record(z.unknown()).optional(),
+  ca: z.record(z.string(), z.unknown()).optional(),
   handshake_timeout: CaddyDurationSchema.optional(),
 }).passthrough();
 
@@ -348,8 +348,8 @@ export const Layer4ProxyHandlerSchema = GeneratedProxyHandlerSchema.extend({
 export const Layer4TlsConnectionPolicySchema = GeneratedConnectionPolicySchema.extend({
   /** Which ClientHellos this policy is for (`sni`, `alpn`, `remote_ip`, …). */
   match: Layer4TlsHandshakeMatchSchema.optional(),
-  certificate_selection: z.record(z.unknown()).optional(),
-  client_authentication: z.record(z.unknown()).optional(),
+  certificate_selection: z.record(z.string(), z.unknown()).optional(),
+  client_authentication: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
 /** The `tls` handler: terminates TLS, the next handlers see the plaintext. */
@@ -475,14 +475,14 @@ export type Layer4Handler =
   | Layer4VarsHandler
   | Layer4OtherHandler;
 
-export const Layer4SubrouteHandlerSchema: z.ZodType<Layer4SubrouteHandler, z.ZodTypeDef, unknown> =
+export const Layer4SubrouteHandlerSchema: z.ZodType<Layer4SubrouteHandler, unknown> =
   GeneratedSubrouteHandlerSchema.extend({
     handler: z.literal("subroute"),
     routes: z.array(z.lazy(() => Layer4RouteSchema)).optional(),
     matching_timeout: CaddyDurationSchema.optional(),
   }).passthrough();
 
-export const Layer4TeeHandlerSchema: z.ZodType<Layer4TeeHandler, z.ZodTypeDef, unknown> = z
+export const Layer4TeeHandlerSchema: z.ZodType<Layer4TeeHandler, unknown> = z
   .object({
     handler: z.literal("tee"),
     branch: z.array(z.lazy(() => Layer4HandlerSchema)).optional(),
@@ -508,7 +508,7 @@ export const LAYER4_HANDLER_SCHEMAS: Record<Layer4HandlerName, z.ZodTypeAny> = {
  * Any layer4 handler. A known handler (by its `handler` name) is checked
  * against its own schema; others are checked for the name only.
  */
-export const Layer4HandlerSchema: z.ZodType<Layer4Handler, z.ZodTypeDef, unknown> = z
+export const Layer4HandlerSchema: z.ZodType<Layer4Handler, unknown> = z
   .object({ handler: z.string().min(1) })
   .passthrough()
   .superRefine((value, ctx) => {
@@ -518,7 +518,8 @@ export const Layer4HandlerSchema: z.ZodType<Layer4Handler, z.ZodTypeDef, unknown
     if (!schema) return;
     const result = schema.safeParse(value);
     if (!result.success) {
-      for (const issue of result.error.issues) ctx.addIssue(issue);
+      for (const issue of result.error.issues)
+        ctx.addIssue({ code: "custom", message: issue.message, path: issue.path });
     }
   })
   .transform((value) => {
@@ -541,7 +542,7 @@ export interface Layer4Route {
   [key: string]: unknown;
 }
 
-export const Layer4RouteSchema: z.ZodType<Layer4Route, z.ZodTypeDef, unknown> = z
+export const Layer4RouteSchema: z.ZodType<Layer4Route, unknown> = z
   .object({
     "@id": z.string().min(1).optional(),
     match: z.array(Layer4MatcherSetSchema).optional(),
@@ -565,7 +566,7 @@ export const Layer4ServerSchema = z
 /** The `layer4` app (`apps.layer4`). */
 export const Layer4AppSchema = z
   .object({
-    servers: z.record(Layer4ServerSchema).optional(),
+    servers: z.record(z.string(), Layer4ServerSchema).optional(),
   })
   .passthrough();
 
