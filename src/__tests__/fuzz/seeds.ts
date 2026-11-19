@@ -48,7 +48,9 @@ import { z } from "zod";
  * since `.strict()` would silently override that intent.
  */
 function strictify(schema: z.ZodTypeAny): z.ZodTypeAny {
-  if (schema instanceof z.ZodObject && schema._def.unknownKeys !== "passthrough") {
+  // zod 4: `.passthrough()` and `.catchall()` set def.catchall (zod 3 had `unknownKeys`); a
+  // schema without one strips unknown keys and is the one to make strict.
+  if (schema instanceof z.ZodObject && schema.def.catchall === undefined) {
     return schema.strict();
   }
   return schema;
