@@ -43,6 +43,9 @@ class Incomplete(Exception):
     """The buffer ends inside a value: wait for more bytes."""
 
 
+WHITESPACE = str.maketrans("", "", "\r\n\t")
+
+
 def fmt_value(value: bytes | None, limit: int = TEXT_SHOWN) -> str:
     if value is None:
         return "nil"
@@ -50,7 +53,8 @@ def fmt_value(value: bytes | None, limit: int = TEXT_SHOWN) -> str:
         text = value.decode("utf-8")
     except UnicodeDecodeError:
         text = None
-    if text is None or not text.isprintable():
+    # Line breaks and tabs are fine in text (repr shows them as \n, \t).
+    if text is None or not text.translate(WHITESPACE).isprintable():
         shown = "0x" + value[: limit // 2].hex()
         return shown + (f"… ({len(value)} bytes)" if len(value) > limit // 2 else "")
     if len(text) > limit:
@@ -163,7 +167,8 @@ def describe_reply(value: tuple) -> str:
         return "NIL"
     if kind == "bulk":
         n = len(value[1])
-        return f"STRING  {fmt_value(value[1])}  ({n} byte{'s' if n != 1 else ''})"
+        shown = fmt_value(value[1])
+        return f"STRING  {shown}" if shown.endswith("bytes)") else f"STRING  {shown}  ({n} byte{'s' if n != 1 else ''})"
     items = value[1]
     if kind == "map":
         n = len(items) // 2

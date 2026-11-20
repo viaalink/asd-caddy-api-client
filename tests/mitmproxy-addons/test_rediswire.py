@@ -129,6 +129,14 @@ class TranscriptTest(unittest.TestCase):
             ],
         )
 
+    def test_multi_line_text_stays_text(self):
+        info = b"# Server\r\nredis_version:7.4.1\r\n" + b"x" * 100
+        flow = play([self.addon()], [(True, cmd("INFO")), (False, b"$%d\r\n%s\r\n" % (len(info), info))])
+        self.assertEqual(
+            flow.comment.split("\n")[1],
+            "← STRING  '# Server\\r\\nredis_version:7.4.1\\r\\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'… (131 bytes)",
+        )
+
     def test_long_and_binary_values_are_cut(self):
         flow = play(
             [self.addon()],

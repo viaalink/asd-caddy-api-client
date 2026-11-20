@@ -71,6 +71,9 @@ class Incomplete(Exception):
     """The buffer ends inside a packet: wait for more bytes."""
 
 
+WHITESPACE = str.maketrans("", "", "\r\n\t")
+
+
 def fmt_value(value: bytes | None, limit: int = TEXT_SHOWN) -> str:
     if value is None:
         return "NULL"
@@ -78,7 +81,8 @@ def fmt_value(value: bytes | None, limit: int = TEXT_SHOWN) -> str:
         text = value.decode("utf-8")
     except UnicodeDecodeError:
         text = None
-    if text is None or not text.isprintable():
+    # Line breaks and tabs are fine in text (repr shows them as \n, \t).
+    if text is None or not text.translate(WHITESPACE).isprintable():
         shown = "0x" + value[: limit // 2].hex()
         return shown + (f"… ({len(value)} bytes)" if len(value) > limit // 2 else "")
     if len(text) > limit:
