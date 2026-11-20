@@ -21,6 +21,9 @@ All notable changes to this project will be documented in this file. See [standa
   passwords, never show and are blanked in the stored flow once forwarded. A MySQL SSLRequest or a
   Redis TLS handshake is reported and not decoded. Tested against MySQL 8, MariaDB 11 and Redis 7
   through caddy-l4 and mitmweb (`just test-layer4`).
+- The demo (`just demo start`) runs the shop on Postgres, MySQL 8, MariaDB 11 and Redis 7, one
+  dashboard tab each (`/dashboard?tab=pg|mysql|mariadb|redis`): every database behind a caddy-l4
+  route that the dashboard's MITM switch swaps through a mitmweb with the matching addon.
 - Python unit tests for the addons on recorded byte sequences (`tests/mitmproxy-addons/`,
   `just test-addons`, and part of `just test`): split and merged chunks, every byte its own TCP
   message, secrets blanked, all three addons loaded together.
