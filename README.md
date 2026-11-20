@@ -369,6 +369,37 @@ services:
       - "3000:3000"
 ```
 
+#### Databases over TCP: Postgres, MySQL/MariaDB, Redis
+
+Behind a caddy-l4 (`layer4`) route, `MitmproxyManager` swaps a TCP service through mitmproxy in
+reverse TCP mode the same way. The package ships three mitmproxy addons that turn the bytes into a
+readable transcript (mitmweb's Comment tab) and decode every TCP message in Stream Data (a content
+view picked automatically):
+
+| Addon       | Protocol                | What you read                                                                                                                                                      |
+| ----------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pgwire`    | PostgreSQL              | SQL (simple and extended), bind parameters, columns, rows, command tags, errors                                                                                    |
+| `mysqlwire` | MySQL and MariaDB       | which server (MySQL or MariaDB, version), `COM_QUERY` SQL, prepared statements with their parameters, columns, rows, OK packets (rows affected, insert id), errors |
+| `rediswire` | Redis (RESP2 and RESP3) | commands with their arguments (pipelined or not), replies summarised: type, length, first values                                                                   |
+
+Passwords never show: login data (Postgres password messages, the MySQL auth response and any
+later auth exchange, Redis `AUTH` / `HELLO … AUTH`) is left out of the transcript and blanked in the
+stored flow once forwarded. A connection that switches to TLS is reported and not decoded.
+
+Each addon only takes flows that look like its own protocol (Postgres and Redis clients speak first,
+a MySQL server greets first), never by port, so one mitmweb can load all three and serve several
+reverse TCP listeners; a flow none of them recognises stays raw, as mitmproxy shows it without
+addons.
+
+```bash
+mitmweb --mode reverse:tcp://postgres:5432@5432 --mode reverse:tcp://mysql:3306@3306 \
+        --mode reverse:tcp://redis:6379@6379 \
+        -s pgwire.py -s mysqlwire.py -s rediswire.py
+```
+
+`mitmproxyAddonPath("pgwire" | "mysqlwire" | "rediswire")` gives each file's path inside the
+package; `writeMitmproxyAddon(addon, dir)` writes it out for bundled or compiled programs.
+
 **Features:**
 
 - ✅ Zero client/backend code changes

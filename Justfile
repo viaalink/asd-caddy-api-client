@@ -74,6 +74,11 @@ test-layer4:
     done
     LAYER4_TEST=true bun test src/__tests__/integration/layer4-modules.integration.test.ts --no-coverage
 
+# The mitmproxy addons (pgwire, mysqlwire, rediswire) on recorded byte sequences.
+# Plain python3 is enough (mitmproxy is stubbed when missing); also part of `just test`.
+test-addons:
+    cd tests/mitmproxy-addons && python3 -B -m unittest -v
+
 # Stop the layer4 test stack
 test-layer4-down:
     docker compose -p caddy-layer4-test -f tests/integration/docker-compose.layer4.yml down -v

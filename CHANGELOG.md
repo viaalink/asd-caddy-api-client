@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [Unreleased]
+
+### Added
+
+- mitmproxy addons for MySQL/MariaDB and Redis, next to `pgwire`, shipped in the package
+  (`mitmproxy-addons/mysqlwire.py`, `mitmproxy-addons/rediswire.py`; paths from
+  `mitmproxyAddonPath("mysqlwire" | "rediswire")`, sources embedded for `writeMitmproxyAddon()`).
+  `mysqlwire` reads the MySQL client/server protocol: the greeting says whether the server is MySQL
+  or MariaDB and which version, `COM_QUERY` SQL, prepared statements (`COM_STMT_PREPARE`, and
+  `COM_STMT_EXECUTE` with its parameters), result sets (columns, rows, row count, text and binary),
+  OK and ERR packets. `rediswire` reads RESP2 and RESP3: commands with their arguments (array and
+  inline, pipelined or not) and each reply summarised (type, length, first values). Like `pgwire`,
+  each fills mitmweb's Comment tab with the session as one transcript, decodes every TCP message in
+  Stream Data (the "MySQL" and "Redis" content views, picked automatically) and logs every line;
+  split or merged TCP chunks decode correctly. The MySQL auth response and any later auth data,
+  and Redis `AUTH`, `HELLO … AUTH`, `MIGRATE … AUTH`, `CONFIG SET requirepass` and `ACL SETUSER`
+  passwords, never show and are blanked in the stored flow once forwarded. A MySQL SSLRequest or a
+  Redis TLS handshake is reported and not decoded. Tested against MySQL 8, MariaDB 11 and Redis 7
+  through caddy-l4 and mitmweb (`just test-layer4`).
+- Python unit tests for the addons on recorded byte sequences (`tests/mitmproxy-addons/`,
+  `just test-addons`, and part of `just test`): split and merged chunks, every byte its own TCP
+  message, secrets blanked, all three addons loaded together.
+
+### Changed
+
+- `pgwire` only takes flows that look like Postgres (a startup, SSL or cancel request from the
+  client), so it can share one mitmproxy with `mysqlwire` and `rediswire`: each addon claims its
+  own protocol by what is on the wire, not by port, and a flow none of them recognises stays raw.
+
 ## [0.13.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.12.1...v0.13.0) (2026-11-19)
 
 ### Changed
