@@ -5,47 +5,6 @@
   "description": "Caddy static response handler configuration",
   "$ref": "#/definitions/caddy-handler-static-response",
   "definitions": {
-    "caddy-handler-static-response": {
-      "type": "object",
-      "properties": {
-        "handler": {
-          "type": "string",
-          "const": "static_response"
-        },
-        "status_code": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "body": {
-          "type": "string"
-        },
-        "headers": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "close": {
-          "type": "boolean"
-        },
-        "abort": {
-          "type": "boolean"
-        },
-        "@id": {
-          "type": "string"
-        }
-      },
-      "required": ["handler"],
-      "additionalProperties": false
-    }
+    "caddy-handler-static-response": {}
   }
 }

@@ -5,52 +5,6 @@
   "description": "caddy-security OIDC identity provider configuration",
   "$ref": "#/definitions/caddy-security-oidc-provider",
   "definitions": {
-    "caddy-security-oidc-provider": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string",
-          "const": "oauth"
-        },
-        "params": {
-          "type": "object",
-          "properties": {
-            "driver": {
-              "type": "string"
-            },
-            "realm": {
-              "type": "string"
-            },
-            "client_id": {
-              "type": "string"
-            },
-            "client_secret": {
-              "type": "string"
-            },
-            "metadata_url": {
-              "type": "string"
-            },
-            "scopes": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "@id": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        "@id": {
-          "type": "string"
-        }
-      },
-      "required": ["name", "kind", "params"],
-      "additionalProperties": false
-    }
+    "caddy-security-oidc-provider": {}
   }
 }

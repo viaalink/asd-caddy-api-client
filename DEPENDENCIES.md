@@ -41,8 +41,8 @@ by hand before trusting the output.
 
 | Plugin         | Version   | Source               | Updated    |
 | -------------- | --------- | -------------------- | ---------- |
-| caddy-security | v1.6.2    | local/caddy-security | 2026-11-11 |
-| go-authcrunch  | v1.5.0    | local/go-authcrunch  | 2026-11-11 |
+| caddy-security | v1.7.0    | local/caddy-security | 2026-11-23 |
+| go-authcrunch  | v1.6.0    | local/go-authcrunch  | 2026-11-23 |
 | caddy-l4       | `1353123` | local/caddy-l4       | 2026-11-16 |
 
 **v1.1.59 → v1.1.64 notes:** caddy-security's own exported struct shape is unchanged

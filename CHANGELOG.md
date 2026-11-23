@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.13.1](https://github.com/viaalink/asd-caddy-api-client/compare/v0.13.0...v0.13.1) (2026-11-23)
+
+### Changed
+
+- Types regenerated from caddy-security v1.7.0 (was v1.6.2; [diff](https://github.com/greenpau/caddy-security/compare/v1.6.2...v1.7.0)).
+- Types regenerated from go-authcrunch v1.6.0 (was v1.5.0; [diff](https://github.com/greenpau/go-authcrunch/compare/v1.5.0...v1.6.0)).
+
 ## [0.13.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.12.1...v0.13.0) (2026-11-19)
 
 ### Changed

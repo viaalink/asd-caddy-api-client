@@ -30,9 +30,9 @@
         "pattern": "^v1\\.\\d+\\.\\d+$"
       },
       "pin": {
-        "ref": "v1.6.2",
-        "commit": "ffe6f3632e5cff95eae8b342b96fd5552c8eede3",
-        "updated": "2026-11-11"
+        "ref": "v1.7.0",
+        "commit": "3225a2b426889e4e1abe5101ee6261a50af8b47f",
+        "updated": "2026-11-23"
       },
       "tygoConfig": "scripts/upstreams/tygo/caddy-security.yaml",
       "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
@@ -48,9 +48,9 @@
         "parent": "caddy-security"
       },
       "pin": {
-        "ref": "v1.5.0",
-        "commit": "e1fa48a310b6d8d97661778b3dbbec9da6bb8b34",
-        "updated": "2026-11-11"
+        "ref": "v1.6.0",
+        "commit": "65130696c48c1d1feeef5a5aa86e5933127c7cd1",
+        "updated": "2026-11-23"
       },
       "tygoConfig": "scripts/upstreams/tygo/go-authcrunch.yaml",
       "generator": "generate:plugin-types (scripts/generate-plugin-types.ts)",
