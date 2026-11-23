@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file. See [standa
 - Types regenerated from caddy-security v1.7.0 (was v1.6.2; [diff](https://github.com/greenpau/caddy-security/compare/v1.6.2...v1.7.0)).
 - Types regenerated from go-authcrunch v1.6.0 (was v1.5.0; [diff](https://github.com/greenpau/go-authcrunch/compare/v1.5.0...v1.6.0)).
 
+### Fixed
+
+- Editor JSON schemas (`src/generated/schemas/*.json`) are generated with zod 4's own `z.toJSONSchema` (normalized to the previous draft-07 shape) instead of `zod-to-json-schema`, which does not understand zod 4 and emitted an empty `{}` for every schema on regeneration. The published schemas are unchanged in what they accept.
+
 ## [0.13.0](https://github.com/viaalink/asd-caddy-api-client/compare/v0.12.1...v0.13.0) (2026-11-19)
 
 ### Changed

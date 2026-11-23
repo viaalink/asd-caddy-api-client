@@ -5,6 +5,25 @@
   "description": "caddy-security authenticator portal handler",
   "$ref": "#/definitions/caddy-security-authenticator",
   "definitions": {
-    "caddy-security-authenticator": {}
+    "caddy-security-authenticator": {
+      "type": "object",
+      "properties": {
+        "handler": {
+          "type": "string",
+          "const": "authenticator"
+        },
+        "portal_name": {
+          "type": "string"
+        },
+        "route_matcher": {
+          "type": "string"
+        },
+        "@id": {
+          "type": "string"
+        }
+      },
+      "required": ["handler"],
+      "additionalProperties": false
+    }
   }
 }

@@ -5,6 +5,44 @@
   "description": "caddy-security authorization handler",
   "$ref": "#/definitions/caddy-security-authorization",
   "definitions": {
-    "caddy-security-authorization": {}
+    "caddy-security-authorization": {
+      "type": "object",
+      "properties": {
+        "handler": {
+          "type": "string",
+          "const": "authentication"
+        },
+        "providers": {
+          "type": "object",
+          "properties": {
+            "authorizer": {
+              "type": "object",
+              "properties": {
+                "gatekeeper_name": {
+                  "type": "string"
+                },
+                "route_matcher": {
+                  "type": "string"
+                },
+                "@id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "@id": {
+              "type": "string"
+            }
+          },
+          "required": ["authorizer"],
+          "additionalProperties": false
+        },
+        "@id": {
+          "type": "string"
+        }
+      },
+      "required": ["handler", "providers"],
+      "additionalProperties": false
+    }
   }
 }
