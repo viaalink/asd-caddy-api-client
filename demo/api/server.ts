@@ -5,8 +5,9 @@
  * - Dynamic route management via Caddy Admin API
  * - Hot-swappable MITMproxy traffic interception using MitmproxyManager
  * - Multiple services with independent monitoring control
- * - SQL over TCP: Postgres behind a caddy-l4 route, swapped through a
- *   mitmproxy that decodes the Postgres wire protocol
+ * - Databases over TCP: Postgres, MySQL, MariaDB and Redis behind caddy-l4
+ *   routes, each swapped through a mitmproxy that decodes its protocol
+ *   (the package's pgwire, mysqlwire and rediswire addons)
  */
 
 import {
@@ -20,6 +21,8 @@ import {
   buildLayer4Server,
 } from "../dist/index.js";
 import pg from "pg";
+import { createConnection as createMysqlConnection } from "mysql2/promise";
+import { Redis } from "ioredis";
 import type { CaddyRoute } from "../dist/index.js";
 
 const CADDY_ADMIN_URL = process.env.CADDY_ADMIN_URL || "http://localhost:2019";
@@ -63,6 +66,9 @@ const mitmManager = new MitmproxyManager(caddy, {
   default: { host: "mitmproxy", port: 8080, webPort: 8081 }, // For Elasticsearch
   nodeproxy: { host: "mitmproxy-node", port: 8080, webPort: 8081 }, // For Node API
   postgres: { host: "mitmproxy-pg", port: 5432, webPort: 8081 }, // reverse:tcp → postgres:5432
+  mysql: { host: "mitmproxy-mysql", port: 3306, webPort: 8081 }, // reverse:tcp → mysql:3306
+  mariadb: { host: "mitmproxy-mariadb", port: 3306, webPort: 8081 }, // reverse:tcp → mariadb:3306
+  redis: { host: "mitmproxy-redis", port: 6379, webPort: 8081 }, // reverse:tcp → redis:6379
 });
 
 // Register Elasticsearch service (uses default proxy)
@@ -91,6 +97,24 @@ mitmManager.register({
   match: "postgres",
   proxy: "postgres",
 });
+
+// MySQL, MariaDB and Redis: TCP services too, each on a layer4 listener of its
+// own. caddy-l4 has no matcher for them (and a MySQL server speaks first, so
+// there is nothing to match before it does): a route without a matcher.
+const TCP_DATABASES = [
+  { id: "mysql", listen: ":3306", backend: { host: "mysql", port: 3306 } },
+  { id: "mariadb", listen: ":3307", backend: { host: "mariadb", port: 3306 } },
+  { id: "redis", listen: ":6379", backend: { host: "redis", port: 6379 } },
+] as const;
+for (const d of TCP_DATABASES) {
+  mitmManager.register({
+    protocol: "tcp",
+    id: d.id,
+    serverId: d.id,
+    backend: d.backend,
+    proxy: d.id,
+  });
+}
 
 // The demo's own database access goes through Caddy (caddy:5432), so the route
 // can be swapped. A TCP connection is routed when it opens, so the pool closes
@@ -137,6 +161,140 @@ async function searchProductsSql(params: URLSearchParams) {
   };
 }
 
+// MySQL and MariaDB through Caddy (caddy:3306, caddy:3307). One connection per
+// search: a TCP connection is routed when it opens, so the next search after
+// inspection is switched on goes through mitmproxy, and each flow in mitmweb
+// reads from the server's greeting (MySQL or MariaDB) to the last row.
+const SQL_PASSWORD = process.env.DEMO_DB_PASSWORD ?? "demo";
+const SQL_DATABASES: Record<string, { port: number }> = {
+  mysql: { port: 3306 },
+  mariadb: { port: 3307 },
+};
+
+async function searchProductsMysql(dbId: string, params: URLSearchParams) {
+  const where: string[] = [];
+  const values: (string | number)[] = [];
+  const q = params.get("q")?.trim();
+  if (q) {
+    where.push("(name like ? or description like ?)");
+    values.push(`%${q}%`, `%${q}%`);
+  }
+  const category = params.get("category");
+  if (category) {
+    where.push("category = ?");
+    values.push(category);
+  }
+  const maxPrice = Number(params.get("maxPrice"));
+  if (maxPrice > 0) {
+    where.push("price <= ?");
+    values.push(maxPrice);
+  }
+  const SORTS: Record<string, string> = { price: "price", name: "name", rating: "rating desc" };
+  const sort = SORTS[params.get("sort") ?? "price"] ?? "price";
+  const sql =
+    `select name, category, description, price from products` +
+    (where.length ? ` where ${where.join(" and ")}` : "") +
+    ` order by ${sort} limit 20`;
+  const started = performance.now();
+  const conn = await createMysqlConnection({
+    host: process.env.SQL_HOST ?? "caddy",
+    port: SQL_DATABASES[dbId]!.port,
+    user: "shop",
+    password: SQL_PASSWORD,
+    database: "shop",
+  });
+  try {
+    // execute(): a prepared statement, so the wire shows the SQL and its parameters apart
+    const [rows] = await conn.execute(sql, values);
+    const list = rows as Record<string, unknown>[];
+    return { rows: list, count: list.length, ms: Math.round(performance.now() - started) };
+  } finally {
+    await conn.end();
+  }
+}
+
+// Redis through Caddy (caddy:6379). The products as hashes (product:<id>), one
+// set per category (category:<Category>) and a sorted set by price.
+const REDIS_PASSWORD = process.env.DEMO_REDIS_PASSWORD ?? "demo";
+
+function redisClient() {
+  return new Redis({
+    host: process.env.REDIS_HOST ?? "caddy",
+    port: 6379,
+    password: REDIS_PASSWORD,
+    lazyConnect: true,
+    enableReadyCheck: false,
+    maxRetriesPerRequest: 1,
+  });
+}
+
+/** Load demo/data/products.json into Redis (the SQL databases seed themselves). */
+async function seedRedis() {
+  const products = (await Bun.file("../data/products.json").json()) as {
+    name: string;
+    category: string;
+    description: string;
+    price: number;
+  }[];
+  const r = redisClient();
+  await r.connect();
+  try {
+    const old = await r.keys("product:*");
+    const cats = await r.keys("category:*");
+    if (old.length + cats.length) await r.del(...old, ...cats);
+    await r.del("products:by_price");
+    const tx = r.multi();
+    products.forEach((p, i) => {
+      const id = String(i + 1);
+      tx.hset(`product:${id}`, {
+        name: p.name,
+        category: p.category,
+        description: p.description,
+        price: String(p.price),
+      });
+      tx.sadd(`category:${p.category}`, id);
+      tx.zadd("products:by_price", p.price, id);
+    });
+    await tx.exec();
+  } finally {
+    await r.quit();
+  }
+}
+
+/**
+ * Product search on Redis. The same filters, as Redis commands: the category
+ * set, the price index, then one HGETALL per product. The two bugs show up
+ * here too: the lower-case slug reads category:electronics (empty), and
+ * "rating" reads an index that was never built (products:by_rating, empty).
+ */
+async function searchProductsRedis(params: URLSearchParams) {
+  const started = performance.now();
+  const r = redisClient();
+  await r.connect();
+  try {
+    const maxPrice = Number(params.get("maxPrice"));
+    const index = params.get("sort") === "rating" ? "products:by_rating" : "products:by_price";
+    let ids = await r.zrangebyscore(index, "-inf", maxPrice > 0 ? maxPrice : "+inf");
+    const category = params.get("category");
+    if (category) {
+      const members = new Set(await r.smembers(`category:${category}`));
+      ids = ids.filter((id) => members.has(id));
+    }
+    const pipeline = r.pipeline();
+    for (const id of ids) pipeline.hgetall(`product:${id}`);
+    const results = ((await pipeline.exec()) ?? []).map(([, v]) => v as Record<string, string>);
+    const q = params.get("q")?.trim().toLowerCase();
+    let rows = results.filter(
+      (p) => !q || p.name?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)
+    );
+    if (params.get("sort") === "name") rows = rows.sort((a, b) => a.name!.localeCompare(b.name!));
+    rows = rows.slice(0, 20);
+    return { rows, count: rows.length, ms: Math.round(performance.now() - started) };
+  } finally {
+    await r.quit();
+  }
+}
+
 /**
  * Setup initial routes using the library
  * This configures Caddy with proper routes for the demo
@@ -167,6 +325,10 @@ async function setupRoutes() {
     "app_route",
     "mitmproxy_ui_route",
     "mitmproxy_node_ui_route",
+    "mitmproxy_pg_ui_route",
+    "mitmproxy_mysql_ui_route",
+    "mitmproxy_mariadb_ui_route",
+    "mitmproxy_redis_ui_route",
     "mitm_elasticsearch",
     "mitm_nodeapi",
     "dashboard_route",
@@ -239,6 +401,18 @@ async function setupRoutes() {
       overrideHost: "127.0.0.1:8081",
     })
   );
+  for (const d of TCP_DATABASES) {
+    routes.push(
+      buildIframeProxyRoute({
+        pathPrefix: `/mitmproxy-${d.id}`,
+        upstreamHost: `mitmproxy-${d.id}`,
+        upstreamPort: 8081,
+        routeId: `mitmproxy_${d.id}_ui_route`,
+        iframeEmbed: true,
+        overrideHost: "127.0.0.1:8081",
+      })
+    );
+  }
   routes.push(
     buildIframeProxyRoute({
       pathPrefix: "/mitmproxy-node",
@@ -307,6 +481,35 @@ async function setupRoutes() {
   );
   await mitmManager.disable("postgres");
   console.log("  ✓ Added layer4 server: pg → postgres:5432 (direct)");
+
+  for (const d of TCP_DATABASES) {
+    await caddy.setLayer4Server(
+      d.id,
+      buildLayer4Server({
+        listen: d.listen,
+        routes: [
+          buildLayer4ProxyRoute({
+            id: `mitm_${d.id}`,
+            upstream: `${d.backend.host}:${d.backend.port}`,
+          }),
+        ],
+      })
+    );
+    await mitmManager.disable(d.id);
+    console.log(`  ✓ Added layer4 server: ${d.id} → ${d.backend.host}:${d.backend.port} (direct)`);
+  }
+
+  // Redis has no init scripts: load the products now, through Caddy (direct).
+  for (let i = 0; ; i++) {
+    try {
+      await seedRedis();
+      console.log("  ✓ Seeded Redis with the products");
+      break;
+    } catch (e) {
+      if (i === 20) throw e;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
 
   console.log("Routes configured!");
 }
@@ -771,8 +974,14 @@ const server = Bun.serve({
         // Use correct proxy for each service
         // Node API has its own HTTP proxy; Postgres names its own (reverse TCP)
         // proxy in its registration; everything else uses the default one.
-        const proxyName =
-          serviceId === "nodeapi" ? "nodeproxy" : serviceId === "postgres" ? "postgres" : "default";
+        const OWN_PROXY: Record<string, string> = {
+          nodeapi: "nodeproxy",
+          postgres: "postgres",
+          mysql: "mysql",
+          mariadb: "mariadb",
+          redis: "redis",
+        };
+        const proxyName = OWN_PROXY[serviceId] ?? "default";
         await mitmManager.enable(serviceId, { proxy: proxyName });
         return Response.json(
           {
@@ -828,10 +1037,17 @@ const server = Bun.serve({
         );
       }
 
-      // Product search on Postgres (SQL built from the filters)
+      // Product search on a database (?db=postgres|mysql|mariadb|redis), built from the filters
       if (path === "/api/db/search") {
         try {
-          return Response.json(await searchProductsSql(url.searchParams), { headers: corsHeaders });
+          const dbId = url.searchParams.get("db") ?? "postgres";
+          const result =
+            dbId === "redis"
+              ? await searchProductsRedis(url.searchParams)
+              : dbId in SQL_DATABASES
+                ? await searchProductsMysql(dbId, url.searchParams)
+                : await searchProductsSql(url.searchParams);
+          return Response.json(result, { headers: corsHeaders });
         } catch (error) {
           // What a real app tends to tell its users: not much.
           console.error("db search failed:", (error as Error).message);
@@ -863,11 +1079,14 @@ const server = Bun.serve({
           elasticsearch: await clear("mitmproxy"),
           nodeapi: await clear("mitmproxy-node"),
           postgres: await clear("mitmproxy-pg"),
+          mysql: await clear("mitmproxy-mysql"),
+          mariadb: await clear("mitmproxy-mariadb"),
+          redis: await clear("mitmproxy-redis"),
         };
 
         return Response.json(
           {
-            success: results.elasticsearch && results.nodeapi && results.postgres,
+            success: Object.values(results).every(Boolean),
             cleared: results,
             message: "MITMproxy flows cleared",
           },

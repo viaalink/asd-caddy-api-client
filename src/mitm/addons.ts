@@ -1,8 +1,14 @@
 /**
  * mitmproxy addons shipped with this package (Python, in `mitmproxy-addons/`).
  *
- *   pgwire  PostgreSQL wire protocol → readable SQL, parameters, results and
- *           errors on every TCP flow (see TcpServiceRegistration)
+ *   pgwire     PostgreSQL wire protocol → readable SQL, parameters, results and
+ *              errors on every TCP flow (see TcpServiceRegistration)
+ *   mysqlwire  MySQL/MariaDB client/server protocol → server kind and version,
+ *              SQL, prepared statements with parameters, results, OK/ERR
+ *   rediswire  Redis RESP2/RESP3 → commands with arguments, replies summarised
+ *
+ * Each addon only decodes flows that look like its own protocol, so one
+ * mitmweb can load all three (`-s pgwire.py -s mysqlwire.py -s rediswire.py`).
  *
  * mitmproxyAddonPath() finds the file inside the installed package. A bundled
  * or compiled program (`bun build --compile`) has no package directory: it

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shop on Postgres - SQL Traffic Inspection</title>
+    <title>Shop - Database Traffic Inspection</title>
     <link rel="stylesheet" href="style.css" />
     <style>
       .filters {
@@ -27,6 +27,25 @@
         border-radius: 6px;
         padding: 6px 8px;
       }
+      .db-switch {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 10px;
+      }
+      .db-switch a {
+        font-size: 13px;
+        color: #94a3b8;
+        text-decoration: none;
+        border: 1px solid #334155;
+        border-radius: 999px;
+        padding: 3px 12px;
+      }
+      .db-switch a.active {
+        color: #e2e8f0;
+        border-color: #38bdf8;
+        background: rgba(56, 189, 248, 0.15);
+      }
       .suggestion.active {
         border-color: #38bdf8;
         color: #e2e8f0;
@@ -38,7 +57,13 @@
     <div class="container">
       <header>
         <h1>Shop</h1>
-        <p class="subtitle">Postgres, queried by the backend from your filters</p>
+        <p class="subtitle" id="subtitle">Postgres, queried by the backend from your filters</p>
+        <nav class="db-switch" id="dbSwitch">
+          <a href="?db=postgres" data-db="postgres">Postgres</a>
+          <a href="?db=mysql" data-db="mysql">MySQL</a>
+          <a href="?db=mariadb" data-db="mariadb">MariaDB</a>
+          <a href="?db=redis" data-db="redis">Redis</a>
+        </nav>
       </header>
 
       <div class="monitoring-status">

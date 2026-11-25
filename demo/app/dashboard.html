@@ -548,6 +548,18 @@
               <span class="indicator"></span>
               Postgres
             </button>
+            <button class="mitm-tab" id="tab-mysql" data-target="mysql">
+              <span class="indicator"></span>
+              MySQL
+            </button>
+            <button class="mitm-tab" id="tab-mariadb" data-target="mariadb">
+              <span class="indicator"></span>
+              MariaDB
+            </button>
+            <button class="mitm-tab" id="tab-redis" data-target="redis">
+              <span class="indicator"></span>
+              Redis
+            </button>
           </div>
         </div>
         <!-- Hidden toggle for JS compatibility -->
@@ -587,6 +599,35 @@
               >
             </div>
             <iframe class="mitm-iframe" id="iframe-pg" src="/mitmproxy-pg/"></iframe>
+          </div>
+
+          <!-- MySQL, MariaDB, Redis: TCP too, decoded by the mysqlwire / rediswire addons -->
+          <div class="tab-panel" id="panel-mysql">
+            <div class="actions-bar">
+              <span class="actions-label">SQL</span>
+              <span class="actions-label" style="text-transform: none"
+                >Use the shop on the left; open a flow, then <b>Stream Data</b></span
+              >
+            </div>
+            <iframe class="mitm-iframe" id="iframe-mysql" src="/mitmproxy-mysql/"></iframe>
+          </div>
+          <div class="tab-panel" id="panel-mariadb">
+            <div class="actions-bar">
+              <span class="actions-label">SQL</span>
+              <span class="actions-label" style="text-transform: none"
+                >Use the shop on the left; open a flow, then <b>Stream Data</b></span
+              >
+            </div>
+            <iframe class="mitm-iframe" id="iframe-mariadb" src="/mitmproxy-mariadb/"></iframe>
+          </div>
+          <div class="tab-panel" id="panel-redis">
+            <div class="actions-bar">
+              <span class="actions-label">Redis</span>
+              <span class="actions-label" style="text-transform: none"
+                >Use the shop on the left; open a flow, then <b>Stream Data</b></span
+              >
+            </div>
+            <iframe class="mitm-iframe" id="iframe-redis" src="/mitmproxy-redis/"></iframe>
           </div>
         </div>
 
@@ -738,7 +779,14 @@
 
       // State
       let currentTab = "es";
-      let state = { elasticsearch: false, nodeapi: false, postgres: false };
+      let state = {
+        elasticsearch: false,
+        nodeapi: false,
+        postgres: false,
+        mysql: false,
+        mariadb: false,
+        redis: false,
+      };
 
       // One entry per tab: the service it toggles, its label in the flow
       // diagram, its mitmweb frame, and the app shown on the left.
@@ -746,15 +794,29 @@
         es: { service: "elasticsearch", label: "ES", iframe: "iframe-es", app: "/app/" },
         node: { service: "nodeapi", label: "Node", iframe: "iframe-node", app: "/app/" },
         pg: { service: "postgres", label: "PG", iframe: "iframe-pg", app: "/app/db.html" },
+        mysql: {
+          service: "mysql",
+          label: "MySQL",
+          iframe: "iframe-mysql",
+          app: "/app/db.html?db=mysql",
+        },
+        mariadb: {
+          service: "mariadb",
+          label: "MariaDB",
+          iframe: "iframe-mariadb",
+          app: "/app/db.html?db=mariadb",
+        },
+        redis: {
+          service: "redis",
+          label: "Redis",
+          iframe: "iframe-redis",
+          app: "/app/db.html?db=redis",
+        },
       };
 
       // DOM
-      const tabEs = document.getElementById("tab-es");
-      const tabNode = document.getElementById("tab-node");
-      const panelEs = document.getElementById("panel-es");
-      const panelNode = document.getElementById("panel-node");
-      const tabPg = document.getElementById("tab-pg");
-      const panelPg = document.getElementById("panel-pg");
+      const tabButton = (tab) => document.getElementById(`tab-${tab}`);
+      const tabPanel = (tab) => document.getElementById(`panel-${tab}`);
       const appIframe = document.getElementById("app-iframe");
       const toggleIntercept = document.getElementById("toggle-intercept");
       const toggleLabel = document.getElementById("toggle-label");
@@ -773,24 +835,23 @@
       // Tab switching
       function switchTab(tab) {
         currentTab = tab;
-        tabEs.classList.toggle("active", tab === "es");
-        tabNode.classList.toggle("active", tab === "node");
-        tabPg.classList.toggle("active", tab === "pg");
-        panelEs.classList.toggle("active", tab === "es");
-        panelNode.classList.toggle("active", tab === "node");
-        panelPg.classList.toggle("active", tab === "pg");
-        // The shop on Postgres, or the search on Elasticsearch
+        for (const key of Object.keys(TABS)) {
+          tabButton(key).classList.toggle("active", key === tab);
+          tabPanel(key).classList.toggle("active", key === tab);
+        }
+        // The shop on a database, or the search on Elasticsearch
         const app = TABS[tab].app;
-        if (new URL(appIframe.src, location.href).pathname !== app) appIframe.src = app;
+        const shown = new URL(appIframe.src, location.href);
+        if (shown.pathname + shown.search !== app) appIframe.src = app;
 
         updateTabIndicators();
         updateFlowDiagram();
       }
 
       function updateTabIndicators() {
-        tabEs.classList.toggle("capturing", state.elasticsearch);
-        tabNode.classList.toggle("capturing", state.nodeapi);
-        tabPg.classList.toggle("capturing", state.postgres);
+        for (const [key, { service }] of Object.entries(TABS)) {
+          tabButton(key).classList.toggle("capturing", state[service]);
+        }
       }
 
       function updateFlowDiagram() {
@@ -845,9 +906,9 @@
         try {
           const res = await fetch(`${API}/api/monitoring/status`);
           const data = await res.json();
-          state.elasticsearch = data.services?.elasticsearch?.enabled || false;
-          state.nodeapi = data.services?.nodeapi?.enabled || false;
-          state.postgres = data.services?.postgres?.enabled || false;
+          for (const service of Object.keys(state)) {
+            state[service] = data.services?.[service]?.enabled || false;
+          }
           updateTabIndicators();
           updateFlowDiagram();
         } catch (e) {
@@ -981,9 +1042,9 @@
       }
 
       // Event listeners
-      tabEs.addEventListener("click", () => switchTab("es"));
-      tabNode.addEventListener("click", () => switchTab("node"));
-      tabPg.addEventListener("click", () => switchTab("pg"));
+      for (const key of Object.keys(TABS)) {
+        tabButton(key).addEventListener("click", () => switchTab(key));
+      }
       toggleIntercept.addEventListener("change", (e) => toggleService(e.target.checked));
 
       // MITM node click - the main intercept control
@@ -1044,7 +1105,9 @@
         }
       });
 
-      // Init
+      // Init (?tab=pg|mysql|mariadb|redis opens that tab, for films and links)
+      const initialTab = new URLSearchParams(location.search).get("tab");
+      if (initialTab && initialTab in TABS) switchTab(initialTab);
       updateFlowDiagram(); // Set initial flow state
       fetchStatus();
     </script>

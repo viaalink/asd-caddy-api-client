@@ -1,13 +1,29 @@
 /**
- * Shop on Postgres: the filters go to the backend (/api/db/search), which
- * builds the SQL. The page never sees the query; mitmproxy does.
+ * The shop on a database: ?db=postgres (default), mysql, mariadb or redis.
+ * The filters go to the backend (/api/db/search), which builds the SQL or the
+ * Redis commands. The page never sees the query; mitmproxy does.
  *
  * Two bugs, on purpose, the kind you only find on the wire:
  *   - the category buttons send a lower-case slug ("electronics"), the column
- *     holds "Electronics": zero rows, no error;
+ *     (or Redis key) holds "Electronics": zero rows, no error;
  *   - "Sort by Rating" asks for a column that was never added: the page only
- *     hears "something went wrong".
+ *     hears "something went wrong" (Redis: an index that was never built,
+ *     so again nothing).
  */
+
+const DATABASES = {
+  postgres: { name: "Postgres", subtitle: "Postgres, queried by the backend from your filters" },
+  mysql: { name: "MySQL", subtitle: "MySQL 8, queried by the backend from your filters" },
+  mariadb: { name: "MariaDB", subtitle: "MariaDB 11, queried by the backend from your filters" },
+  redis: { name: "Redis", subtitle: "Redis 7, read by the backend from your filters" },
+};
+const dbParam = new URLSearchParams(location.search).get("db");
+const db = dbParam && dbParam in DATABASES ? dbParam : "postgres";
+document.getElementById("subtitle").textContent = DATABASES[db].subtitle;
+document.title = `Shop on ${DATABASES[db].name} - Database Traffic Inspection`;
+for (const a of document.querySelectorAll("#dbSwitch a")) {
+  a.classList.toggle("active", a.dataset.db === db);
+}
 
 const statusIndicator = document.getElementById("statusIndicator");
 const statusText = document.getElementById("statusText");
@@ -58,6 +74,7 @@ async function search() {
   if (category) params.set("category", category);
   if (maxPrice.value) params.set("maxPrice", maxPrice.value);
   params.set("sort", sort.value);
+  params.set("db", db);
 
   message("Searching...");
   try {
@@ -84,11 +101,12 @@ async function status() {
   try {
     const res = await fetch("/api/monitoring/status");
     const data = await res.json();
-    const on = data.services?.postgres?.enabled === true;
+    const on = data.services?.[db]?.enabled === true;
     statusIndicator.className = `status-indicator ${on ? "proxied" : "direct"}`;
+    const name = DATABASES[db].name;
     statusText.textContent = on
-      ? "Postgres: Capturing via MITMproxy"
-      : "Postgres: Direct (not capturing)";
+      ? `${name}: Capturing via MITMproxy`
+      : `${name}: Direct (not capturing)`;
   } catch {
     statusText.textContent = "Error: Cannot connect to API";
   }
