@@ -208,6 +208,20 @@ export interface DocumentsAPIConfig {
 // source: handle_api_admin.go
 
 //////////
+// source: handle_api_capabilities.go
+
+/**
+ * FeatureAvailability separates configuration, implementation and permission.
+ * It is informational: every API still performs its own authorization checks.
+ */
+export interface FeatureAvailability {
+  enabled: boolean;
+  supported: boolean;
+  allowed: boolean;
+  reason: string;
+}
+
+//////////
 // source: handle_api_crud_user.go
 
 //////////

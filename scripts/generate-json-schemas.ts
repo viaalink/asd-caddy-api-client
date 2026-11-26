@@ -10,7 +10,6 @@
  */
 
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -74,7 +73,26 @@ import {
   Layer4AppSchema,
   LAYER4_HANDLERS,
   LAYER4_HANDLER_SCHEMAS,
+  Layer4MatcherSetSchema,
+  Layer4TlsHandshakeMatchSchema,
+  Layer4VarsHandlerSchema,
 } from "../src/caddy/layer4-schemas.js";
+
+/**
+ * The objects that stay open on purpose (`.catchall(z.unknown())`): a matcher
+ * set and the TLS handshake conditions take matcher modules of other plugins,
+ * the `vars` handler takes any variable name. They keep `additionalProperties:
+ * {}`, which strictLayer4 and the strictness audit leave alone. Zod 4 builds
+ * `.passthrough()` the same way (a catchall of `z.unknown()`), so these are told
+ * apart by their catchall instance; every other passthrough object gets
+ * `additionalProperties: true` (closed for the editor by strictLayer4, listed
+ * in the audit's PERMISSIVE_FIELDS elsewhere).
+ */
+const OPEN_CATCHALLS = new Set<unknown>(
+  [Layer4MatcherSetSchema, Layer4TlsHandshakeMatchSchema, Layer4VarsHandlerSchema].map(
+    (schema) => (schema as unknown as { _zod: { def: { catchall?: unknown } } })._zod.def.catchall
+  )
+);
 
 // `@id` is a Caddy-wide JSON convention (admin API object addressing,
 // stripped before Go struct decoding) -- it isn't a real Go struct field,
@@ -103,8 +121,8 @@ import {
 //
 // StrictKnownCaddyHandlerSchema/StrictSubrouteHandlerSchema/StrictRouteSchema
 // are mutually self-referential (subroute -> routes -> handlers -> subroute
-// -> ...) so a typo at any nesting depth is still caught. Requires
-// $refStrategy: "root" below -- "none" collapses recursive refs to `{}`.
+// -> ...) so a typo at any nesting depth is still caught. Requires real
+// $refs (toNamedJsonSchema below) -- inlining collapses recursion to `{}`.
 const StrictSubrouteHandlerSchema = z.object({
   handler: z.literal("subroute"),
   routes: z.array(z.lazy((): z.ZodTypeAny => StrictRouteSchema)).optional(),
@@ -415,15 +433,9 @@ function strictLayer4(node: unknown, expandHandlers = true): void {
       // (strict) schema; any other name is a module of another plugin.
       obj.allOf = LAYER4_HANDLERS.map((name) => ({
         if: { properties: { handler: { const: name } }, required: ["handler"] },
-        then: zodToJsonSchema(
-          LAYER4_HANDLER_SCHEMAS[name] as Parameters<typeof zodToJsonSchema>[0],
-          {
-            // Inline: these are embedded in another document. Recursion (subroute,
-            // tee) ends in `{}` one level down rather than a dangling $ref.
-            $refStrategy: "none",
-            target: "jsonSchema7",
-          }
-        ),
+        // Inline: these are embedded in another document. Recursion (subroute,
+        // tee) ends in `{}` one level down rather than a dangling $ref.
+        then: toInlineJsonSchema(LAYER4_HANDLER_SCHEMAS[name] as z.ZodType),
       }));
       // Close the embedded handler schemas, but don't expand the handlers nested
       // in them (subroute → handlers → subroute … would never end): one level
@@ -438,6 +450,30 @@ function strictLayer4(node: unknown, expandHandlers = true): void {
   for (const value of Object.values(obj)) strictLayer4(value, expandHandlers);
 }
 
+/**
+ * The shared definitions a subtree reaches through `$ref`s, transitively: zod 4
+ * hoists a recursive schema (a matcher set's `not`) to the document's top-level
+ * `definitions`, outside `apps.layer4`, where strictLayer4 has to follow it.
+ */
+function layer4Refs(
+  node: unknown,
+  definitions: Record<string, unknown>,
+  seen: Set<string>
+): Set<string> {
+  if (Array.isArray(node)) {
+    node.forEach((item) => layer4Refs(item, definitions, seen));
+  } else if (node && typeof node === "object") {
+    const ref = (node as { $ref?: unknown }).$ref;
+    const name = typeof ref === "string" ? ref.replace(/^#\/definitions\//, "") : undefined;
+    if (name && name in definitions && !seen.has(name)) {
+      seen.add(name);
+      layer4Refs(definitions[name], definitions, seen);
+    }
+    for (const value of Object.values(node)) layer4Refs(value, definitions, seen);
+  }
+  return seen;
+}
+
 /** The layer4 app inside a schema: the whole schema, or `apps.layer4` of a full config. */
 function applyStrictLayer4(definition: SchemaDefinition, jsonSchema: object): void {
   if (definition.name === "caddy-layer4-app") {
@@ -448,20 +484,137 @@ function applyStrictLayer4(definition: SchemaDefinition, jsonSchema: object): vo
     if (!node || typeof node !== "object") return;
     const obj = node as Record<string, unknown>;
     const apps = (obj.properties as Record<string, { properties?: Record<string, unknown> }>)?.apps;
-    if (apps?.properties?.layer4) strictLayer4(apps.properties.layer4);
+    if (apps?.properties?.layer4) {
+      strictLayer4(apps.properties.layer4);
+      layer4Refs(apps.properties.layer4, definitions, new Set()).forEach((name) =>
+        strictLayer4(definitions[name])
+      );
+    }
     for (const value of Object.values(obj)) visit(value);
   };
+  const definitions = ((jsonSchema as { definitions?: Record<string, unknown> }).definitions ??
+    {}) as Record<string, unknown>;
   visit(jsonSchema);
 }
 
+/**
+ * Zod 4's own JSON Schema output (`z.toJSONSchema`), normalized to the shape the
+ * editor schemas have always had (zod-to-json-schema doesn't understand zod 4
+ * and emits `{}` for every schema):
+ * - an object with known fields and no `additionalProperties` (zod's default
+ *   "strip" objects, whose input form zod 4 leaves open) is closed (`false`),
+ *   so a typo'd field is flagged in the editor;
+ * - a `.passthrough()` object gets `additionalProperties: true` (see OPEN_CATCHALLS);
+ * - a lone `allOf: [{ $ref }]` becomes the `$ref`;
+ * - `oneOf` (zod 4's discriminated unions) stays `anyOf`, as consumers expect;
+ * - the safe-integer bounds zod 4 adds to every `.int()` are dropped, and so is
+ *   `propertyNames: { type: "string" }` (every JSON key is a string).
+ */
+function normalizeZod4JsonSchema(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(normalizeZod4JsonSchema);
+  if (!node || typeof node !== "object") return node;
+  const obj: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    obj[key] = normalizeZod4JsonSchema(value);
+  }
+  if (obj.maximum === Number.MAX_SAFE_INTEGER) delete obj.maximum;
+  if (obj.minimum === Number.MIN_SAFE_INTEGER) delete obj.minimum;
+  const names = obj.propertyNames as Record<string, unknown> | undefined;
+  if (names && Object.keys(names).length === 1 && names.type === "string") {
+    delete obj.propertyNames;
+  }
+  if (obj.type === "object" && typeof obj.properties === "object") {
+    if (obj.additionalProperties === undefined) obj.additionalProperties = false;
+  }
+  if (Array.isArray(obj.oneOf) && !("anyOf" in obj)) {
+    obj.anyOf = obj.oneOf;
+    delete obj.oneOf;
+  }
+  const allOf = obj.allOf as Record<string, unknown>[] | undefined;
+  if (Array.isArray(allOf) && allOf.length === 1 && Object.keys(obj).length === 1) {
+    const only = allOf[0];
+    if (only && typeof only === "object" && "$ref" in only && Object.keys(only).length === 1) {
+      return only;
+    }
+  }
+  return obj;
+}
+
+function zod4JsonSchema(schema: z.ZodType): Record<string, unknown> {
+  const out = z.toJSONSchema(schema, {
+    target: "draft-7", // JSON Schema draft-07 for broad compatibility
+    io: "input", // what a user writes: defaulted fields stay optional
+    unrepresentable: "any", // transforms/custom checks: `{}`
+    cycles: "ref",
+    reused: "inline",
+    // A union member `z.undefined()` (an optional map value) matches nothing in
+    // JSON, so it must not widen the union to "anything".
+    override: (ctx) => {
+      const def = ctx.zodSchema._zod.def;
+      if (def.type === "undefined") ctx.jsonSchema.not = {};
+      if (
+        def.type === "object" &&
+        def.catchall?._zod.def.type === "unknown" &&
+        !OPEN_CATCHALLS.has(def.catchall)
+      ) {
+        ctx.jsonSchema.additionalProperties = true;
+      }
+    },
+  }) as Record<string, unknown>;
+  delete out.$schema;
+  return normalizeZod4JsonSchema(out) as Record<string, unknown>;
+}
+
+/** Rewrite every `$ref` in `node` through `rewrite` (`undefined` = drop the ref to `{}`). */
+function mapRefs(node: unknown, rewrite: (ref: string) => string | undefined): unknown {
+  if (Array.isArray(node)) return node.map((item) => mapRefs(item, rewrite));
+  if (!node || typeof node !== "object") return node;
+  const obj = node as Record<string, unknown>;
+  if (typeof obj.$ref === "string") {
+    const ref = rewrite(obj.$ref);
+    return ref === undefined ? {} : { ...obj, $ref: ref };
+  }
+  return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, mapRefs(v, rewrite)]));
+}
+
+/** `{ $ref: "#/definitions/<name>", definitions: { <name>: …, …shared } }`. */
+function toNamedJsonSchema(schema: z.ZodType, name: string): object {
+  const { definitions, ...root } = zod4JsonSchema(schema);
+  const self = `#/definitions/${name}`;
+  const rewrite = (ref: string): string => (ref === "#" ? self : ref);
+  return {
+    $ref: self,
+    definitions: {
+      [name]: mapRefs(root, rewrite),
+      ...(mapRefs(definitions ?? {}, rewrite) as Record<string, unknown>),
+    },
+  };
+}
+
+/** Self-contained (no `$ref`s): recursion ends in `{}`. */
+function toInlineJsonSchema(schema: z.ZodType): object {
+  const { definitions, ...root } = zod4JsonSchema(schema);
+  const defs = (definitions ?? {}) as Record<string, unknown>;
+  const inline = (node: unknown, seen: Set<string>): unknown =>
+    mapRefsInline(node, (ref) => {
+      const key = ref.replace("#/definitions/", "");
+      if (ref === "#" || seen.has(key) || !(key in defs)) return undefined;
+      return inline(defs[key], new Set([...seen, key]));
+    });
+  return inline(root, new Set()) as object;
+}
+
+function mapRefsInline(node: unknown, resolve: (ref: string) => unknown): unknown {
+  if (Array.isArray(node)) return node.map((item) => mapRefsInline(item, resolve));
+  if (!node || typeof node !== "object") return node;
+  const obj = node as Record<string, unknown>;
+  if (typeof obj.$ref === "string") return resolve(obj.$ref) ?? {};
+  return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, mapRefsInline(v, resolve)]));
+}
+
 function generateJsonSchema(definition: SchemaDefinition): object {
-  const jsonSchema = zodToJsonSchema(definition.schema as Parameters<typeof zodToJsonSchema>[0], {
-    name: definition.name,
-    // "root" (not "none"): emits real $refs so Strict*Schema's recursion is
-    // expressed, not inlined to `{}` -- also shrinks output (223KB -> 121KB).
-    $refStrategy: "root",
-    target: "jsonSchema7", // Use JSON Schema draft-07 for broad compatibility
-  });
+  // Real $refs (not inlined `{}`), so Strict*Schema's recursion is expressed.
+  const jsonSchema = toNamedJsonSchema(definition.schema as z.ZodType, definition.name);
 
   injectUniversalId(jsonSchema);
   applyStrictLayer4(definition, jsonSchema);

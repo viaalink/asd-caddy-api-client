@@ -14,12 +14,12 @@
             "type": "object",
             "properties": {
               "listen": {
+                "minItems": 1,
                 "type": "array",
                 "items": {
                   "type": "string",
                   "minLength": 1
-                },
-                "minItems": 1
+                }
               },
               "routes": {
                 "type": "array",
@@ -33,582 +33,11 @@
                     "match": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "clock": {
-                            "type": "object",
-                            "properties": {
-                              "after": {
-                                "type": "string",
-                                "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
-                              },
-                              "before": {
-                                "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/clock/properties/after"
-                              },
-                              "timezone": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "dns": {
-                            "type": "object",
-                            "properties": {
-                              "allow": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "class": {
-                                      "type": "string"
-                                    },
-                                    "class_regexp": {
-                                      "type": "string"
-                                    },
-                                    "name": {
-                                      "type": "string"
-                                    },
-                                    "name_regexp": {
-                                      "type": "string"
-                                    },
-                                    "type": {
-                                      "type": "string"
-                                    },
-                                    "type_regexp": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "additionalProperties": false
-                                }
-                              },
-                              "deny": {
-                                "type": "array",
-                                "items": {
-                                  "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/dns/properties/allow/items"
-                                }
-                              },
-                              "default_deny": {
-                                "type": "boolean"
-                              },
-                              "prefer_allow": {
-                                "type": "boolean"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "http": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "host": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string"
-                                  }
-                                },
-                                "path": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string"
-                                  }
-                                },
-                                "path_regexp": {
-                                  "type": "object",
-                                  "properties": {
-                                    "name": {
-                                      "type": "string"
-                                    },
-                                    "pattern": {
-                                      "type": "string"
-                                    },
-                                    "@id": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": ["pattern"],
-                                  "additionalProperties": false
-                                },
-                                "method": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string"
-                                  }
-                                },
-                                "header": {
-                                  "type": "object",
-                                  "additionalProperties": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                },
-                                "header_regexp": {
-                                  "type": "object",
-                                  "additionalProperties": {
-                                    "anyOf": [
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "name": {
-                                            "type": "string"
-                                          },
-                                          "pattern": {
-                                            "type": "string"
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": ["pattern"],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "not": {}
-                                      }
-                                    ]
-                                  }
-                                },
-                                "query": {
-                                  "type": "object",
-                                  "additionalProperties": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                },
-                                "client_ip": {
-                                  "type": "object",
-                                  "properties": {
-                                    "ranges": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "@id": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "additionalProperties": false
-                                },
-                                "remote_ip": {
-                                  "type": "object",
-                                  "properties": {
-                                    "ranges": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "@id": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "additionalProperties": false
-                                },
-                                "protocol": {
-                                  "type": "string"
-                                },
-                                "tls": {
-                                  "type": "object",
-                                  "properties": {
-                                    "handshake_complete": {
-                                      "type": "boolean"
-                                    },
-                                    "@id": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "additionalProperties": false
-                                },
-                                "file": {
-                                  "type": "object",
-                                  "properties": {
-                                    "fs": {
-                                      "type": "string"
-                                    },
-                                    "root": {
-                                      "type": "string"
-                                    },
-                                    "try_files": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "try_policy": {
-                                      "type": "string"
-                                    },
-                                    "split_path": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "@id": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "additionalProperties": false
-                                },
-                                "not": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "additionalProperties": {}
-                                  }
-                                },
-                                "expression": {
-                                  "type": "string"
-                                }
-                              },
-                              "additionalProperties": false
-                            }
-                          },
-                          "local_ip": {
-                            "type": "object",
-                            "properties": {
-                              "ranges": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "openvpn": {
-                            "type": "object",
-                            "properties": {
-                              "modes": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "enum": ["plain", "auth", "crypt", "crypt2"]
-                                }
-                              },
-                              "ignore_crypto": {
-                                "type": "boolean"
-                              },
-                              "ignore_timestamp": {
-                                "type": "boolean"
-                              },
-                              "group_key": {
-                                "type": "string"
-                              },
-                              "group_key_file": {
-                                "type": "string"
-                              },
-                              "auth_digest": {
-                                "type": "string"
-                              },
-                              "group_key_direction": {
-                                "type": "string",
-                                "enum": ["normal", "inverse", "bidi", "bidirectional"]
-                              },
-                              "client_keys": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "client_key_files": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "server_key": {
-                                "type": "string"
-                              },
-                              "server_key_file": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "postgres": {
-                            "type": "object",
-                            "properties": {
-                              "user": {
-                                "type": "object",
-                                "additionalProperties": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string"
-                                  }
-                                }
-                              },
-                              "client": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "tls": {
-                                "type": "string",
-                                "enum": ["enabled", "disabled", ""]
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "proxy_protocol": {
-                            "type": "object",
-                            "properties": {},
-                            "additionalProperties": false
-                          },
-                          "quic": {
-                            "type": "object",
-                            "properties": {
-                              "sni": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "minLength": 1
-                                }
-                              },
-                              "sni_regexp": {
-                                "type": "object",
-                                "properties": {
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "pattern": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": ["pattern"],
-                                "additionalProperties": false
-                              },
-                              "alpn": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "minLength": 1
-                                }
-                              },
-                              "remote_ip": {
-                                "type": "object",
-                                "properties": {
-                                  "ranges": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "not_ranges": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                },
-                                "additionalProperties": false
-                              },
-                              "local_ip": {
-                                "type": "object",
-                                "properties": {
-                                  "ranges": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                },
-                                "additionalProperties": false
-                              }
-                            },
-                            "additionalProperties": {}
-                          },
-                          "rdp": {
-                            "type": "object",
-                            "properties": {
-                              "cookie_hash": {
-                                "type": "string"
-                              },
-                              "cookie_hash_regexp": {
-                                "type": "string"
-                              },
-                              "cookie_ips": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "cookie_ports": {
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                }
-                              },
-                              "custom_info": {
-                                "type": "string"
-                              },
-                              "custom_info_regexp": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "regexp": {
-                            "type": "object",
-                            "properties": {
-                              "count": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 65535
-                              },
-                              "hex": {
-                                "type": "boolean"
-                              },
-                              "pattern": {
-                                "type": "string",
-                                "minLength": 1
-                              }
-                            },
-                            "required": ["pattern"],
-                            "additionalProperties": false
-                          },
-                          "remote_ip": {
-                            "type": "object",
-                            "properties": {
-                              "ranges": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "remote_ip_list": {
-                            "type": "object",
-                            "properties": {
-                              "remote_ip_file": {
-                                "type": "string",
-                                "minLength": 1
-                              }
-                            },
-                            "required": ["remote_ip_file"],
-                            "additionalProperties": false
-                          },
-                          "socks4": {
-                            "type": "object",
-                            "properties": {
-                              "commands": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "enum": ["CONNECT", "BIND"]
-                                }
-                              },
-                              "networks": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "ports": {
-                                "type": "array",
-                                "items": {
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 65535
-                                }
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "socks5": {
-                            "type": "object",
-                            "properties": {
-                              "auth_methods": {
-                                "type": "array",
-                                "items": {
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 255
-                                }
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "ssh": {
-                            "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/proxy_protocol"
-                          },
-                          "tls": {
-                            "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic"
-                          },
-                          "vars": {
-                            "type": "object",
-                            "additionalProperties": {
-                              "type": "array",
-                              "items": {
-                                "type": "string"
-                              }
-                            }
-                          },
-                          "vars_regexp": {
-                            "type": "object",
-                            "additionalProperties": {
-                              "type": "object",
-                              "properties": {
-                                "name": {
-                                  "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic/properties/sni_regexp/properties/name"
-                                },
-                                "pattern": {
-                                  "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic/properties/sni_regexp/properties/pattern"
-                                }
-                              },
-                              "required": ["pattern"],
-                              "additionalProperties": false
-                            }
-                          },
-                          "winbox": {
-                            "type": "object",
-                            "properties": {
-                              "modes": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "enum": ["standard", "romon"]
-                                }
-                              },
-                              "username": {
-                                "type": "string"
-                              },
-                              "username_regexp": {
-                                "type": "string"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "wireguard": {
-                            "type": "object",
-                            "properties": {
-                              "zero": {
-                                "type": "number"
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "xmpp": {
-                            "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/proxy_protocol"
-                          },
-                          "not": {
-                            "type": "array",
-                            "items": {
-                              "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/routes/items/properties/match/items"
-                            }
-                          }
-                        },
-                        "additionalProperties": {}
+                        "$ref": "#/definitions/__schema0"
                       }
                     },
                     "handle": {
+                      "minItems": 1,
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -639,8 +68,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -661,8 +89,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -683,8 +110,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -700,17 +126,18 @@
                               "type": "object",
                               "properties": {
                                 "upstreams": {
+                                  "minItems": 1,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
                                     "properties": {
                                       "dial": {
+                                        "minItems": 1,
                                         "type": "array",
                                         "items": {
                                           "type": "string",
                                           "minLength": 1
-                                        },
-                                        "minItems": 1
+                                        }
                                       },
                                       "local_address": {
                                         "type": "array",
@@ -805,8 +232,7 @@
                                     },
                                     "required": ["dial"],
                                     "additionalProperties": false
-                                  },
-                                  "minItems": 1
+                                  }
                                 },
                                 "dynamic_upstreams": {},
                                 "health_checks": {
@@ -1066,8 +492,7 @@
                                 }
                               },
                               "required": ["upstreams", "handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -1118,8 +543,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -1156,8 +580,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -1831,6 +1254,7 @@
                                         }
                                       },
                                       "handle": {
+                                        "minItems": 1,
                                         "type": "array",
                                         "items": {
                                           "type": "object",
@@ -1842,8 +1266,7 @@
                                           },
                                           "required": ["handler"],
                                           "additionalProperties": true
-                                        },
-                                        "minItems": 1
+                                        }
                                       }
                                     },
                                     "required": ["handle"],
@@ -1871,8 +1294,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -1907,8 +1329,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -1960,8 +1381,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -2114,8 +1534,7 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": false,
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": false
                             }
                           },
                           {
@@ -2136,13 +1555,11 @@
                                 }
                               },
                               "required": ["handler"],
-                              "additionalProperties": {},
-                              "$schema": "http://json-schema.org/draft-07/schema#"
+                              "additionalProperties": {}
                             }
                           }
                         ]
-                      },
-                      "minItems": 1
+                      }
                     }
                   },
                   "required": ["handle"],
@@ -2165,7 +1582,19 @@
                 ]
               },
               "matching_timeout": {
-                "$ref": "#/definitions/caddy-layer4-app/properties/servers/additionalProperties/properties/idle_timeout"
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "const": "0"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                  }
+                ]
               }
             },
             "required": ["listen", "routes"],
@@ -2174,6 +1603,667 @@
         }
       },
       "additionalProperties": false
+    },
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "clock": {
+          "type": "object",
+          "properties": {
+            "after": {
+              "type": "string",
+              "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
+            },
+            "before": {
+              "type": "string",
+              "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
+            },
+            "timezone": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "dns": {
+          "type": "object",
+          "properties": {
+            "allow": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "class": {
+                    "type": "string"
+                  },
+                  "class_regexp": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "name_regexp": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "type_regexp": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "deny": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "class": {
+                    "type": "string"
+                  },
+                  "class_regexp": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "name_regexp": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "type_regexp": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "default_deny": {
+              "type": "boolean"
+            },
+            "prefer_allow": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "http": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "path_regexp": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["pattern"],
+                "additionalProperties": false
+              },
+              "method": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "header": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "header_regexp": {
+                "type": "object",
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "pattern": {
+                          "type": "string"
+                        },
+                        "@id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["pattern"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "not": {}
+                    }
+                  ]
+                }
+              },
+              "query": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "client_ip": {
+                "type": "object",
+                "properties": {
+                  "ranges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "remote_ip": {
+                "type": "object",
+                "properties": {
+                  "ranges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "protocol": {
+                "type": "string"
+              },
+              "tls": {
+                "type": "object",
+                "properties": {
+                  "handshake_complete": {
+                    "type": "boolean"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "file": {
+                "type": "object",
+                "properties": {
+                  "fs": {
+                    "type": "string"
+                  },
+                  "root": {
+                    "type": "string"
+                  },
+                  "try_files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "try_policy": {
+                    "type": "string"
+                  },
+                  "split_path": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "not": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "local_ip": {
+          "type": "object",
+          "properties": {
+            "ranges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "openvpn": {
+          "type": "object",
+          "properties": {
+            "modes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["plain", "auth", "crypt", "crypt2"]
+              }
+            },
+            "ignore_crypto": {
+              "type": "boolean"
+            },
+            "ignore_timestamp": {
+              "type": "boolean"
+            },
+            "group_key": {
+              "type": "string"
+            },
+            "group_key_file": {
+              "type": "string"
+            },
+            "auth_digest": {
+              "type": "string"
+            },
+            "group_key_direction": {
+              "type": "string",
+              "enum": ["normal", "inverse", "bidi", "bidirectional"]
+            },
+            "client_keys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "client_key_files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "server_key": {
+              "type": "string"
+            },
+            "server_key_file": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "postgres": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "client": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "tls": {
+              "type": "string",
+              "enum": ["enabled", "disabled", ""]
+            }
+          },
+          "additionalProperties": false
+        },
+        "proxy_protocol": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "quic": {
+          "type": "object",
+          "properties": {
+            "sni": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sni_regexp": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "required": ["pattern"],
+              "additionalProperties": false
+            },
+            "alpn": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "remote_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "not_ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "local_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": {}
+        },
+        "rdp": {
+          "type": "object",
+          "properties": {
+            "cookie_hash": {
+              "type": "string"
+            },
+            "cookie_hash_regexp": {
+              "type": "string"
+            },
+            "cookie_ips": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "cookie_ports": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "custom_info": {
+              "type": "string"
+            },
+            "custom_info_regexp": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "regexp": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "hex": {
+              "type": "boolean"
+            },
+            "pattern": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["pattern"],
+          "additionalProperties": false
+        },
+        "remote_ip": {
+          "type": "object",
+          "properties": {
+            "ranges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "remote_ip_list": {
+          "type": "object",
+          "properties": {
+            "remote_ip_file": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["remote_ip_file"],
+          "additionalProperties": false
+        },
+        "socks4": {
+          "type": "object",
+          "properties": {
+            "commands": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["CONNECT", "BIND"]
+              }
+            },
+            "networks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ports": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "socks5": {
+          "type": "object",
+          "properties": {
+            "auth_methods": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "ssh": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "sni": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sni_regexp": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "required": ["pattern"],
+              "additionalProperties": false
+            },
+            "alpn": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "remote_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "not_ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "local_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": {}
+        },
+        "vars": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "vars_regexp": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "pattern": {
+                "type": "string"
+              }
+            },
+            "required": ["pattern"],
+            "additionalProperties": false
+          }
+        },
+        "winbox": {
+          "type": "object",
+          "properties": {
+            "modes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["standard", "romon"]
+              }
+            },
+            "username": {
+              "type": "string"
+            },
+            "username_regexp": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "wireguard": {
+          "type": "object",
+          "properties": {
+            "zero": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "xmpp": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "not": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/__schema0"
+          }
+        }
+      },
+      "additionalProperties": {}
     }
   }
 }

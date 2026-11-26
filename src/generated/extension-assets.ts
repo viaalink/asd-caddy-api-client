@@ -6,7 +6,7 @@
  * Run: npm run generate:extension
  *
  * @generated
- * @version 0.12.0
+ * @version 0.13.0
  * @generatedAt 2026-11-04T16:59:09.062Z
  */
 
@@ -54,7 +54,7 @@ export interface HandlerMetadata {
 /**
  * Library version this metadata was generated from
  */
-export const METADATA_VERSION = "0.12.0";
+export const METADATA_VERSION = "0.13.0";
 
 /**
  * Timestamp when this metadata was generated
@@ -461,7 +461,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
         "buildSecurityConfig({",
         '  portals: [{ name: "${1:myportal}" }],',
         '  policies: [{ name: "${2:mypolicy}" }],',
-        '  identityStores: [{ name: "${3:local}", params: { path: "${4:/etc/caddy/users.json}" }, kind: "local" }],',
+        '  identityStores: [{ name: "${3:local}", kind: "local", params: { path: "${4:/etc/caddy/users.json}" } }],',
         "  // optional: identityProviders",
         "})$0",
       ],
@@ -2171,7 +2171,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-layer4-subroute-handler",
       body: [
         "buildLayer4SubrouteHandler({",
-        '  routes: [{ handle: [{ handler: "subroute" }] }],',
+        '  routes: [{ handle: [{ handler: "proxy", upstreams: [{ dial: ["${1:localhost:3000}"] }] }] }],',
         "  // optional: matchingTimeout",
         "})$0",
       ],
@@ -2328,7 +2328,9 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
     example: 'buildLayer4TeeHandler([buildLayer4ProxyHandler("mirror:5432")])',
     snippet: {
       prefix: "caddy-layer4-tee-handler",
-      body: ['buildLayer4TeeHandler([{ handler: "subroute" }])$0'],
+      body: [
+        'buildLayer4TeeHandler([{ handler: "proxy", upstreams: [{ dial: ["${1:localhost:3000}"] }] }])$0',
+      ],
       description: "Build Layer4 Tee Handler",
     },
   },
@@ -2524,7 +2526,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-layer4-route",
       body: [
         "buildLayer4Route({",
-        '  handle: [{ handler: "subroute" }],',
+        '  handle: [{ handler: "proxy", upstreams: [{ dial: ["${1:localhost:3000}"] }] }],',
         "  // optional: id, match",
         "})$0",
       ],
@@ -2657,7 +2659,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       body: [
         "buildLayer4Server({",
         '  listen: "${1::5432}",',
-        '  routes: [{ handle: [{ handler: "subroute" }] }],',
+        '  routes: [{ handle: [{ handler: "proxy", upstreams: [{ dial: ["${2:localhost:3000}"] }] }] }],',
         "  // optional: idleTimeout, matchingTimeout",
         "})$0",
       ],
@@ -2701,7 +2703,7 @@ export const BUILDER_METADATA: Record<string, BuilderMetadata> = {
       prefix: "caddy-layer4-listener-wrapper",
       body: [
         "buildLayer4ListenerWrapper({",
-        '  routes: [{ handle: [{ handler: "subroute" }] }],',
+        '  routes: [{ handle: [{ handler: "proxy", upstreams: [{ dial: ["${1:localhost:3000}"] }] }] }],',
         "  // optional: matchingTimeout",
         "})$0",
       ],

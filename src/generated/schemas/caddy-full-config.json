@@ -191,7 +191,46 @@
                     "type": "object",
                     "properties": {
                       "BaseLog": {
-                        "$ref": "#/definitions/caddy-full-config/properties/logging/properties/sink/properties/BaseLog"
+                        "type": "object",
+                        "properties": {
+                          "writer": {},
+                          "encoder": {},
+                          "core": {},
+                          "level": {
+                            "type": "string"
+                          },
+                          "sampling": {
+                            "type": "object",
+                            "properties": {
+                              "interval": {
+                                "type": ["number", "string"]
+                              },
+                              "first": {
+                                "type": "number"
+                              },
+                              "thereafter": {
+                                "type": "number"
+                              },
+                              "@id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "with_caller": {
+                            "type": "boolean"
+                          },
+                          "with_caller_skip": {
+                            "type": "number"
+                          },
+                          "with_stacktrace": {
+                            "type": "string"
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
                       },
                       "include": {
                         "type": "array",
@@ -237,9 +276,7 @@
                   "type": "number"
                 },
                 "grace_period": {},
-                "shutdown_delay": {
-                  "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                },
+                "shutdown_delay": {},
                 "metrics": {
                   "type": "object",
                   "properties": {
@@ -277,39 +314,23 @@
                         "type": "array",
                         "items": {}
                       },
-                      "read_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
-                      "read_header_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
-                      "read_idle_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
+                      "read_timeout": {},
+                      "read_header_timeout": {},
+                      "read_idle_timeout": {},
                       "read_min_rate": {
                         "type": "number"
                       },
-                      "write_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
-                      "write_idle_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
+                      "write_timeout": {},
+                      "write_idle_timeout": {},
                       "write_min_rate": {
                         "type": "number"
                       },
                       "max_write_chunk": {
                         "type": "number"
                       },
-                      "idle_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
-                      "keepalive_interval": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
-                      "keepalive_idle": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/grace_period"
-                      },
+                      "idle_timeout": {},
+                      "keepalive_interval": {},
+                      "keepalive_idle": {},
                       "keepalive_count": {
                         "type": "number"
                       },
@@ -343,7 +364,8 @@
                                   "type": "string"
                                 },
                                 "match": {
-                                  "type": "array"
+                                  "type": "array",
+                                  "items": {}
                                 },
                                 "handle": {
                                   "type": "array",
@@ -470,1348 +492,33 @@
                         "type": "boolean"
                       },
                       "metrics": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/metrics"
+                        "type": "object",
+                        "properties": {
+                          "per_host": {
+                            "type": "boolean"
+                          },
+                          "observe_catchall_hosts": {
+                            "type": "boolean"
+                          },
+                          "otlp": {
+                            "type": "boolean"
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
                       },
                       "routes": {
                         "type": "array",
                         "items": {
-                          "type": "object",
-                          "properties": {
-                            "@id": {
-                              "type": "string"
-                            },
-                            "match": {
-                              "type": "array",
-                              "items": {
-                                "type": "object",
-                                "properties": {
-                                  "host": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "path": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "path_regexp": {
-                                    "type": "object",
-                                    "properties": {
-                                      "name": {
-                                        "type": "string"
-                                      },
-                                      "pattern": {
-                                        "type": "string"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["pattern"],
-                                    "additionalProperties": false
-                                  },
-                                  "method": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "header": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    }
-                                  },
-                                  "header_regexp": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                      "anyOf": [
-                                        {
-                                          "type": "object",
-                                          "properties": {
-                                            "name": {
-                                              "type": "string"
-                                            },
-                                            "pattern": {
-                                              "type": "string"
-                                            },
-                                            "@id": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "required": ["pattern"],
-                                          "additionalProperties": false
-                                        },
-                                        {
-                                          "not": {}
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "query": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    }
-                                  },
-                                  "client_ip": {
-                                    "type": "object",
-                                    "properties": {
-                                      "ranges": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "remote_ip": {
-                                    "type": "object",
-                                    "properties": {
-                                      "ranges": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "protocol": {
-                                    "type": "string"
-                                  },
-                                  "tls": {
-                                    "type": "object",
-                                    "properties": {
-                                      "handshake_complete": {
-                                        "type": "boolean"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "file": {
-                                    "type": "object",
-                                    "properties": {
-                                      "fs": {
-                                        "type": "string"
-                                      },
-                                      "root": {
-                                        "type": "string"
-                                      },
-                                      "try_files": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "try_policy": {
-                                        "type": "string"
-                                      },
-                                      "split_path": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "not": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "additionalProperties": {}
-                                    }
-                                  },
-                                  "expression": {
-                                    "type": "string"
-                                  },
-                                  "@id": {
-                                    "type": "string"
-                                  }
-                                },
-                                "additionalProperties": false
-                              }
-                            },
-                            "handle": {
-                              "type": "array",
-                              "items": {
-                                "anyOf": [
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "reverse_proxy"
-                                      },
-                                      "upstreams": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "properties": {
-                                            "dial": {
-                                              "type": "string",
-                                              "minLength": 1
-                                            },
-                                            "max_requests": {
-                                              "type": "integer",
-                                              "exclusiveMinimum": 0
-                                            },
-                                            "@id": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "required": ["dial"],
-                                          "additionalProperties": false
-                                        }
-                                      },
-                                      "load_balancing": {
-                                        "type": "object",
-                                        "properties": {
-                                          "selection_policy": {
-                                            "type": "object",
-                                            "properties": {
-                                              "policy": {
-                                                "type": "string",
-                                                "enum": [
-                                                  "first",
-                                                  "random",
-                                                  "least_conn",
-                                                  "round_robin",
-                                                  "ip_hash",
-                                                  "uri_hash",
-                                                  "header",
-                                                  "cookie"
-                                                ]
-                                              }
-                                            },
-                                            "required": ["policy"],
-                                            "additionalProperties": true
-                                          },
-                                          "retries": {
-                                            "type": "integer",
-                                            "minimum": 0
-                                          },
-                                          "try_duration": {
-                                            "anyOf": [
-                                              {
-                                                "type": "integer"
-                                              },
-                                              {
-                                                "type": "string",
-                                                "const": "0"
-                                              },
-                                              {
-                                                "type": "string",
-                                                "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
-                                              }
-                                            ]
-                                          },
-                                          "try_interval": {
-                                            "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "health_checks": {
-                                        "type": "object",
-                                        "properties": {
-                                          "active": {
-                                            "type": "object",
-                                            "properties": {
-                                              "uri": {
-                                                "type": "string"
-                                              },
-                                              "path": {
-                                                "type": "string"
-                                              },
-                                              "port": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 65535
-                                              },
-                                              "headers": {
-                                                "type": "object",
-                                                "additionalProperties": {
-                                                  "type": "array",
-                                                  "items": {
-                                                    "type": "string"
-                                                  }
-                                                }
-                                              },
-                                              "follow_redirects": {
-                                                "type": "boolean"
-                                              },
-                                              "interval": {
-                                                "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                              },
-                                              "timeout": {
-                                                "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                              },
-                                              "passes": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0
-                                              },
-                                              "fails": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0
-                                              },
-                                              "max_size": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0
-                                              },
-                                              "expect_status": {
-                                                "type": "integer",
-                                                "minimum": 100,
-                                                "maximum": 599
-                                              },
-                                              "expect_body": {
-                                                "type": "string"
-                                              },
-                                              "@id": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          },
-                                          "passive": {
-                                            "type": "object",
-                                            "properties": {
-                                              "fail_duration": {
-                                                "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                              },
-                                              "max_fails": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0
-                                              },
-                                              "unhealthy_request_count": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0
-                                              },
-                                              "unhealthy_status": {
-                                                "type": "array",
-                                                "items": {
-                                                  "type": "integer",
-                                                  "minimum": 100,
-                                                  "maximum": 599
-                                                }
-                                              },
-                                              "unhealthy_latency": {
-                                                "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                              },
-                                              "@id": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "transport": {
-                                        "type": "object",
-                                        "properties": {
-                                          "protocol": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": ["protocol"],
-                                        "additionalProperties": true
-                                      },
-                                      "circuit_breaker": {
-                                        "type": "object",
-                                        "properties": {
-                                          "type": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": ["type"],
-                                        "additionalProperties": true
-                                      },
-                                      "dynamic_upstreams": {
-                                        "type": "object",
-                                        "properties": {
-                                          "source": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": ["source"],
-                                        "additionalProperties": true
-                                      },
-                                      "flush_interval": {
-                                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                      },
-                                      "stream_timeout": {
-                                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                      },
-                                      "stream_close_delay": {
-                                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
-                                      },
-                                      "trusted_proxies": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "request_buffers": {
-                                        "type": "integer",
-                                        "minimum": 0
-                                      },
-                                      "response_buffers": {
-                                        "type": "integer",
-                                        "minimum": 0
-                                      },
-                                      "headers": {
-                                        "type": "object",
-                                        "properties": {
-                                          "request": {
-                                            "type": "object",
-                                            "properties": {
-                                              "add": {
-                                                "type": "object",
-                                                "additionalProperties": {
-                                                  "type": "array",
-                                                  "items": {
-                                                    "type": "string"
-                                                  }
-                                                }
-                                              },
-                                              "set": {
-                                                "type": "object",
-                                                "additionalProperties": {
-                                                  "type": "array",
-                                                  "items": {
-                                                    "type": "string"
-                                                  }
-                                                }
-                                              },
-                                              "delete": {
-                                                "type": "array",
-                                                "items": {
-                                                  "type": "string"
-                                                }
-                                              },
-                                              "@id": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          },
-                                          "response": {
-                                            "type": "object",
-                                            "properties": {
-                                              "add": {
-                                                "type": "object",
-                                                "additionalProperties": {
-                                                  "type": "array",
-                                                  "items": {
-                                                    "type": "string"
-                                                  }
-                                                }
-                                              },
-                                              "set": {
-                                                "type": "object",
-                                                "additionalProperties": {
-                                                  "type": "array",
-                                                  "items": {
-                                                    "type": "string"
-                                                  }
-                                                }
-                                              },
-                                              "delete": {
-                                                "type": "array",
-                                                "items": {
-                                                  "type": "string"
-                                                }
-                                              },
-                                              "@id": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "rewrite": {
-                                        "type": "object",
-                                        "properties": {
-                                          "uri": {
-                                            "type": "string"
-                                          },
-                                          "strip_path_prefix": {
-                                            "type": "string"
-                                          },
-                                          "strip_path_suffix": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": true
-                                      },
-                                      "handle_response": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "properties": {
-                                            "match": {
-                                              "type": "object",
-                                              "properties": {
-                                                "status_code": {
-                                                  "type": "array",
-                                                  "items": {
-                                                    "type": "integer"
-                                                  }
-                                                }
-                                              },
-                                              "additionalProperties": true
-                                            },
-                                            "routes": {
-                                              "type": "array"
-                                            }
-                                          },
-                                          "additionalProperties": true
-                                        }
-                                      },
-                                      "verbose_logs": {
-                                        "type": "boolean"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "headers"
-                                      },
-                                      "response": {
-                                        "type": "object",
-                                        "properties": {
-                                          "deferred": {
-                                            "type": "boolean"
-                                          },
-                                          "set": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                              "type": "array",
-                                              "items": {
-                                                "type": "string"
-                                              }
-                                            }
-                                          },
-                                          "add": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                              "type": "array",
-                                              "items": {
-                                                "type": "string"
-                                              }
-                                            }
-                                          },
-                                          "delete": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "request": {
-                                        "type": "object",
-                                        "properties": {
-                                          "set": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                              "type": "array",
-                                              "items": {
-                                                "type": "string"
-                                              }
-                                            }
-                                          },
-                                          "add": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                              "type": "array",
-                                              "items": {
-                                                "type": "string"
-                                              }
-                                            }
-                                          },
-                                          "delete": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "static_response"
-                                      },
-                                      "status_code": {
-                                        "anyOf": [
-                                          {
-                                            "type": "integer"
-                                          },
-                                          {
-                                            "type": "string"
-                                          }
-                                        ]
-                                      },
-                                      "body": {
-                                        "type": "string"
-                                      },
-                                      "headers": {
-                                        "type": "object",
-                                        "additionalProperties": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "string"
-                                          }
-                                        }
-                                      },
-                                      "close": {
-                                        "type": "boolean"
-                                      },
-                                      "abort": {
-                                        "type": "boolean"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "authentication"
-                                      },
-                                      "providers": {
-                                        "type": "object",
-                                        "properties": {
-                                          "http_basic": {
-                                            "type": "object",
-                                            "properties": {
-                                              "accounts": {
-                                                "type": "array",
-                                                "items": {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "username": {
-                                                      "type": "string"
-                                                    },
-                                                    "password": {
-                                                      "type": "string"
-                                                    },
-                                                    "@id": {
-                                                      "type": "string"
-                                                    }
-                                                  },
-                                                  "required": ["username", "password"],
-                                                  "additionalProperties": false
-                                                }
-                                              },
-                                              "realm": {
-                                                "type": "string"
-                                              },
-                                              "hash": {
-                                                "type": "object",
-                                                "properties": {
-                                                  "algorithm": {
-                                                    "type": "string"
-                                                  },
-                                                  "@id": {
-                                                    "type": "string"
-                                                  }
-                                                },
-                                                "additionalProperties": false
-                                              },
-                                              "@id": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          },
-                                          "authorizer": {
-                                            "type": "object",
-                                            "properties": {
-                                              "gatekeeper_name": {
-                                                "type": "string"
-                                              },
-                                              "route_matcher": {
-                                                "type": "string"
-                                              },
-                                              "@id": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "rewrite"
-                                      },
-                                      "uri": {
-                                        "type": "string"
-                                      },
-                                      "strip_path_prefix": {
-                                        "type": "string"
-                                      },
-                                      "strip_path_suffix": {
-                                        "type": "string"
-                                      },
-                                      "uri_substring": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "properties": {
-                                            "find": {
-                                              "type": "string"
-                                            },
-                                            "replace": {
-                                              "type": "string"
-                                            },
-                                            "limit": {
-                                              "type": "integer"
-                                            },
-                                            "@id": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "required": ["find", "replace"],
-                                          "additionalProperties": false
-                                        }
-                                      },
-                                      "query": {
-                                        "type": "object",
-                                        "properties": {
-                                          "delete": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "set": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "object",
-                                              "properties": {
-                                                "key": {
-                                                  "type": "string"
-                                                },
-                                                "val": {
-                                                  "type": "string"
-                                                },
-                                                "@id": {
-                                                  "type": "string"
-                                                }
-                                              },
-                                              "required": ["key", "val"],
-                                              "additionalProperties": false
-                                            }
-                                          },
-                                          "add": {
-                                            "type": "array",
-                                            "items": {
-                                              "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/4/properties/query/properties/set/items"
-                                            }
-                                          },
-                                          "replace": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "object",
-                                              "properties": {
-                                                "key": {
-                                                  "type": "string"
-                                                },
-                                                "search": {
-                                                  "type": "string"
-                                                },
-                                                "search_regexp": {
-                                                  "type": "string"
-                                                },
-                                                "replace": {
-                                                  "type": "string"
-                                                },
-                                                "@id": {
-                                                  "type": "string"
-                                                }
-                                              },
-                                              "additionalProperties": false
-                                            }
-                                          },
-                                          "rename": {
-                                            "type": "array",
-                                            "items": {
-                                              "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/4/properties/query/properties/set/items"
-                                            }
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "encode"
-                                      },
-                                      "encodings": {
-                                        "type": "object",
-                                        "properties": {
-                                          "gzip": {
-                                            "type": "object",
-                                            "properties": {},
-                                            "additionalProperties": true
-                                          },
-                                          "zstd": {
-                                            "type": "object",
-                                            "properties": {},
-                                            "additionalProperties": true
-                                          },
-                                          "br": {
-                                            "type": "object",
-                                            "properties": {},
-                                            "additionalProperties": true
-                                          }
-                                        },
-                                        "additionalProperties": true
-                                      },
-                                      "prefer": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "minimum_length": {
-                                        "type": "integer",
-                                        "exclusiveMinimum": 0
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "fs": {
-                                        "type": "string"
-                                      },
-                                      "root": {
-                                        "type": "string"
-                                      },
-                                      "hide": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "index_names": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "browse": {
-                                        "type": "object",
-                                        "properties": {
-                                          "template_file": {
-                                            "type": "string"
-                                          },
-                                          "reveal_symlinks": {
-                                            "type": "boolean"
-                                          },
-                                          "sort": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "file_limit": {
-                                            "type": "number"
-                                          },
-                                          "plain_time_format": {
-                                            "type": "string"
-                                          },
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "canonical_uris": {
-                                        "type": "boolean"
-                                      },
-                                      "status_code": {},
-                                      "pass_thru": {
-                                        "type": "boolean"
-                                      },
-                                      "precompressed": {},
-                                      "precompressed_order": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "etag_file_extensions": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "file_server"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "file_root": {
-                                        "type": "string"
-                                      },
-                                      "mime_types": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "delimiters": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "match": {},
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "templates"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "source": {
-                                        "type": "string"
-                                      },
-                                      "destinations": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "mappings": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "properties": {
-                                            "input": {
-                                              "type": "string"
-                                            },
-                                            "input_regexp": {
-                                              "type": "string"
-                                            },
-                                            "outputs": {
-                                              "type": "array"
-                                            },
-                                            "@id": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "additionalProperties": false
-                                        }
-                                      },
-                                      "defaults": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "map"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "resources": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "properties": {
-                                            "method": {
-                                              "type": "string"
-                                            },
-                                            "target": {
-                                              "type": "string"
-                                            },
-                                            "@id": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "additionalProperties": false
-                                        }
-                                      },
-                                      "headers": {
-                                        "type": "object",
-                                        "properties": {
-                                          "HeaderOps": {},
-                                          "@id": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "push"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "max_size": {
-                                        "type": "number"
-                                      },
-                                      "set": {
-                                        "type": "string"
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "request_body"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "vars"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": true
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handle_response": {
-                                        "type": "array"
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "intercept"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "name": {
-                                        "type": "string"
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "invoke"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "span": {
-                                        "type": "string"
-                                      },
-                                      "span_attributes": {
-                                        "type": "object",
-                                        "additionalProperties": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "tracing"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["span", "handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "key": {
-                                        "type": "string"
-                                      },
-                                      "value": {
-                                        "type": "string"
-                                      },
-                                      "early": {
-                                        "type": "boolean"
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "log_append"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "error": {
-                                        "type": "string"
-                                      },
-                                      "status_code": {
-                                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/2/properties/status_code"
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "error"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "status_code": {},
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "copy_response"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "include": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "exclude": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "copy_response_headers"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "subroute"
-                                      },
-                                      "routes": {
-                                        "type": "array",
-                                        "items": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items"
-                                        }
-                                      },
-                                      "errors": {},
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "handler": {
-                                        "type": "string",
-                                        "const": "authenticator"
-                                      },
-                                      "portal_name": {
-                                        "type": "string"
-                                      },
-                                      "route_matcher": {
-                                        "type": "string"
-                                      },
-                                      "@id": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "required": ["handler"],
-                                    "additionalProperties": false
-                                  }
-                                ]
-                              },
-                              "minItems": 1
-                            },
-                            "terminal": {
-                              "type": "boolean"
-                            },
-                            "priority": {
-                              "type": "integer"
-                            }
-                          },
-                          "required": ["handle"],
-                          "additionalProperties": false
+                          "$ref": "#/definitions/__schema0"
                         }
                       },
                       "named_routes": {
                         "type": "object",
                         "additionalProperties": {
-                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items"
+                          "$ref": "#/definitions/__schema0"
                         }
                       },
                       "@id": {
@@ -1906,12 +613,8 @@
                       "additionalProperties": false
                     },
                     "ocsp_interval": {},
-                    "renew_interval": {
-                      "$ref": "#/definitions/caddy-full-config/properties/apps/properties/tls/properties/automation/properties/ocsp_interval"
-                    },
-                    "storage_clean_interval": {
-                      "$ref": "#/definitions/caddy-full-config/properties/apps/properties/tls/properties/automation/properties/ocsp_interval"
-                    },
+                    "renew_interval": {},
+                    "storage_clean_interval": {},
                     "@id": {
                       "type": "string"
                     }
@@ -1922,9 +625,7 @@
                   "type": "object",
                   "properties": {
                     "key_source": {},
-                    "rotation_interval": {
-                      "$ref": "#/definitions/caddy-full-config/properties/apps/properties/tls/properties/automation/properties/ocsp_interval"
-                    },
+                    "rotation_interval": {},
                     "max_keys": {
                       "type": "number"
                     },
@@ -1999,9 +700,7 @@
                                   "type": "string"
                                 }
                               },
-                              "publishers": {
-                                "$ref": "#/definitions/caddy-full-config/properties/apps/properties/tls/properties/certificates"
-                              },
+                              "publishers": {},
                               "@id": {
                                 "type": "string"
                               }
@@ -2461,12 +1160,12 @@
                     "type": "object",
                     "properties": {
                       "listen": {
+                        "minItems": 1,
                         "type": "array",
                         "items": {
                           "type": "string",
                           "minLength": 1
-                        },
-                        "minItems": 1
+                        }
                       },
                       "routes": {
                         "type": "array",
@@ -2480,461 +1179,11 @@
                             "match": {
                               "type": "array",
                               "items": {
-                                "type": "object",
-                                "properties": {
-                                  "clock": {
-                                    "type": "object",
-                                    "properties": {
-                                      "after": {
-                                        "type": "string",
-                                        "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
-                                      },
-                                      "before": {
-                                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/clock/properties/after"
-                                      },
-                                      "timezone": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "dns": {
-                                    "type": "object",
-                                    "properties": {
-                                      "allow": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "properties": {
-                                            "class": {
-                                              "type": "string"
-                                            },
-                                            "class_regexp": {
-                                              "type": "string"
-                                            },
-                                            "name": {
-                                              "type": "string"
-                                            },
-                                            "name_regexp": {
-                                              "type": "string"
-                                            },
-                                            "type": {
-                                              "type": "string"
-                                            },
-                                            "type_regexp": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "additionalProperties": false
-                                        }
-                                      },
-                                      "deny": {
-                                        "type": "array",
-                                        "items": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/dns/properties/allow/items"
-                                        }
-                                      },
-                                      "default_deny": {
-                                        "type": "boolean"
-                                      },
-                                      "prefer_allow": {
-                                        "type": "boolean"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "http": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {
-                                        "host": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/host"
-                                        },
-                                        "path": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/path"
-                                        },
-                                        "path_regexp": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/path_regexp"
-                                        },
-                                        "method": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/method"
-                                        },
-                                        "header": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/header"
-                                        },
-                                        "header_regexp": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/header_regexp"
-                                        },
-                                        "query": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/query"
-                                        },
-                                        "client_ip": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/client_ip"
-                                        },
-                                        "remote_ip": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/remote_ip"
-                                        },
-                                        "protocol": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/protocol"
-                                        },
-                                        "tls": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/tls"
-                                        },
-                                        "file": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/file"
-                                        },
-                                        "not": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/not"
-                                        },
-                                        "expression": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/expression"
-                                        }
-                                      },
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "local_ip": {
-                                    "type": "object",
-                                    "properties": {
-                                      "ranges": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "openvpn": {
-                                    "type": "object",
-                                    "properties": {
-                                      "modes": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string",
-                                          "enum": ["plain", "auth", "crypt", "crypt2"]
-                                        }
-                                      },
-                                      "ignore_crypto": {
-                                        "type": "boolean"
-                                      },
-                                      "ignore_timestamp": {
-                                        "type": "boolean"
-                                      },
-                                      "group_key": {
-                                        "type": "string"
-                                      },
-                                      "group_key_file": {
-                                        "type": "string"
-                                      },
-                                      "auth_digest": {
-                                        "type": "string"
-                                      },
-                                      "group_key_direction": {
-                                        "type": "string",
-                                        "enum": ["normal", "inverse", "bidi", "bidirectional"]
-                                      },
-                                      "client_keys": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "client_key_files": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "server_key": {
-                                        "type": "string"
-                                      },
-                                      "server_key_file": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "postgres": {
-                                    "type": "object",
-                                    "properties": {
-                                      "user": {
-                                        "type": "object",
-                                        "additionalProperties": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "string"
-                                          }
-                                        }
-                                      },
-                                      "client": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "tls": {
-                                        "type": "string",
-                                        "enum": ["enabled", "disabled", ""]
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "proxy_protocol": {
-                                    "type": "object",
-                                    "properties": {},
-                                    "additionalProperties": false
-                                  },
-                                  "quic": {
-                                    "type": "object",
-                                    "properties": {
-                                      "sni": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string",
-                                          "minLength": 1
-                                        }
-                                      },
-                                      "sni_regexp": {
-                                        "type": "object",
-                                        "properties": {
-                                          "name": {
-                                            "type": "string"
-                                          },
-                                          "pattern": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": ["pattern"],
-                                        "additionalProperties": false
-                                      },
-                                      "alpn": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string",
-                                          "minLength": 1
-                                        }
-                                      },
-                                      "remote_ip": {
-                                        "type": "object",
-                                        "properties": {
-                                          "ranges": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
-                                          },
-                                          "not_ranges": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      },
-                                      "local_ip": {
-                                        "type": "object",
-                                        "properties": {
-                                          "ranges": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      }
-                                    },
-                                    "additionalProperties": {}
-                                  },
-                                  "rdp": {
-                                    "type": "object",
-                                    "properties": {
-                                      "cookie_hash": {
-                                        "type": "string"
-                                      },
-                                      "cookie_hash_regexp": {
-                                        "type": "string"
-                                      },
-                                      "cookie_ips": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "cookie_ports": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "number"
-                                        }
-                                      },
-                                      "custom_info": {
-                                        "type": "string"
-                                      },
-                                      "custom_info_regexp": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "regexp": {
-                                    "type": "object",
-                                    "properties": {
-                                      "count": {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 65535
-                                      },
-                                      "hex": {
-                                        "type": "boolean"
-                                      },
-                                      "pattern": {
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": ["pattern"],
-                                    "additionalProperties": false
-                                  },
-                                  "remote_ip": {
-                                    "type": "object",
-                                    "properties": {
-                                      "ranges": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "remote_ip_list": {
-                                    "type": "object",
-                                    "properties": {
-                                      "remote_ip_file": {
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": ["remote_ip_file"],
-                                    "additionalProperties": false
-                                  },
-                                  "socks4": {
-                                    "type": "object",
-                                    "properties": {
-                                      "commands": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string",
-                                          "enum": ["CONNECT", "BIND"]
-                                        }
-                                      },
-                                      "networks": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "ports": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "integer",
-                                          "minimum": 0,
-                                          "maximum": 65535
-                                        }
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "socks5": {
-                                    "type": "object",
-                                    "properties": {
-                                      "auth_methods": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "integer",
-                                          "minimum": 0,
-                                          "maximum": 255
-                                        }
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "ssh": {
-                                    "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/proxy_protocol"
-                                  },
-                                  "tls": {
-                                    "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic"
-                                  },
-                                  "vars": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
-                                    }
-                                  },
-                                  "vars_regexp": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                      "type": "object",
-                                      "properties": {
-                                        "name": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic/properties/sni_regexp/properties/name"
-                                        },
-                                        "pattern": {
-                                          "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/quic/properties/sni_regexp/properties/pattern"
-                                        }
-                                      },
-                                      "required": ["pattern"],
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "winbox": {
-                                    "type": "object",
-                                    "properties": {
-                                      "modes": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string",
-                                          "enum": ["standard", "romon"]
-                                        }
-                                      },
-                                      "username": {
-                                        "type": "string"
-                                      },
-                                      "username_regexp": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "wireguard": {
-                                    "type": "object",
-                                    "properties": {
-                                      "zero": {
-                                        "type": "number"
-                                      }
-                                    },
-                                    "additionalProperties": false
-                                  },
-                                  "xmpp": {
-                                    "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items/properties/proxy_protocol"
-                                  },
-                                  "not": {
-                                    "type": "array",
-                                    "items": {
-                                      "$ref": "#/definitions/caddy-full-config/properties/apps/properties/layer4/properties/servers/additionalProperties/properties/routes/items/properties/match/items"
-                                    }
-                                  }
-                                },
-                                "additionalProperties": {}
+                                "$ref": "#/definitions/__schema1"
                               }
                             },
                             "handle": {
+                              "minItems": 1,
                               "type": "array",
                               "items": {
                                 "type": "object",
@@ -2965,8 +1214,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -2987,8 +1235,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -3009,8 +1256,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -3026,17 +1272,18 @@
                                       "type": "object",
                                       "properties": {
                                         "upstreams": {
+                                          "minItems": 1,
                                           "type": "array",
                                           "items": {
                                             "type": "object",
                                             "properties": {
                                               "dial": {
+                                                "minItems": 1,
                                                 "type": "array",
                                                 "items": {
                                                   "type": "string",
                                                   "minLength": 1
-                                                },
-                                                "minItems": 1
+                                                }
                                               },
                                               "local_address": {
                                                 "type": "array",
@@ -3131,8 +1378,7 @@
                                             },
                                             "required": ["dial"],
                                             "additionalProperties": false
-                                          },
-                                          "minItems": 1
+                                          }
                                         },
                                         "dynamic_upstreams": {},
                                         "health_checks": {
@@ -3392,8 +1638,7 @@
                                         }
                                       },
                                       "required": ["upstreams", "handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -3444,8 +1689,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -3482,8 +1726,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -4162,6 +2405,7 @@
                                                 }
                                               },
                                               "handle": {
+                                                "minItems": 1,
                                                 "type": "array",
                                                 "items": {
                                                   "type": "object",
@@ -4173,8 +2417,7 @@
                                                   },
                                                   "required": ["handler"],
                                                   "additionalProperties": true
-                                                },
-                                                "minItems": 1
+                                                }
                                               }
                                             },
                                             "required": ["handle"],
@@ -4202,8 +2445,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -4238,8 +2480,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -4291,8 +2532,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -4445,8 +2685,7 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": false,
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": false
                                     }
                                   },
                                   {
@@ -4467,13 +2706,11 @@
                                         }
                                       },
                                       "required": ["handler"],
-                                      "additionalProperties": {},
-                                      "$schema": "http://json-schema.org/draft-07/schema#"
+                                      "additionalProperties": {}
                                     }
                                   }
                                 ]
-                              },
-                              "minItems": 1
+                              }
                             }
                           },
                           "required": ["handle"],
@@ -4481,10 +2718,34 @@
                         }
                       },
                       "idle_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "0"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                          }
+                        ]
                       },
                       "matching_timeout": {
-                        "$ref": "#/definitions/caddy-full-config/properties/apps/properties/http/properties/servers/additionalProperties/properties/routes/items/properties/handle/items/anyOf/0/properties/load_balancing/properties/try_duration"
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "0"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                          }
+                        ]
                       }
                     },
                     "required": ["listen", "routes"],
@@ -4505,6 +2766,2132 @@
         }
       },
       "additionalProperties": false
+    },
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "@id": {
+          "type": "string"
+        },
+        "match": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "path_regexp": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["pattern"],
+                "additionalProperties": false
+              },
+              "method": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "header": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "header_regexp": {
+                "type": "object",
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "pattern": {
+                          "type": "string"
+                        },
+                        "@id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["pattern"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "not": {}
+                    }
+                  ]
+                }
+              },
+              "query": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "client_ip": {
+                "type": "object",
+                "properties": {
+                  "ranges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "remote_ip": {
+                "type": "object",
+                "properties": {
+                  "ranges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "protocol": {
+                "type": "string"
+              },
+              "tls": {
+                "type": "object",
+                "properties": {
+                  "handshake_complete": {
+                    "type": "boolean"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "file": {
+                "type": "object",
+                "properties": {
+                  "fs": {
+                    "type": "string"
+                  },
+                  "root": {
+                    "type": "string"
+                  },
+                  "try_files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "try_policy": {
+                    "type": "string"
+                  },
+                  "split_path": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "not": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "expression": {
+                "type": "string"
+              },
+              "@id": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "handle": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "reverse_proxy"
+                  },
+                  "upstreams": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "dial": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "max_requests": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "@id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["dial"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "load_balancing": {
+                    "type": "object",
+                    "properties": {
+                      "selection_policy": {
+                        "type": "object",
+                        "properties": {
+                          "policy": {
+                            "type": "string",
+                            "enum": [
+                              "first",
+                              "random",
+                              "least_conn",
+                              "round_robin",
+                              "ip_hash",
+                              "uri_hash",
+                              "header",
+                              "cookie"
+                            ]
+                          }
+                        },
+                        "required": ["policy"],
+                        "additionalProperties": true
+                      },
+                      "retries": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "try_duration": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "0"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                          }
+                        ]
+                      },
+                      "try_interval": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "string",
+                            "const": "0"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                          }
+                        ]
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "health_checks": {
+                    "type": "object",
+                    "properties": {
+                      "active": {
+                        "type": "object",
+                        "properties": {
+                          "uri": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "port": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 65535
+                          },
+                          "headers": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "follow_redirects": {
+                            "type": "boolean"
+                          },
+                          "interval": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "0"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                              }
+                            ]
+                          },
+                          "timeout": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "0"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                              }
+                            ]
+                          },
+                          "passes": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "fails": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "max_size": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "expect_status": {
+                            "type": "integer",
+                            "minimum": 100,
+                            "maximum": 599
+                          },
+                          "expect_body": {
+                            "type": "string"
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "passive": {
+                        "type": "object",
+                        "properties": {
+                          "fail_duration": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "0"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                              }
+                            ]
+                          },
+                          "max_fails": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "unhealthy_request_count": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0
+                          },
+                          "unhealthy_status": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 100,
+                              "maximum": 599
+                            }
+                          },
+                          "unhealthy_latency": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "string",
+                                "const": "0"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                              }
+                            ]
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "transport": {
+                    "type": "object",
+                    "properties": {
+                      "protocol": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["protocol"],
+                    "additionalProperties": true
+                  },
+                  "circuit_breaker": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["type"],
+                    "additionalProperties": true
+                  },
+                  "dynamic_upstreams": {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["source"],
+                    "additionalProperties": true
+                  },
+                  "flush_interval": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "const": "0"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                      }
+                    ]
+                  },
+                  "stream_timeout": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "const": "0"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                      }
+                    ]
+                  },
+                  "stream_close_delay": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "const": "0"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                      }
+                    ]
+                  },
+                  "trusted_proxies": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "request_buffers": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "response_buffers": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "headers": {
+                    "type": "object",
+                    "properties": {
+                      "request": {
+                        "type": "object",
+                        "properties": {
+                          "add": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "set": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "delete": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "response": {
+                        "type": "object",
+                        "properties": {
+                          "add": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "set": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "delete": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "rewrite": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string"
+                      },
+                      "strip_path_prefix": {
+                        "type": "string"
+                      },
+                      "strip_path_suffix": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": true
+                  },
+                  "handle_response": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "match": {
+                          "type": "object",
+                          "properties": {
+                            "status_code": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "additionalProperties": true
+                        },
+                        "routes": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "verbose_logs": {
+                    "type": "boolean"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "headers"
+                  },
+                  "response": {
+                    "type": "object",
+                    "properties": {
+                      "deferred": {
+                        "type": "boolean"
+                      },
+                      "set": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "add": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "delete": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "request": {
+                    "type": "object",
+                    "properties": {
+                      "set": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "add": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "delete": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "static_response"
+                  },
+                  "status_code": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "close": {
+                    "type": "boolean"
+                  },
+                  "abort": {
+                    "type": "boolean"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "authentication"
+                  },
+                  "providers": {
+                    "type": "object",
+                    "properties": {
+                      "http_basic": {
+                        "type": "object",
+                        "properties": {
+                          "accounts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "username": {
+                                  "type": "string"
+                                },
+                                "password": {
+                                  "type": "string"
+                                },
+                                "@id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["username", "password"],
+                              "additionalProperties": false
+                            }
+                          },
+                          "realm": {
+                            "type": "string"
+                          },
+                          "hash": {
+                            "type": "object",
+                            "properties": {
+                              "algorithm": {
+                                "type": "string"
+                              },
+                              "@id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "authorizer": {
+                        "type": "object",
+                        "properties": {
+                          "gatekeeper_name": {
+                            "type": "string"
+                          },
+                          "route_matcher": {
+                            "type": "string"
+                          },
+                          "@id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "rewrite"
+                  },
+                  "uri": {
+                    "type": "string"
+                  },
+                  "strip_path_prefix": {
+                    "type": "string"
+                  },
+                  "strip_path_suffix": {
+                    "type": "string"
+                  },
+                  "uri_substring": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "find": {
+                          "type": "string"
+                        },
+                        "replace": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "@id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["find", "replace"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "query": {
+                    "type": "object",
+                    "properties": {
+                      "delete": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "set": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "val": {
+                              "type": "string"
+                            },
+                            "@id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["key", "val"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "add": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "val": {
+                              "type": "string"
+                            },
+                            "@id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["key", "val"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "replace": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "search": {
+                              "type": "string"
+                            },
+                            "search_regexp": {
+                              "type": "string"
+                            },
+                            "replace": {
+                              "type": "string"
+                            },
+                            "@id": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "rename": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "val": {
+                              "type": "string"
+                            },
+                            "@id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["key", "val"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "encode"
+                  },
+                  "encodings": {
+                    "type": "object",
+                    "properties": {
+                      "gzip": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": true
+                      },
+                      "zstd": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": true
+                      },
+                      "br": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": true
+                      }
+                    },
+                    "additionalProperties": true
+                  },
+                  "prefer": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "minimum_length": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "fs": {
+                    "type": "string"
+                  },
+                  "root": {
+                    "type": "string"
+                  },
+                  "hide": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "index_names": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "browse": {
+                    "type": "object",
+                    "properties": {
+                      "template_file": {
+                        "type": "string"
+                      },
+                      "reveal_symlinks": {
+                        "type": "boolean"
+                      },
+                      "sort": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "file_limit": {
+                        "type": "number"
+                      },
+                      "plain_time_format": {
+                        "type": "string"
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "canonical_uris": {
+                    "type": "boolean"
+                  },
+                  "status_code": {},
+                  "pass_thru": {
+                    "type": "boolean"
+                  },
+                  "precompressed": {},
+                  "precompressed_order": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "etag_file_extensions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "file_server"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "file_root": {
+                    "type": "string"
+                  },
+                  "mime_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "delimiters": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "match": {},
+                  "handler": {
+                    "type": "string",
+                    "const": "templates"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "destinations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mappings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "input": {
+                          "type": "string"
+                        },
+                        "input_regexp": {
+                          "type": "string"
+                        },
+                        "outputs": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "@id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "defaults": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "map"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "resources": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "method": {
+                          "type": "string"
+                        },
+                        "target": {
+                          "type": "string"
+                        },
+                        "@id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "headers": {
+                    "type": "object",
+                    "properties": {
+                      "HeaderOps": {},
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "push"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "max_size": {
+                    "type": "number"
+                  },
+                  "set": {
+                    "type": "string"
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "request_body"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "vars"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handle_response": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "intercept"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "invoke"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "span": {
+                    "type": "string"
+                  },
+                  "span_attributes": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "tracing"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["span", "handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "early": {
+                    "type": "boolean"
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "log_append"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string"
+                  },
+                  "status_code": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "error"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status_code": {},
+                  "handler": {
+                    "type": "string",
+                    "const": "copy_response"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "handler": {
+                    "type": "string",
+                    "const": "copy_response_headers"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "subroute"
+                  },
+                  "routes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/__schema0"
+                    }
+                  },
+                  "errors": {},
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "handler": {
+                    "type": "string",
+                    "const": "authenticator"
+                  },
+                  "portal_name": {
+                    "type": "string"
+                  },
+                  "route_matcher": {
+                    "type": "string"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["handler"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "terminal": {
+          "type": "boolean"
+        },
+        "priority": {
+          "type": "integer"
+        }
+      },
+      "required": ["handle"],
+      "additionalProperties": false
+    },
+    "__schema1": {
+      "type": "object",
+      "properties": {
+        "clock": {
+          "type": "object",
+          "properties": {
+            "after": {
+              "type": "string",
+              "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
+            },
+            "before": {
+              "type": "string",
+              "pattern": "^(\\d{2}:\\d{2}:\\d{2}|.*\\{[^}]+\\}.*)$"
+            },
+            "timezone": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "dns": {
+          "type": "object",
+          "properties": {
+            "allow": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "class": {
+                    "type": "string"
+                  },
+                  "class_regexp": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "name_regexp": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "type_regexp": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "deny": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "class": {
+                    "type": "string"
+                  },
+                  "class_regexp": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "name_regexp": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "type_regexp": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "default_deny": {
+              "type": "boolean"
+            },
+            "prefer_allow": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "http": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "path_regexp": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["pattern"],
+                "additionalProperties": false
+              },
+              "method": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "header": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "header_regexp": {
+                "type": "object",
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "pattern": {
+                          "type": "string"
+                        },
+                        "@id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["pattern"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "not": {}
+                    }
+                  ]
+                }
+              },
+              "query": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "client_ip": {
+                "type": "object",
+                "properties": {
+                  "ranges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "remote_ip": {
+                "type": "object",
+                "properties": {
+                  "ranges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "protocol": {
+                "type": "string"
+              },
+              "tls": {
+                "type": "object",
+                "properties": {
+                  "handshake_complete": {
+                    "type": "boolean"
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "file": {
+                "type": "object",
+                "properties": {
+                  "fs": {
+                    "type": "string"
+                  },
+                  "root": {
+                    "type": "string"
+                  },
+                  "try_files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "try_policy": {
+                    "type": "string"
+                  },
+                  "split_path": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "@id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "not": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "local_ip": {
+          "type": "object",
+          "properties": {
+            "ranges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "openvpn": {
+          "type": "object",
+          "properties": {
+            "modes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["plain", "auth", "crypt", "crypt2"]
+              }
+            },
+            "ignore_crypto": {
+              "type": "boolean"
+            },
+            "ignore_timestamp": {
+              "type": "boolean"
+            },
+            "group_key": {
+              "type": "string"
+            },
+            "group_key_file": {
+              "type": "string"
+            },
+            "auth_digest": {
+              "type": "string"
+            },
+            "group_key_direction": {
+              "type": "string",
+              "enum": ["normal", "inverse", "bidi", "bidirectional"]
+            },
+            "client_keys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "client_key_files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "server_key": {
+              "type": "string"
+            },
+            "server_key_file": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "postgres": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "client": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "tls": {
+              "type": "string",
+              "enum": ["enabled", "disabled", ""]
+            }
+          },
+          "additionalProperties": false
+        },
+        "proxy_protocol": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "quic": {
+          "type": "object",
+          "properties": {
+            "sni": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sni_regexp": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "required": ["pattern"],
+              "additionalProperties": false
+            },
+            "alpn": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "remote_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "not_ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "local_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": {}
+        },
+        "rdp": {
+          "type": "object",
+          "properties": {
+            "cookie_hash": {
+              "type": "string"
+            },
+            "cookie_hash_regexp": {
+              "type": "string"
+            },
+            "cookie_ips": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "cookie_ports": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "custom_info": {
+              "type": "string"
+            },
+            "custom_info_regexp": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "regexp": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "hex": {
+              "type": "boolean"
+            },
+            "pattern": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["pattern"],
+          "additionalProperties": false
+        },
+        "remote_ip": {
+          "type": "object",
+          "properties": {
+            "ranges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "remote_ip_list": {
+          "type": "object",
+          "properties": {
+            "remote_ip_file": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["remote_ip_file"],
+          "additionalProperties": false
+        },
+        "socks4": {
+          "type": "object",
+          "properties": {
+            "commands": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["CONNECT", "BIND"]
+              }
+            },
+            "networks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ports": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "socks5": {
+          "type": "object",
+          "properties": {
+            "auth_methods": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "ssh": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "sni": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sni_regexp": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "required": ["pattern"],
+              "additionalProperties": false
+            },
+            "alpn": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "remote_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "not_ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "local_ip": {
+              "type": "object",
+              "properties": {
+                "ranges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": {}
+        },
+        "vars": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "vars_regexp": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "pattern": {
+                "type": "string"
+              }
+            },
+            "required": ["pattern"],
+            "additionalProperties": false
+          }
+        },
+        "winbox": {
+          "type": "object",
+          "properties": {
+            "modes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["standard", "romon"]
+              }
+            },
+            "username": {
+              "type": "string"
+            },
+            "username_regexp": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "wireguard": {
+          "type": "object",
+          "properties": {
+            "zero": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "xmpp": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "not": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/__schema1"
+          }
+        }
+      },
+      "additionalProperties": {}
     }
   }
 }

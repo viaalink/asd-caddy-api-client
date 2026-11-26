@@ -76,7 +76,19 @@
               ]
             },
             "try_interval": {
-              "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "0"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                }
+              ]
             },
             "@id": {
               "type": "string"
@@ -114,10 +126,34 @@
                   "type": "boolean"
                 },
                 "interval": {
-                  "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "0"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                    }
+                  ]
                 },
                 "timeout": {
-                  "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "0"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                    }
+                  ]
                 },
                 "passes": {
                   "type": "integer",
@@ -149,7 +185,19 @@
               "type": "object",
               "properties": {
                 "fail_duration": {
-                  "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "0"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                    }
+                  ]
                 },
                 "max_fails": {
                   "type": "integer",
@@ -168,7 +216,19 @@
                   }
                 },
                 "unhealthy_latency": {
-                  "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "0"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                    }
+                  ]
                 },
                 "@id": {
                   "type": "string"
@@ -213,13 +273,49 @@
           "additionalProperties": true
         },
         "flush_interval": {
-          "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "const": "0"
+            },
+            {
+              "type": "string",
+              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+            }
+          ]
         },
         "stream_timeout": {
-          "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "const": "0"
+            },
+            {
+              "type": "string",
+              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+            }
+          ]
         },
         "stream_close_delay": {
-          "$ref": "#/definitions/caddy-handler-reverse-proxy/properties/load_balancing/properties/try_duration"
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "const": "0"
+            },
+            {
+              "type": "string",
+              "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+            }
+          ]
         },
         "trusted_proxies": {
           "type": "array",
@@ -343,7 +439,8 @@
                 "additionalProperties": true
               },
               "routes": {
-                "type": "array"
+                "type": "array",
+                "items": {}
               }
             },
             "additionalProperties": true

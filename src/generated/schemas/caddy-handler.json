@@ -78,7 +78,19 @@
                   ]
                 },
                 "try_interval": {
-                  "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "const": "0"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                    }
+                  ]
                 },
                 "@id": {
                   "type": "string"
@@ -116,10 +128,34 @@
                       "type": "boolean"
                     },
                     "interval": {
-                      "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "string",
+                          "const": "0"
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                        }
+                      ]
                     },
                     "timeout": {
-                      "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "string",
+                          "const": "0"
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                        }
+                      ]
                     },
                     "passes": {
                       "type": "integer",
@@ -151,7 +187,19 @@
                   "type": "object",
                   "properties": {
                     "fail_duration": {
-                      "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "string",
+                          "const": "0"
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                        }
+                      ]
                     },
                     "max_fails": {
                       "type": "integer",
@@ -170,7 +218,19 @@
                       }
                     },
                     "unhealthy_latency": {
-                      "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "string",
+                          "const": "0"
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                        }
+                      ]
                     },
                     "@id": {
                       "type": "string"
@@ -215,13 +275,49 @@
               "additionalProperties": true
             },
             "flush_interval": {
-              "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "0"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                }
+              ]
             },
             "stream_timeout": {
-              "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "0"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                }
+              ]
             },
             "stream_close_delay": {
-              "$ref": "#/definitions/caddy-handler/anyOf/0/properties/load_balancing/properties/try_duration"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "const": "0"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?(\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h|d))+$"
+                }
+              ]
             },
             "trusted_proxies": {
               "type": "array",
@@ -345,7 +441,8 @@
                     "additionalProperties": true
                   },
                   "routes": {
-                    "type": "array"
+                    "type": "array",
+                    "items": {}
                   }
                 },
                 "additionalProperties": true
@@ -636,7 +733,20 @@
                 "add": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/caddy-handler/anyOf/4/properties/query/properties/set/items"
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "val": {
+                        "type": "string"
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["key", "val"],
+                    "additionalProperties": false
                   }
                 },
                 "replace": {
@@ -666,7 +776,20 @@
                 "rename": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/caddy-handler/anyOf/4/properties/query/properties/set/items"
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "val": {
+                        "type": "string"
+                      },
+                      "@id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["key", "val"],
+                    "additionalProperties": false
                   }
                 },
                 "@id": {
@@ -860,7 +983,8 @@
                     "type": "string"
                   },
                   "outputs": {
-                    "type": "array"
+                    "type": "array",
+                    "items": {}
                   },
                   "@id": {
                     "type": "string"
@@ -963,7 +1087,8 @@
           "type": "object",
           "properties": {
             "handle_response": {
-              "type": "array"
+              "type": "array",
+              "items": {}
             },
             "handler": {
               "type": "string",
@@ -1046,7 +1171,14 @@
               "type": "string"
             },
             "status_code": {
-              "$ref": "#/definitions/caddy-handler/anyOf/2/properties/status_code"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "handler": {
               "type": "string",
@@ -1291,11 +1423,11 @@
                     }
                   },
                   "handle": {
+                    "minItems": 1,
                     "type": "array",
                     "items": {
                       "$ref": "#/definitions/caddy-handler"
-                    },
-                    "minItems": 1
+                    }
                   },
                   "terminal": {
                     "type": "boolean"
