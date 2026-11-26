@@ -27,6 +27,31 @@ Every checkout gets its own ports and container names from `tpl.env`
 (`getRandomPort`, `getRandomString`), resolved once into `.env` by `via env init`.
 Several clones or worktrees run the demo side by side without clashing.
 
+## Databases over TCP: Postgres, MySQL, MariaDB, Redis
+
+The dashboard has one tab per database (`/dashboard?tab=pg|mysql|mariadb|redis` opens it
+directly). The shop on the left (`/app/db.html?db=…`) asks the backend for products; the
+backend reaches each database through the demo Caddy's layer4 (caddy-l4) routes, and clicking
+**MITM** swaps that route through a mitmweb with the package's decoder for the protocol
+(`pgwire`, `mysqlwire`, `rediswire`). Open a flow: the Comment tab holds the transcript,
+Stream Data each TCP message decoded.
+
+| Tab      | Server       | Layer4 listener | mitmweb (addon)                 |
+| -------- | ------------ | --------------- | ------------------------------- |
+| Postgres | Postgres 16  | `caddy:5432`    | `mitmproxy-pg` (pgwire)         |
+| MySQL    | MySQL 8.4    | `caddy:3306`    | `mitmproxy-mysql` (mysqlwire)   |
+| MariaDB  | MariaDB 11.4 | `caddy:3307`    | `mitmproxy-mariadb` (mysqlwire) |
+| Redis    | Redis 7.4    | `caddy:6379`    | `mitmproxy-redis` (rediswire)   |
+
+The same two bugs live in every database, the kind you only find on the wire:
+
+- **Click a category** (e.g. Electronics): the button sends the slug `electronics`, the data says
+  `Electronics`. Zero results, no error. The wire shows the parameter (`?1='electronics'`,
+  `$1='electronics'`) or the Redis key (`SMEMBERS 'category:electronics'` → empty set).
+- **Sort by Rating**: the SQL asks for a `rating` column that was never added (the page only says
+  "Something went wrong"; the wire shows `ERROR 1054 … Unknown column 'rating'`); on Redis it reads
+  an index that was never built (`products:by_rating` → empty).
+
 ## Architecture
 
 ```

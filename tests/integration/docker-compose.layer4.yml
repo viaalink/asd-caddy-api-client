@@ -11,6 +11,14 @@
 # (pg_hba `password`), to prove the addon hides it from the stored flow.
 # LAYER4_MITMPROXY_VERSION picks another mitmproxy (default 12.2.1, what the
 # Viaalink CLI installs); 10.4.2 runs the addon's older content view API.
+#
+# MySQL 8, MariaDB 11 and Redis 7 (layer4-mysql-redis.integration.test.ts):
+#   MySQL via Caddy 127.0.0.1:13306, MariaDB 127.0.0.1:13307, Redis 127.0.0.1:16379,
+#   Postgres via Caddy and mitmweb-tcp 127.0.0.1:15433
+#   mitmweb-tcp UI / API 127.0.0.1:18082: ONE mitmweb with all three addons and
+#   a reverse TCP listener per database (Postgres too), to prove each addon only
+#   takes its own protocol, whatever the port.
+# Test-only credentials for throwaway containers.
 name: caddy-layer4-test
 services:
   caddy:
@@ -23,6 +31,10 @@ services:
     ports:
       - "127.0.0.1:2021:2019"
       - "127.0.0.1:15432:5432"
+      - "127.0.0.1:13306:3306"
+      - "127.0.0.1:13307:3307"
+      - "127.0.0.1:16379:6379"
+      - "127.0.0.1:15433:5433"
 
   postgres:
     image: postgres:16-alpine
@@ -37,6 +49,56 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root-Secret-4711
+      MYSQL_DATABASE: shop
+      MYSQL_USER: shop
+      MYSQL_PASSWORD: Mysql-Secret-4711
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot-Secret-4711"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  mariadb:
+    image: mariadb:11.4
+    environment:
+      MARIADB_ROOT_PASSWORD: root-Secret-4711
+      MARIADB_DATABASE: shop
+      MARIADB_USER: shop
+      MARIADB_PASSWORD: Mariadb-Secret-4711
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --requirepass Redis-Secret-4711
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "Redis-Secret-4711", "--no-auth-warning", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mitmproxy-tcp:
+    image: mitmproxy/mitmproxy:${LAYER4_MITMPROXY_VERSION:-12.2.1}
+    command: >
+      mitmweb
+      --mode reverse:tcp://mysql:3306@3306
+      --mode reverse:tcp://mariadb:3306@3307
+      --mode reverse:tcp://redis:6379@6379
+      --mode reverse:tcp://postgres:5432@5432
+      --web-host 0.0.0.0 --web-port 8081 --set web_password=layer4-test
+      -s /addons/pgwire.py -s /addons/mysqlwire.py -s /addons/rediswire.py
+    volumes:
+      - ../../mitmproxy-addons:/addons:ro
+    ports:
+      - "127.0.0.1:18082:8081"
 
   mitmproxy:
     image: mitmproxy/mitmproxy:${LAYER4_MITMPROXY_VERSION:-12.2.1}

@@ -151,3 +151,6 @@ test-results/
 
 # via runtime state (env snapshot, logs)
 .asd/
+
+# Python bytecode (mitmproxy addons and their tests)
+__pycache__/

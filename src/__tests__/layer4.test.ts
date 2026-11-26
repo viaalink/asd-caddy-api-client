@@ -1,4 +1,5 @@
 import { describe, test, expect, beforeEach, vi } from "vitest";
+import { spawnSync } from "child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -269,13 +270,26 @@ describe("mitmproxy helpers", () => {
       "reverse:tcp://postgres:5432@6432"
     );
   });
-  test("the pgwire addon ships with the package", () => {
-    const file = mitmproxyAddonPath("pgwire");
+  const ADDONS = ["pgwire", "mysqlwire", "rediswire"] as const;
+  test.each(ADDONS)("the %s addon ships with the package", (addon) => {
+    const file = mitmproxyAddonPath(addon);
     expect(existsSync(file)).toBe(true);
     expect(readFileSync(file, "utf8")).toContain("def tcp_message");
   });
-  test("the embedded source is the file (else: bun run generate:mitmproxy-addons)", () => {
-    expect(mitmproxyAddonSource("pgwire")).toBe(readFileSync(mitmproxyAddonPath("pgwire"), "utf8"));
+  test.each(ADDONS)(
+    "the embedded %s source is the file (else: bun run generate:mitmproxy-addons)",
+    (addon) => {
+      expect(mitmproxyAddonSource(addon)).toBe(readFileSync(mitmproxyAddonPath(addon), "utf8"));
+    }
+  );
+  test("the addons decode recorded byte sequences (Python unit tests, tests/mitmproxy-addons)", () => {
+    // Same as `just test-addons`; mitmproxy itself is optional (helpers.py stubs it).
+    const run = spawnSync("python3", ["-B", "-m", "unittest", "-q"], {
+      cwd: join(__dirname, "../../tests/mitmproxy-addons"),
+      encoding: "utf8",
+    });
+    expect(run.error).toBeUndefined();
+    expect(run.status, run.stderr).toBe(0);
   });
   test("writeMitmproxyAddon writes it out, for compiled programs", () => {
     const dir = mkdtempSync(join(tmpdir(), "addon-"));

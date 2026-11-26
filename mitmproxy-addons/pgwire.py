@@ -21,6 +21,10 @@ everything after the SSL request, and the transcript says so.
 
 Messages can be split over TCP chunks or several can share one chunk, so every
 flow keeps a buffer per direction and only complete messages are decoded.
+
+The addon only takes flows that look like Postgres (the client speaks first,
+with a startup, SSL or cancel request), so it can be loaded next to
+mysqlwire.py and rediswire.py in one mitmproxy.
 """
 from __future__ import annotations
 
@@ -203,9 +207,43 @@ class PgStream:
                 out.append(line)
 
 
+def looks_like_postgres(first_client_bytes: bytes) -> bool | None:
+    """
+    Does a flow that the client opened with these bytes speak the Postgres
+    protocol? None: too few bytes yet to tell.
+    """
+    if len(first_client_bytes) < 8:
+        # Every startup message is at least 8 bytes and starts with 00 00.
+        return None if all(b == 0 for b in first_client_bytes[:2]) else False
+    (length, code) = struct.unpack_from("!ii", first_client_bytes, 0)
+    known = (PROTOCOL_3, SSL_REQUEST, GSSENC_REQUEST, CANCEL_REQUEST)
+    return 8 <= length <= 10000 and (code in known or code >> 16 == 3)
+
+
 class PgWire:
     def __init__(self) -> None:
         self.streams: dict[tuple[str, bool], PgStream] = {}
+        self.ours: dict[str, bool] = {}
+
+    def _claim(self, flow: tcp.TCPFlow) -> list[int]:
+        """
+        The indexes of the messages to decode now: the last one, or every one
+        so far when this message is the one that shows the flow is Postgres.
+        """
+        if flow.id in self.ours:
+            return [len(flow.messages) - 1] if self.ours[flow.id] else []
+        claimed = flow.metadata.get("wire_protocol")
+        if claimed not in (None, "postgres") or not flow.messages[0].from_client:
+            verdict: bool | None = False
+        else:
+            verdict = looks_like_postgres(b"".join(m.content for m in flow.messages if m.from_client))
+        if verdict is None:
+            return []  # wait for more bytes
+        self.ours[flow.id] = verdict
+        if not verdict:
+            return []
+        flow.metadata["wire_protocol"] = "postgres"
+        return list(range(len(flow.messages)))
 
     @staticmethod
     def _hide_logins(flow: tcp.TCPFlow, keep_last: bool) -> None:
@@ -222,9 +260,16 @@ class PgWire:
             pending.remove(index)
 
     def tcp_message(self, flow: tcp.TCPFlow) -> None:
-        msg = flow.messages[-1]
+        indexes = self._claim(flow)
+        if not indexes:
+            return
         # Earlier messages have been forwarded by now: hide their login data.
         self._hide_logins(flow, keep_last=True)
+        for index in indexes:
+            self._decode(flow, index)
+
+    def _decode(self, flow: tcp.TCPFlow, index: int) -> None:
+        msg = flow.messages[index]
         key = (flow.id, msg.from_client)
         stream = self.streams.setdefault(key, PgStream(frontend=msg.from_client))
         try:
@@ -239,9 +284,9 @@ class PgWire:
         arrow = "→" if msg.from_client else "←"
         # Per message, for the content view: index in flow.messages → its lines.
         by_message = flow.metadata.setdefault("pgwire_messages", {})
-        by_message[len(flow.messages) - 1] = [f"{arrow} {line}" for line in lines]
+        by_message[index] = [f"{arrow} {line}" for line in lines]
         if msg.from_client and any(line.startswith("LOGIN") for line in lines):
-            flow.metadata.setdefault("pgwire_hide", []).append(len(flow.messages) - 1)
+            flow.metadata.setdefault("pgwire_hide", []).append(index)
         if lines:
             log = flow.metadata.setdefault("pgwire", [])
             for line in lines:
@@ -250,9 +295,14 @@ class PgWire:
             flow.comment = "\n".join(log[-60:])
 
     def tcp_end(self, flow: tcp.TCPFlow) -> None:
+        if not self.ours.pop(flow.id, False):
+            return
         self._hide_logins(flow, keep_last=False)
         self.streams.pop((flow.id, True), None)
         self.streams.pop((flow.id, False), None)
+
+    def tcp_error(self, flow: tcp.TCPFlow) -> None:
+        self.tcp_end(flow)
 
 
 def _decoded_lines(flow, tcp_message) -> list[str] | None:

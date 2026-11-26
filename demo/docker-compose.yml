@@ -167,6 +167,155 @@ services:
       retries: 10
       start_period: 10s
 
+  # MySQL 8 and MariaDB 11: the same products (seed/mysql.sql), for the MySQL
+  # protocol; the category column is binary so the lower-case slug misses here too.
+  mysql:
+    image: mysql:8.4
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DEMO_DB_PASSWORD:-demo}
+      - MYSQL_DATABASE=shop
+      - MYSQL_USER=shop
+      - MYSQL_PASSWORD=${DEMO_DB_PASSWORD:-demo}
+    volumes:
+      - ./seed/mysql.sql:/docker-entrypoint-initdb.d/products.sql:ro
+    networks:
+      - demo-net
+    healthcheck:
+      # Through TCP: the entrypoint's temporary init server only listens on a socket.
+      test: ["CMD-SHELL", 'mysqladmin ping -h 127.0.0.1 -ushop -p"$$MYSQL_PASSWORD" --silent']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  mariadb:
+    image: mariadb:11.4
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mariadb
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DEMO_DB_PASSWORD:-demo}
+      - MARIADB_DATABASE=shop
+      - MARIADB_USER=shop
+      - MARIADB_PASSWORD=${DEMO_DB_PASSWORD:-demo}
+    volumes:
+      - ./seed/mysql.sql:/docker-entrypoint-initdb.d/products.sql:ro
+    networks:
+      - demo-net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  # Redis 7, with a password (AUTH): demo-api loads the products at start.
+  redis:
+    image: redis:7.4-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-redis
+    command: ["sh", "-c", 'exec redis-server --requirepass "$$REDIS_PASSWORD"']
+    environment:
+      - REDIS_PASSWORD=${DEMO_REDIS_PASSWORD:-demo}
+    networks:
+      - demo-net
+    healthcheck:
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # One mitmweb per database (reverse TCP mode), each with the package's addon
+  # for its protocol: mysqlwire (MySQL and MariaDB), rediswire (Redis).
+  mitmproxy-mysql:
+    image: mitmproxy/mitmproxy:12.2.1
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-mysql
+    command: >
+      mitmweb
+      --mode reverse:tcp://mysql:3306@3306
+      --web-host 0.0.0.0
+      --web-port 8081
+      --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
+      -s /addons/mysqlwire.py
+    volumes:
+      - ../mitmproxy-addons:/addons:ro
+    ports:
+      - "127.0.0.1:${DEMO_MITM_MYSQL_WEB_PORT:-9087}:8081" # Web UI
+    networks:
+      - demo-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mitmproxy-mariadb:
+    image: mitmproxy/mitmproxy:12.2.1
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-mariadb
+    command: >
+      mitmweb
+      --mode reverse:tcp://mariadb:3306@3306
+      --web-host 0.0.0.0
+      --web-port 8081
+      --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
+      -s /addons/mysqlwire.py
+    volumes:
+      - ../mitmproxy-addons:/addons:ro
+    ports:
+      - "127.0.0.1:${DEMO_MITM_MARIADB_WEB_PORT:-9088}:8081" # Web UI
+    networks:
+      - demo-net
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mitmproxy-redis:
+    image: mitmproxy/mitmproxy:12.2.1
+    container_name: ${COMPOSE_PROJECT_NAME:-caddy-mitm-demo}-mitmproxy-redis
+    command: >
+      mitmweb
+      --mode reverse:tcp://redis:6379@6379
+      --web-host 0.0.0.0
+      --web-port 8081
+      --no-web-open-browser
+      --set web_password=${DEMO_MITMWEB_PASSWORD:-demo}
+      -s /addons/rediswire.py
+    volumes:
+      - ../mitmproxy-addons:/addons:ro
+    ports:
+      - "127.0.0.1:${DEMO_MITM_REDIS_WEB_PORT:-9089}:8081" # Web UI
+    networks:
+      - demo-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python3 -c "import urllib.request; urllib.request.urlopen(''http://localhost:8081/?token=${DEMO_MITMWEB_PASSWORD:-demo}'')"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   # Demo API server (Bun + caddy-api-client library)
   demo-api:
     build:
@@ -180,11 +329,15 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       # Postgres through Caddy's layer4 route, so inspection can swap it
       - DATABASE_URL=postgres://demo:demo@caddy:5432/shop
+      # MySQL (caddy:3306), MariaDB (caddy:3307) and Redis (caddy:6379), through Caddy too
+      - DEMO_DB_PASSWORD=${DEMO_DB_PASSWORD:-demo}
+      - DEMO_REDIS_PASSWORD=${DEMO_REDIS_PASSWORD:-demo}
       # mitmweb 11.1+ wants a password; Caddy passes it on to the mitmweb UIs
       - MITMWEB_PASSWORD=${DEMO_MITMWEB_PASSWORD:-demo}
     volumes:
       - ./app:/app/public:ro
       - ./api/server.ts:/app/demo/server.ts:ro
+      - ./data:/app/data:ro
     networks:
       - demo-net
     depends_on:
@@ -195,6 +348,12 @@ services:
       mitmproxy:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      mariadb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # Seed sample data into Elasticsearch
